@@ -11,7 +11,7 @@ Never charge for existing infrastructure.
 
 Equation 6 (Dike Volume) is complex.
 Do not simplify it.
-Implement it exactly as specified in specs.md.
+Implement it exactly as specified in ROADMAP.md.
 
 ### Unit Consistency
 
@@ -22,7 +22,7 @@ Implement it exactly as specified in specs.md.
 
 ### Source of Truth
 
-specs.md determines architecture.
+ROADMAP.md determines architecture.
 docs/equations.md determines math.
 
 ## Code Quality & Style
@@ -77,7 +77,7 @@ For example: "Please run `julia --project -e 'using Pkg; Pkg.add("PackageName")'
 
 ## Workflow (Strict)
 
-After completing each phase from specs.md:
+After completing each phase from ROADMAP.md:
 
 1. **STOP** and run the tests: `julia --project test/runtests.jl`
 2. **REPORT** what was implemented and any discrepancies with the paper.
@@ -128,12 +128,14 @@ Use `PROGRESS.md` to track implementation progress across sessions.
 **Always** include explanatory comments for test groups that clarify the physical or logical reasoning.
 
 For constraint validation tests, use the format:
+
 ```julia
 # constraint inequality; brief explanation of why this matters physically/logically
 @test_throws AssertionError function_call(invalid_value)
 ```
 
 **Good examples:**
+
 ```julia
 # total_value > 0; negative values are physically meaningless
 @test_throws AssertionError validate_parameters(CityParameters(total_value = -1000.0))
@@ -143,6 +145,7 @@ For constraint validation tests, use the format:
 ```
 
 Group related tests under a single comment when they test the same constraint:
+
 ```julia
 # 0 ≤ P ≤ 1; resistance percentage must be a valid fraction
 @test_throws AssertionError Levers(0, 0, 1.5, 0, 0)
