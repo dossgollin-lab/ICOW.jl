@@ -123,6 +123,34 @@ Use `PROGRESS.md` to track implementation progress across sessions.
 - **Monotonicity**: Increasing defenses must always increase cost.
 - **Regression**: The "Van Dantzig" case (Static Dike optimization) must yield a convex cost curve.
 
+### Test Documentation
+
+**Always** include explanatory comments for test groups that clarify the physical or logical reasoning.
+
+For constraint validation tests, use the format:
+```julia
+# constraint inequality; brief explanation of why this matters physically/logically
+@test_throws AssertionError function_call(invalid_value)
+```
+
+**Good examples:**
+```julia
+# total_value > 0; negative values are physically meaningless
+@test_throws AssertionError validate_parameters(CityParameters(total_value = -1000.0))
+
+# W ≤ B; cannot withdraw from areas above the dike base (they're protected)
+@test_throws AssertionError Levers(5.0, 0, 0, 5.0, 2.0)
+```
+
+Group related tests under a single comment when they test the same constraint:
+```julia
+# 0 ≤ P ≤ 1; resistance percentage must be a valid fraction
+@test_throws AssertionError Levers(0, 0, 1.5, 0, 0)
+@test_throws AssertionError Levers(0, 0, -0.1, 0, 0)
+```
+
+This makes tests self-documenting and helps future developers understand the domain logic.
+
 ## Markdown Style
 
 ### Headers

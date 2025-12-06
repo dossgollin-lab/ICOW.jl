@@ -1,10 +1,10 @@
 # ICOW.jl Implementation Progress
 
-Last updated: 2025-12-05
+Last updated: 2025-12-05 (Phase 0 completed)
 
 ## Current Phase
 
-Working on: **Documentation First**
+Working on: **Phase 0: Parameters & Validation - COMPLETED**
 
 ## Completed
 
@@ -15,11 +15,11 @@ Working on: **Documentation First**
 
 ## Phase 0: Parameters & Validation
 
-- [ ] Create `src/parameters.jl` with `CityParameters`
-- [ ] Create `src/types.jl` with `Levers` and constraints
-- [ ] Create `docs/parameters.md`
-- [ ] Write unit tests for parameter validation
-- [ ] Write unit tests for lever constraints
+- [x] Create `src/parameters.jl` with `CityParameters`
+- [x] Create `src/types.jl` with `Levers` and constraints
+- [x] Create `docs/parameters.md`
+- [x] Write unit tests for parameter validation
+- [x] Write unit tests for lever constraints
 
 ## Phase 1a: Geometry
 
@@ -90,7 +90,17 @@ Working on: **Documentation First**
 
 ### Session Notes
 
-Add session-specific notes here as needed.
+**2025-12-05 - Phase 0 Completed:**
+- Implemented CityParameters struct with all exogenous parameters from Table C.3
+- Implemented Levers struct with physical constraint validation
+- Created comprehensive docs/parameters.md documenting all parameters
+- Wrote 97 unit tests covering parameter validation and lever constraints
+- All tests passing successfully
+- Key design decisions:
+  - Used Base.@kwdef for CityParameters to enable keyword construction
+  - Implemented strict validation in Levers constructor with optional bypass
+  - Added Base.max() overload for Levers to support irreversibility enforcement
+  - Separated is_feasible() function for explicit constraint checking
 
 ### Blockers
 

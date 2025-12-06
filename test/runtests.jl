@@ -2,5 +2,7 @@ using ICOW
 using Test
 
 @testset "ICOW.jl" begin
-    # Write your tests here.
+    # Phase 0: Parameters & Validation
+    include("parameters_tests.jl")
+    include("types_tests.jl")
 end

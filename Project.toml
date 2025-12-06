@@ -2,3 +2,9 @@ name = "ICOW"
 uuid = "3f0c05cb-d2a1-4c03-b976-c0e1c11e0dd4"
 authors = ["James Doss-Gollin <jdossgollin@rice.edu>"]
 version = "0.1.0"
+
+[deps]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+Test = "1.11.0"
