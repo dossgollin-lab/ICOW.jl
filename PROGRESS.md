@@ -4,7 +4,7 @@ Last updated: 2025-12-05 (Phase 0 completed)
 
 ## Current Phase
 
-Working on: **Phase 0: Parameters & Validation - COMPLETED**
+Working on: **Phase 1a: Equation Extraction - AWAITING REVIEW**
 
 ## Completed
 
@@ -21,22 +21,28 @@ Working on: **Phase 0: Parameters & Validation - COMPLETED**
 - [x] Write unit tests for parameter validation
 - [x] Write unit tests for lever constraints
 
-## Phase 1a: Geometry
+## Phase 1: Equation Extraction (REQUIRES USER REVIEW)
 
-- [ ] Extract Equation 6 to `docs/equations.md`
+- [ ] Extract ALL equations (Equations 1-9) from Ceres et al. (2019) to `docs/equations.md`
+- [ ] Use LaTeX math syntax for all equations
+- [ ] Include equation numbers and page references
+- [ ] Define all symbols in each equation with units
+- [ ] Get user approval before proceeding to implementation
+
+## Phase 2: Geometry Implementation
+
 - [ ] Implement `calculate_dike_volume()` in `src/geometry.jl`
 - [ ] Write unit tests for volume calculation
 - [ ] Validate against hand calculations
 
-## Phase 1b: Core Physics
+## Phase 3: Core Physics Implementation
 
-- [ ] Extract Equations 1-5, 7-9 to `docs/equations.md`
 - [ ] Implement cost functions in `src/costs.jl`
 - [ ] Implement damage functions in `src/damage.jl`
 - [ ] Write unit tests for costs
 - [ ] Write unit tests for damage
 
-## Phase 1c: Zones
+## Phase 4: Zones Implementation
 
 - [ ] Create `docs/zones.md` from Figure 3
 - [ ] Implement `calculate_city_zones()` in `src/zones.jl`
@@ -44,7 +50,7 @@ Working on: **Phase 0: Parameters & Validation - COMPLETED**
 - [ ] Write unit tests for zone calculation
 - [ ] Write unit tests for zone damage
 
-## Phase 2: Simulation
+## Phase 5: Simulation
 
 - [ ] Implement `SimulationState` in `src/simulation.jl`
 - [ ] Implement `simulate()` with scalar mode
@@ -53,14 +59,14 @@ Working on: **Phase 0: Parameters & Validation - COMPLETED**
 - [ ] Write simulation tests
 - [ ] Test irreversibility enforcement
 
-## Phase 3: Policies
+## Phase 6: Policies
 
 - [ ] Implement `AbstractPolicy` interface
 - [ ] Implement `StaticPolicy`
 - [ ] Implement `ThresholdPolicy`
 - [ ] Write policy execution tests
 
-## Phase 4: Optimization
+## Phase 7: Optimization
 
 - [ ] Implement `create_objective_function()`
 - [ ] Implement `optimize_portfolio()`
@@ -68,7 +74,7 @@ Working on: **Phase 0: Parameters & Validation - COMPLETED**
 - [ ] Write van Dantzig regression test
 - [ ] Write Pareto front tests
 
-## Phase 5: Analysis
+## Phase 8: Analysis
 
 - [ ] Implement surge generation in `src/surges.jl`
 - [ ] Implement `run_forward_mode()`
@@ -91,6 +97,7 @@ Working on: **Phase 0: Parameters & Validation - COMPLETED**
 ### Session Notes
 
 **2025-12-05 - Phase 0 Completed:**
+
 - Implemented CityParameters struct with all exogenous parameters from Table C.3
 - Implemented Levers struct with physical constraint validation
 - Created comprehensive docs/parameters.md documenting all parameters
@@ -101,6 +108,12 @@ Working on: **Phase 0: Parameters & Validation - COMPLETED**
   - Implemented strict validation in Levers constructor with optional bypass
   - Added Base.max() overload for Levers to support irreversibility enforcement
   - Separated is_feasible() function for explicit constraint checking
+
+**2025-12-05 - Phase 1 Started (Equation Extraction):**
+
+- Starting with equation extraction for user review before implementation
+- Will extract all equations (1-9) from Ceres et al. (2019) to docs/equations.md
+- Awaiting user approval on equations before implementing any physics code
 
 ### Blockers
 
