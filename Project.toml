@@ -1,0 +1,4 @@
+name = "ICOW"
+uuid = "3f0c05cb-d2a1-4c03-b976-c0e1c11e0dd4"
+authors = ["James Doss-Gollin <jdossgollin@rice.edu>"]
+version = "0.1.0"

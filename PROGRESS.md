@@ -11,6 +11,7 @@ Working on: **Documentation First**
 - [x] Create CLAUDE.md with development guidelines
 - [x] Create PROGRESS.md for tracking progress
 - [x] Create docs/ directory
+- [x] Initialize Julia package structure (Project.toml, src/, test/)
 
 ## Phase 0: Parameters & Validation
 
