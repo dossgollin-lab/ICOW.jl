@@ -61,7 +61,6 @@ snake_case for functions, CamelCase for types.
 
 ### Structs
 
-Use `Base.@kwdef` for parameters.
 Prefer `immutable struct` over `mutable struct` unless state modification is strictly required.
 
 ### Assertions
@@ -98,31 +97,7 @@ When creating commits, use clear, descriptive messages in plain text.
 
 **Format**: `git commit -m "brief description of what was done"`
 
-**Example**: `git commit -m "created CLAUDE.md and PROGRESS.md for project setup"`
-
-## Progress Tracking
-
-### PROGRESS.md
-
-Use `PROGRESS.md` to track implementation progress across sessions.
-
-**At the start of each session:**
-
-- Check `PROGRESS.md` to see what's next
-- Update "Current Phase" section
-- Review any notes from previous session
-
-**During implementation:**
-
-- Check off completed items: `- [x] Item name`
-- Add session notes, blockers, or decisions to the Notes section
-- Keep it updated so you always know where you are
-
-**At the end of each session:**
-
-- Mark completed items with `[x]`
-- Add any important notes or decisions
-- Commit changes to git
+**Example**: `git commit -m "Implement Phase 1 parameters and validation"`
 
 ## Testing Strategy
 

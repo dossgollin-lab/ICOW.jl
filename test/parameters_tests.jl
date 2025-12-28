@@ -203,3 +203,9 @@ end
     city32 = CityParameters{Float32}(H_city=17.0f0, D_city=2000.0f0)
     @test city_slope(city32) isa Float32
 end
+
+@testset "Type Stability" begin
+    # Type stability is critical for performance in the optimization loop
+    city = CityParameters()
+    @test (@inferred city_slope(city)) isa Float64
+end

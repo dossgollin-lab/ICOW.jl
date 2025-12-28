@@ -171,3 +171,12 @@ end
         @test result.R isa Float32
     end
 end
+
+@testset "Type Stability" begin
+    # Type stability is critical for performance in the optimization loop
+    city = CityParameters()
+    levers = Levers(1.0, 2.0, 0.5, 3.0, 1.0)
+
+    @test (@inferred is_feasible(levers, city)) isa Bool
+    @test (@inferred max(levers, levers)) isa Levers{Float64}
+end
