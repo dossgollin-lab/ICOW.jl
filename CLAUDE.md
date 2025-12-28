@@ -11,7 +11,7 @@ Never charge for existing infrastructure.
 
 Equation 6 (Dike Volume) is complex.
 Do not simplify it.
-Implement it exactly as specified in ROADMAP.md.
+Implement it exactly as specified in docs/equations.md.
 
 ### Unit Consistency
 
@@ -22,8 +22,15 @@ Implement it exactly as specified in ROADMAP.md.
 
 ### Source of Truth
 
-ROADMAP.md determines architecture.
-docs/equations.md determines math.
+- **docs/equations.md**: The definitive mathematical reference.
+  Contains all equations, parameters, zone definitions, and implementation guidance (paper vs C++ discrepancies).
+- **ROADMAP.md**: The implementation plan.
+  Contains the step-by-step phases, file structure, and task checklist for building the package.
+  **Keep it high-level, conceptual, and strategic.**
+  Note key considerations and dependencies, but do not include code snippets or work out implementation details.
+  Details belong in the source files and their tests.
+- **C++ Reference**: The original implementation is at [rceres/ICOW](https://github.com/rceres/ICOW/blob/master/src/iCOW_2018_06_11.cpp).
+  Download locally to `docs/` for reference (file is in .gitignore and cannot be redistributed).
 
 ## Code Quality & Style
 
@@ -63,7 +70,7 @@ Use `@assert` aggressively in constructors to enforce physical bounds (e.g., $W 
 
 ### Dependencies
 
-- Approved: Distributions, DataFrames, YAXArrays, Metaheuristics, Statistics, Random, Test.
+- Approved: Distributions, DataFrames, YAXArrays, NetCDF, Metaheuristics, StaticArrays, Statistics, Random, Test.
 - **Strict Rule**: If you need to add any other package, you must ASK PERMISSION from the user first. Do not add it to Project.toml without explicit approval.
 
 ### Package Management
@@ -165,6 +172,7 @@ This makes tests self-documenting and helps future developers understand the dom
 
 - Use subsections (###) instead of bold text for structural elements.
 - One sentence per line for better version control and diff readability.
+- Always use LaTeX math (`$...$`) for equations and inequalities, never unicode math symbols (e.g., use `$\leq$` not `≤`).
 
 ### Lists
 

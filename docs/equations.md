@@ -1,213 +1,307 @@
-# Mathematical Equations for iCOW Model
+# Mathematical Reference: iCOW Model
 
-This document contains all mathematical equations from Ceres et al. (2019), transcribed as they appear in the original paper.
-Each equation includes the original equation number and page reference.
+This document is the definitive mathematical reference for the iCOW (Island City on a Wedge) model.
+All equations are from Ceres et al. (2019), with corrections based on the C++ reference implementation.
 
-## Equations
+**C++ Reference:** [rceres/ICOW](https://github.com/rceres/ICOW/blob/master/src/iCOW_2018_06_11.cpp)
+(Download locally to `docs/` for reference; cannot be redistributed)
 
-Equation 1: Withdrawal Cost (p. 14):
+## Decision Levers (`Levers` struct)
 
-$$
-C_w = \frac{v_i * \mathbf{W} * f_w}{\text{city height} - \mathbf{W}}
-$$
+The model has five decision levers (shown in **bold** throughout):
 
-Equation 2: City Value After Withdrawal (p. 14)
+| Lever | Symbol | Field | Description | Units | Constraints |
+|-------|--------|-------|-------------|-------|-------------|
+| Withdrawal | **W** | `W` | Height below which city is relocated (absolute) | m | $0 \leq W \leq H_{city}$ |
+| Resistance Height | **R** | `R` | Height of flood-proofing above $W$ (relative) | m | $R \geq 0$ |
+| Resistance Percentage | **P** | `P` | Fraction of buildings made resistant | - | $0 \leq P \leq 1$ |
+| Dike Height | **D** | `D` | Height of dike above its base (relative) | m | $D \geq 0$, $W+B+D \leq H_{city}$ |
+| Dike Base | **B** | `B` | Height of dike base above $W$ (relative) | m | $B \geq 0$ |
 
-$$
-v_w = v_i * \left(1 - \frac{f_l * \mathbf{W}}{\text{city height}}\right)
-$$
+**Coordinate system**: $W$ is the only absolute lever (measured from seawall/sea level).
+All other levers ($R$, $B$, $D$) are relative to $W$.
+The absolute elevation of the dike base is $W + B$; the dike top is at $W + B + D$.
 
-Equation 3: Resistance Cost Fraction (p. 15)
+## Zone Definitions
 
-$$
-f_{c_R} = f_{adj} * \left( f_{lin} * \mathbf{P} + \frac{f_{exp} * \max(0, \mathbf{P} - t_{exp})}{(1 - \mathbf{P})} \right)
-$$
+The city is partitioned into zones based on lever settings (see Figure 3, p. 11):
 
-Note: The C++ code includes a resistance adjustment factor $f_{adj} = 1.25$ that multiplies the entire expression. This is not shown in the paper but is present in the reference implementation.
+| Zone | Elevation Range (absolute) | Width (relative) | Description | Value Ratio | Damage Calculation |
+|------|---------------------------|------------------|-------------|-------------|---------------------|
+| 0 | $0$ to $W$ | $W$ | Withdrawn | 0 | $d_0 = 0$ (no value remains) |
+| 1 | $W$ to $W + \min(R, B)$ | $\min(R, B)$ | Resistant | 0.95 | $d_1 = Val_1 \cdot (1-P) \cdot f_{damage}$ |
+| 2 | $W + \min(R, B)$ to $W + B$ | $B - R$ (if $R < B$) | Unprotected gap | 0.95 | $d_2 = Val_2 \cdot f_{damage}$ |
+| 3 | $W + B$ to $W + B + D$ | $D$ | Dike protected | 1.1 | $d_3 = Val_3 \cdot f_{damage} \cdot f_{dike}$ |
+| 4 | $W + B + D$ to $H_{city}$ | $H_{city} - W - B - D$ | Above dike | 1.0 | $d_4 = Val_4 \cdot f_{damage}$ |
 
-Equation 4: Resistance Cost (Unconstrained) (p. 15)
+Zone 2 only exists if $R < B$ (resistance doesn't reach dike base).
+$f_{dike} = f_{intact}$ if dike holds, $f_{failed}$ if dike fails (stochastic per Equation 8).
 
-When resistance is NOT constrained by a dike ($\mathbf{R} < \mathbf{B}$ or no dike):
+## Cost Equations
 
-$$
-c_R = \frac{v_w * f_{c_R} * \mathbf{R} * (\mathbf{R}/2 + b)}{h * (\text{city elevation} - \mathbf{W})}
-$$
-
-Equation 5: Resistance Cost (Constrained by Dike) (p. 16)
-
-When resistance IS constrained by dike base ($\mathbf{R} \geq \mathbf{B}$):
-
-$$
-c_R = \frac{v_w * f_{c_R} * \mathbf{B} * (\mathbf{R} - \mathbf{B}/2 + b)}{h * (\text{city elevation} - \mathbf{W})}
-$$
-
-Note: $\mathbf{R} > \mathbf{B}$ is a **dominated strategy**.
-The physical protection is capped at $\mathbf{B}$, but cost increases with $\mathbf{R}$.
-A rational optimizer should constrain $\mathbf{R} \leq \mathbf{B}$ when a dike exists.
-
-Equation 6: Dike Volume (p. 17)
+### Equation 1: Withdrawal Cost (p. 14)
 
 $$
-V_d = W_{city} h \left( w_d + \frac{h}{s^2} \right) + \frac{1}{6} \left[ -\frac{h^4 \left(h + \frac{1}{s}\right)^2}{s^2} - \frac{2h^5 \left(h + \frac{1}{s}\right)}{S^4} - \frac{4h^6}{s^2 S^4} + \frac{4h^4 \left( 2h \left(h + \frac{1}{s}\right) - \frac{4h^2}{s^2} + \frac{h^2}{s^2} \right)}{s^2 S^2} + \frac{2h^3 \left(h + \frac{1}{s}\right)}{S^2} \right]^{\frac{1}{2}} + w_d \frac{h^2}{S^2}
+C_W = \frac{V_{city} \cdot \mathbf{W} \cdot f_w}{H_{city} - \mathbf{W}}
 $$
 
-Equation 7: Dike Cost (p. 17)
+### Equation 2: City Value After Withdrawal (p. 14)
 
 $$
-c_D = V_d * c_{dpv}
+V_w = V_{city} \cdot \left(1 - \frac{f_l \cdot \mathbf{W}}{H_{city}}\right)
 $$
 
-Equation 8: Dike Failure Probability (p. 17)
-
-As written in the paper:
+### Equation 3: Resistance Cost Fraction (p. 15)
 
 $$
-p_{df} = \frac{h_{surge} - t_{df}}{\mathbf{D} - t_{df}}
+f_{cR} = f_{adj} \cdot \left( f_{lin} \cdot \mathbf{P} + \frac{f_{exp} \cdot \max(0, \mathbf{P} - t_{exp})}{1 - \mathbf{P}} \right)
 $$
 
-This formula is dimensionally inconsistent ($h_{surge}$ and $\mathbf{D}$ are in meters, $t_{df}$ is dimensionless).
-The corrected implementation multiplies $t_{df}$ by $\mathbf{D}$ to convert the threshold fraction to meters, and uses piecewise clamping:
+Note: $f_{adj} = 1.25$ is in the C++ code but not prominently shown in the paper.
+
+### Equation 4: Resistance Cost - Unconstrained (p. 15)
+
+When $R < B$ or no dike:
 
 $$
-p_{df} = \begin{cases}
-P_{min} & \text{if } h_{surge} < t_{df} * \mathbf{D} \\
-\frac{h_{surge} - t_{df} * \mathbf{D}}{\mathbf{D} - t_{df} * \mathbf{D}} & \text{if } t_{df} * \mathbf{D} \leq h_{surge} < \mathbf{D} \\
-1.0 & \text{if } h_{surge} \geq \mathbf{D}
-\end{cases}
+C_R = \frac{V_w \cdot f_{cR} \cdot \mathbf{R} \cdot (\mathbf{R}/2 + b)}{H_{bldg} \cdot (H_{city} - \mathbf{W})}
 $$
 
-Equation 9: Damage by Zone (p. 18)
+### Equation 5: Resistance Cost - Constrained (p. 16)
+
+When $R \geq B$ (resistance capped at dike base):
 
 $$
-d_Z = Val_Z * \frac{Vol_F}{Vol_Z} * f_{damage}
+C_R = \frac{V_w \cdot f_{cR} \cdot \mathbf{B} \cdot (\mathbf{R} - \mathbf{B}/2 + b)}{H_{bldg} \cdot (H_{city} - \mathbf{W})}
 $$
 
-## Additional Model Components (from C++ implementation)
+Note: $R > B$ is a **dominated strategy** - physical protection is capped at $B$ but cost increases with $R$.
 
-The following equations are not explicitly numbered in the paper but are implemented in the reference C++ code.
+### Equation 6: Dike Volume (p. 17)
 
-### Effective Surge Height
+$$
+V_d = W_{city} \cdot h_d \left( w_d + \frac{h_d}{s^2} \right) + \frac{1}{6} \sqrt{T} + w_d \frac{h_d^2}{S^2}
+$$
 
-The effective surge affecting the city accounts for seawall protection and wave runup:
+Where the term under the square root is:
+
+$$
+T = -\frac{h_d^4 (h_d + 1/s)^2}{s^2} - \frac{2h_d^5(h_d + 1/s)}{S^4} - \frac{4h_d^6}{s^2 S^4} + \frac{4h_d^4(2h_d(h_d + 1/s) - 3h_d^2/s^2)}{s^2 S^2} + \frac{2h_d^3(h_d + 1/s)}{S^2}
+$$
+
+And $h_d = \mathbf{D} + D_{startup}$ (total effective dike height including startup costs).
+
+**WARNING**: The C++ code has a bug where `dh=5` (an index constant) is used instead of `ch` (cost height).
+Use the paper formula.
+
+### Equation 7: Dike Cost (p. 17)
+
+$$
+C_D = V_d \cdot c_d
+$$
+
+### Total Investment Cost
+
+$$
+C_{total} = C_W + C_R + C_D
+$$
+
+## Damage Equations
+
+### Effective Surge Height (from C++ code)
 
 $$
 h_{eff} = \begin{cases}
 0 & \text{if } h_{raw} \leq H_{seawall} \\
-h_{raw} * f_{runup} - H_{seawall} & \text{if } h_{raw} > H_{seawall}
+h_{raw} \cdot f_{runup} - H_{seawall} & \text{if } h_{raw} > H_{seawall}
 \end{cases}
 $$
 
-Where $h_{raw}$ is the raw storm surge height, $H_{seawall}$ is the seawall height, and $f_{runup}$ is the wave runup multiplier.
+### Equation 8: Dike Failure Probability (p. 17)
 
-### Zone Value Calculations
-
-Zone values are calculated with value ratios that depend on protection status:
-
-$$
-Val_{Z1} = v_w * r_{unprot} * \frac{\min(\mathbf{R}, \mathbf{B})}{H_{city} - \mathbf{W}}
-$$
+The paper formula is dimensionally inconsistent.
+Use the corrected piecewise form:
 
 $$
-Val_{Z3} = v_w * r_{prot} * \frac{\mathbf{D}}{H_{city} - \mathbf{W}}
+p_{fail} = \begin{cases}
+p_{min} & \text{if } h_{surge} < t_{fail} \cdot \mathbf{D} \\
+\frac{h_{surge} - t_{fail} \cdot \mathbf{D}}{\mathbf{D}(1 - t_{fail})} & \text{if } t_{fail} \cdot \mathbf{D} \leq h_{surge} < \mathbf{D} \\
+1.0 & \text{if } h_{surge} \geq \mathbf{D}
+\end{cases}
 $$
 
-Where $r_{unprot}$ is the unprotected value ratio (zones 1-2) and $r_{prot}$ is the protected value ratio (zone 3, behind dike).
+### Equation 9: Damage by Zone (p. 18)
 
-### Damage Multipliers for Protected Zone
+$$
+d_Z = Val_Z \cdot \frac{Vol_F}{Vol_Z} \cdot f_{damage}
+$$
 
-Damage in the protected zone (zone 3) depends on whether the dike fails:
+### Zone Value Calculations (from C++ code)
+
+$$
+Val_{Z1} = V_w \cdot r_{unprot} \cdot \frac{\min(\mathbf{R}, \mathbf{B})}{H_{city} - \mathbf{W}}
+$$
+
+$$
+Val_{Z2} = V_w \cdot r_{unprot} \cdot \frac{\mathbf{B} - \mathbf{R}}{H_{city} - \mathbf{W}}
+$$
+
+$$
+Val_{Z3} = V_w \cdot r_{prot} \cdot \frac{\mathbf{D}}{H_{city} - \mathbf{W}}
+$$
+
+$$
+Val_{Z4} = V_w \cdot \frac{H_{city} - \mathbf{W} - \mathbf{B} - \mathbf{D}}{H_{city} - \mathbf{W}}
+$$
+
+### Protected Zone Damage (from C++ code)
 
 $$
 d_{Z3} = \begin{cases}
-Val_{Z3} * f_{damage} * f_{intact} * (\text{flood fraction}) & \text{if dike intact} \\
-Val_{Z3} * f_{damage} * f_{failed} * (\text{flood fraction}) & \text{if dike failed}
+Val_{Z3} \cdot f_{damage} \cdot f_{intact} \cdot (\text{flood fraction}) & \text{if dike intact} \\
+Val_{Z3} \cdot f_{damage} \cdot f_{failed} \cdot (\text{flood fraction}) & \text{if dike failed}
 \end{cases}
 $$
 
-Where $f_{intact}$ is the intact dike damage factor and $f_{failed}$ is the failed dike damage factor.
-
-### Threshold Damage
-
-When total damage exceeds a threshold level, additional "unacceptable" damage is added:
+### Threshold Damage (from C++ code)
 
 $$
 d_{total} = \begin{cases}
 \sum d_Z & \text{if } \sum d_Z \leq d_{thresh} \\
-\sum d_Z + \left( f_{thresh} * (\sum d_Z - d_{thresh}) \right)^{\gamma_{thresh}} & \text{if } \sum d_Z > d_{thresh}
+\sum d_Z + \left( f_{thresh} \cdot (\sum d_Z - d_{thresh}) \right)^{\gamma_{thresh}} & \text{if } \sum d_Z > d_{thresh}
 \end{cases}
 $$
 
-Where $d_{thresh} = v_i / 375$ is the damage threshold level.
+## Parameters (`CityParameters` struct)
 
-## Symbol Definitions
+All exogenous parameters are fields in the `CityParameters` struct.
 
-| Symbol | Definition | Units |
-|--------|------------|-------|
-| $\mathbf{W}$ | Withdrawal height (height from seawall below which city is relocated) | m |
-| $\mathbf{R}$ | Resistance height | m |
-| $\mathbf{P}$ | Percentage of resistance (0 to 1) | dimensionless |
-| $\mathbf{D}$ | Dike height above base elevation | m |
-| $\mathbf{B}$ | Dike base elevation above seawall | m |
-| $C_w$ | Cost of withdrawal | $ |
-| $c_R$ | Total resistance cost | $ |
-| $c_D$ | Total dike cost | $ |
-| $v_i$ | Initial city value (see note 1) | \$T |
-| $v_w$ | City value after withdrawal | $ |
-| $\text{city height}$ | Maximum city height | m |
-| $\text{city elevation}$ | Maximum city elevation (same as city height) | m |
-| $W_{city}$ | Width of city along seawall (city length) | m |
-| $h$ | Building height (Eqs. 4-5) OR total effective dike height $h = D + D_{startup}$ (Eq. 6) | m |
-| $b$ | Basement depth | m |
-| $f_w$ | Withdrawal adjustment factor | dimensionless |
-| $f_l$ | Fraction that leaves vs relocates | dimensionless |
-| $f_{c_R}$ | Resistance cost fraction (per unit value) | dimensionless |
-| $f_{lin}$ | Linear cost factor | dimensionless |
-| $f_{exp}$ | Exponential cost factor | dimensionless |
-| $t_{exp}$ | Threshold for exponential resistance costs (default 0.6) | dimensionless |
-| $f_{damage}$ | Damage fraction (fraction of value lost per unit flooding) | dimensionless |
-| $V_d$ | Total volume of dike material | m³ |
-| $w_d$ | Width of dike top | m |
-| $s$ | Side slope of dike (horizontal/vertical ratio) | m/m |
-| $S$ | Slope of city wedge ($S = H_{city} / D_{city}$) | m/m |
-| $D_{startup}$ | Equivalent startup height (accounts for fixed costs) | m |
-| $c_{dpv}$ | Cost per cubic meter of dike material | $/m³ |
-| $p_{df}$ | Probability of dike failure | dimensionless |
-| $h_{surge}$ | Surge height above dike base | m |
-| $t_{df}$ | Dike failure threshold (default 0.95) | dimensionless |
-| $P_{min}$ | Minimum failure probability | dimensionless |
-| $d_Z$ | Damage in zone Z | $ |
-| $Val_Z$ | Total value in zone Z | $ |
-| $Vol_F$ | Volume flooded in zone Z | m$^3$ |
-| $Vol_Z$ | Total volume in zone Z | m$^3$ |
-| $f_{adj}$ | Resistance adjustment factor (default 1.25) | dimensionless |
-| $H_{seawall}$ | Seawall height (default 1.75) | m |
-| $f_{runup}$ | Wave runup multiplier (default 1.1) | dimensionless |
-| $h_{raw}$ | Raw storm surge height (before seawall/runup adjustment) | m |
-| $h_{eff}$ | Effective surge height affecting city | m |
-| $r_{prot}$ | Protected value ratio (zone 3, default 1.1) | dimensionless |
-| $r_{unprot}$ | Unprotected value ratio (zones 1-2, default 0.95) | dimensionless |
-| $f_{intact}$ | Intact dike damage factor (default 0.03) | dimensionless |
-| $f_{failed}$ | Failed dike damage factor (default 1.5) | dimensionless |
-| $d_{thresh}$ | Damage threshold for "unacceptable" damage ($v_i / 375$) | \$ |
-| $f_{thresh}$ | Threshold damage fraction (default 1.0) | dimensionless |
-| $\gamma_{thresh}$ | Threshold damage exponent (default 1.01) | dimensionless |
+| Category | Parameter | Symbol | Field | Default | Units | Description |
+|----------|-----------|--------|-------|---------|-------|-------------|
+| Geometry | Initial city value | $V_{city}$ | `V_city` | $1.5 \times 10^{12}$ | $ | Total infrastructure value |
+| Geometry | Building height | $H_{bldg}$ | `H_bldg` | 30.0 | m | Representative building height |
+| Geometry | City max elevation | $H_{city}$ | `H_city` | 17.0 | m | Elevation change across city |
+| Geometry | City depth | $D_{city}$ | `D_city` | 2000.0 | m | Distance from seawall to peak |
+| Geometry | City length | $W_{city}$ | `W_city` | 43000.0 | m | Length of seawall coastline |
+| Geometry | Seawall height | $H_{seawall}$ | `H_seawall` | 1.75 | m | Existing seawall protection |
+| Dike | Startup height | $D_{startup}$ | `D_startup` | 2.0 | m | Equivalent height for fixed costs |
+| Dike | Top width | $w_d$ | `w_d` | 3.0 | m | Width of dike top |
+| Dike | Side slope | $s$ | `s_dike` | 0.5 | m/m | Horizontal/vertical ratio |
+| Dike | Cost per volume | $c_d$ | `c_d` | 10.0 | $/m$^3$ | Material cost |
+| Zones | Protected ratio | $r_{prot}$ | `r_prot` | 1.1 | - | Value multiplier for zone 3 |
+| Zones | Unprotected ratio | $r_{unprot}$ | `r_unprot` | 0.95 | - | Value multiplier for zones 1-2 |
+| Withdrawal | Cost factor | $f_w$ | `f_w` | 1.0 | - | Withdrawal cost adjustment |
+| Withdrawal | Loss fraction | $f_l$ | `f_l` | 0.01 | - | Fraction that leaves vs relocates |
+| Resistance | Adjustment factor | $f_{adj}$ | `f_adj` | 1.25 | - | Overall cost multiplier |
+| Resistance | Linear factor | $f_{lin}$ | `f_lin` | 0.35 | - | Linear cost component |
+| Resistance | Exponential factor | $f_{exp}$ | `f_exp` | 0.115 | - | Exponential cost component |
+| Resistance | Exp threshold | $t_{exp}$ | `t_exp` | 0.4 | - | Threshold for exponential costs |
+| Resistance | Basement depth | $b$ | `b_basement` | 3.0 | m | Representative basement depth |
+| Damage | Damage fraction | $f_{damage}$ | `f_damage` | 0.39 | - | Fraction of value lost per flood |
+| Damage | Intact dike factor | $f_{intact}$ | `f_intact` | 0.03 | - | Damage when dike holds |
+| Damage | Failed dike factor | $f_{failed}$ | `f_failed` | 1.5 | - | Damage when dike fails |
+| Damage | Failure threshold | $t_{fail}$ | `t_fail` | 0.95 | - | Surge/height ratio for failure |
+| Damage | Min failure prob | $p_{min}$ | `p_min` | 0.05 | - | Base failure probability |
+| Damage | Wave runup factor | $f_{runup}$ | `f_runup` | 1.1 | - | Surge amplification |
+| Threshold | Damage threshold | $d_{thresh}$ | `d_thresh` | V_city/375 | $ | "Unacceptable" damage level |
+| Threshold | Threshold fraction | $f_{thresh}$ | `f_thresh` | 1.0 | - | Excess damage multiplier |
+| Threshold | Threshold exponent | $\gamma_{thresh}$ | `gamma_thresh` | 1.01 | - | Excess damage exponent |
+
+**Note**: City slope $S = H_{city} / D_{city}$ is computed, not stored.
+The C++ code incorrectly calculates slope as `CityLength/CityWidth`.
+
+## Intermediate Variables
+
+These are computed values, not struct fields:
+
+| Variable | Symbol | Field | Computed From | Description |
+|----------|--------|-------|---------------|-------------|
+| City slope | $S$ | `S` | `H_city / D_city` | Elevation gradient |
+| Value after withdrawal | $V_w$ | `V_w` | Equation 2 | Remaining city value |
+| Resistance cost fraction | $f_{cR}$ | `f_cR` | Equation 3 | Unitless multiplier |
+| Effective dike height | $h_d$ | `h_d` | `D + D_startup` | For Equation 6 |
+| Dike volume | $V_d$ | `V_d` | Equation 6 | Cubic meters |
+| Effective surge | $h_{eff}$ | `h_eff` | See above | Adjusted surge height |
+| Dike failure probability | $p_{fail}$ | `p_fail` | Equation 8 | Per-event probability |
+
+## Implementation Guidance
+
+### Paper vs C++ Code Discrepancies
+
+The paper and C++ reference implementation have discrepancies.
+Follow these rules:
+
+#### Trust the C++ Code for Parameters
+
+These values differ from Table 3/4 in the paper:
+
+| Parameter | Paper Value | C++ Value (USE THIS) |
+|-----------|-------------|----------------------|
+| $f_{exp}$ | 0.9 | 0.115 |
+| $t_{exp}$ | 0.6 | 0.4 |
+| $f_{failed}$ | 1.3 | 1.5 |
+| $p_{min}$ | 0.001 | 0.05 |
+| $D_{startup}$ | 3.0 | 2.0 |
+| $w_d$ | 4.0 | 3.0 |
+
+#### Trust the C++ Code for Logic
+
+- Equation 8 (dike failure): Use corrected piecewise form
+- Damage calculations: Use intact/failed dike factors
+- Effective surge: Use $h_{eff} = h_{raw} \cdot f_{runup} - H_{seawall}$
+
+#### Trust the Paper for Geometry
+
+- Equation 6 (dike volume): Use paper formula - C++ has bug with `dh=5`
+- City slope: Use $S = H_{city}/D_{city}$ - C++ incorrectly uses length/width
+
+#### Hidden Factors in C++ Code
+
+These are implemented but not prominently documented in the paper:
+
+- $f_{adj} = 1.25$ multiplies entire resistance cost fraction
+- $f_{runup} = 1.1$ multiplies surge before subtracting seawall
+- $r_{prot} = 1.1$ and $r_{unprot} = 0.95$ adjust zone values
+- $f_{intact} = 0.03$ reduces damage when dike holds
+
+## Implementation Clarifications
+
+### Zone 2 Division by Zero
+
+When $R \geq B$, Zone 2 has zero width ($B - R \leq 0$).
+In this case, $Val_{Z2} = 0$ and $d_2 = 0$.
+**Implementation**: Skip Zone 2 entirely when $R \geq B$ to avoid division by zero in volume calculations.
+
+### Surge Height Variables
+
+Equation 8 (Dike Failure) uses $h_{surge}$.
+This refers to **effective surge** $h_{eff}$, not raw ocean surge $h_{raw}$.
+
+The chain is:
+
+1. $h_{raw}$ = raw ocean surge from GEV distribution
+2. $h_{eff} = h_{raw} \cdot f_{runup} - H_{seawall}$ (if $h_{raw} > H_{seawall}$, else 0)
+3. $h_{surge} = h_{eff}$ in Equation 8 and all damage calculations
+
+### Cost vs Damage Integration
+
+**Costs** ($C_W$, $C_R$, $C_D$) are one-time investments computed from lever settings.
+
+**Damages** ($d_Z$) are computed per surge event.
+The simulation uses **Monte Carlo**: for each year $t$ and scenario $s$, sample whether the dike fails (Bernoulli with $p_{fail}$), then sum damages across zones.
+
+**Total objective** over simulation horizon $T$:
+$$
+\text{Objective} = C_{total} + \sum_{t=1}^{T} \sum_{s} d_{total}(t, s) \cdot \delta^t
+$$
+
+Where $\delta$ is the discount factor (default 1.0 for 0% discounting per C++ reference).
 
 ## Notes
 
-1. **Units**: $v_i$ is in \$T (trillions of dollars). Default value 1.5 means \$1.5 trillion = \$1,500,000,000,000.
+1. **Units**: All monetary values are in raw dollars (not scaled).
+   $V_{city} = 1.5 \times 10^{12}$ means $1.5 trillion.
 
-2. **Symbol $h$ is overloaded**: Building height in Equations 4-5, but total effective dike height ($h = \mathbf{D} + D_{startup}$) in Equation 6. Note: Table 3 in the paper uses "B = 30 m" for building height, which corresponds to $h$ in the equations — not the decision lever $\mathbf{B}$ (dike base elevation).
+2. **Dominated strategies**: $R > B$ is dominated (costs more, provides no additional protection).
 
-3. **Notation**: The paper uses lowercase $d_Z$ for damage and uppercase $\mathbf{D}$ for dike height.
-
-4. **Decision levers** are shown in bold: **W**, **R**, **P**, **D**, **B**.
-
-5. **Equation 6 (Dike Volume)**: The reference C++ code contains a bug where a constant `dh=5` is used instead of the cost height `ch`. Implement using `h` (cost height) as shown in the paper equation.
-
-6. **Equation 8 (Dike Failure)**: The corrected piecewise form is verified against the reference C++ code, which calculates `((surge/D) - threshold) / (1 - threshold)` — algebraically equivalent to the corrected form above.
-
-7. **Implementation guidance** (code vs paper):
-   - **Trust the code for parameters**: Use $f_{exp} = 0.115$, $t_{exp} = 0.4$, $f_{failed} = 1.5$, $P_{min} = 0.05$ (these differ from Table 3/4 but reflect the actual implementation)
-   - **Trust the code for logic**: Use the code's Equation 8 (failure probability) and damage calculations (intact vs failed factors)
-   - **Trust the paper for geometry**: Use the paper's Equation 6 (Dike Volume) — the code has a variable naming collision (`dh=5`) that injects incorrect values
-   - **Don't forget hidden factors**: $f_{adj} = 1.25$ (resistance adjustment) and $f_{runup} = 1.1$ (wave runup) are in the code but not prominently shown in the paper
+3. **Stochastic elements**: Dike failure (Eq 8) introduces stochasticity into damage calculations.

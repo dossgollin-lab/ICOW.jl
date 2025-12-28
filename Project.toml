@@ -4,7 +4,19 @@ authors = ["James Doss-Gollin <jdossgollin@rice.edu>"]
 version = "0.1.0"
 
 [deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+Metaheuristics = "bcdb8e00-2c21-11e9-3065-2b553b22f898"
+NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
 
 [compat]
+DataFrames = "1.8.1"
+Distributions = "0.25.122"
+Metaheuristics = "3.4.1"
+NetCDF = "0.12.2"
+StaticArrays = "1.9.15"
 Test = "1.11.0"
+YAXArrays = "0.7.1"
