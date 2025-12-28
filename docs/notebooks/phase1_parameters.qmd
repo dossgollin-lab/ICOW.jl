@@ -1,0 +1,159 @@
+---
+title: "Phase 1: Parameters & Validation"
+subtitle: "Foundational types for the iCOW coastal flood model"
+format:
+  html:
+    code-fold: false
+engine: julia
+execute:
+  exeflags: ["+1.12", "--project=../..", "--threads=auto"]
+  cache: true
+  freeze: auto
+---
+
+## Overview
+
+Phase 1 establishes the foundational data structures for the iCOW (Island City on a Wedge) model:
+
+- `CityParameters` - 27 exogenous parameters describing the city
+- `Levers` - 5 decision variables for flood protection strategies
+- Validation functions to ensure physical consistency
+
+```{julia}
+using ICOW
+```
+
+## CityParameters
+
+The `CityParameters` struct holds all exogenous parameters describing a coastal city.
+Default values represent a NYC-like configuration from Ceres et al. (2019).
+
+```{julia}
+city = CityParameters()
+```
+
+Key parameters include the city's total value, geometry, and various cost factors:
+
+```{julia}
+println("City value: \$$(city.V_city / 1e12) trillion")
+println("City elevation range: $(city.H_city) m")
+println("Coastline length: $(city.W_city / 1000) km")
+```
+
+### Custom Parameters
+
+Override any default by passing keyword arguments:
+
+```{julia}
+custom_city = CityParameters(
+    V_city = 2.0e12,  # $2 trillion
+    H_city = 20.0     # 20 meters elevation
+)
+println("Custom city value: \$$(custom_city.V_city / 1e12) trillion")
+```
+
+### Type Parameterization
+
+For performance-sensitive applications, use single precision:
+
+```{julia}
+city32 = CityParameters{Float32}()
+println("Type of V_city: $(typeof(city32.V_city))")
+```
+
+### Computed Properties
+
+The city slope is computed from parameters, not stored:
+
+```{julia}
+S = city_slope(city)
+println("City slope: $(S) ($(city.H_city)m rise over $(city.D_city)m)")
+```
+
+### Validation
+
+The `validate_parameters` function checks physical bounds:
+
+```{julia}
+validate_parameters(city)  # Returns nothing if valid
+println("Default parameters are valid")
+```
+
+## Decision Levers
+
+The `Levers` struct represents flood protection decisions.
+Five levers control the protection strategy:
+
+| Lever | Description |
+|-------|-------------|
+| W | Withdrawal height - relocate city below this elevation |
+| R | Resistance height - flood-proof buildings up to this height |
+| P | Resistance percentage - fraction of buildings made resistant |
+| D | Dike height - height of protective dike |
+| B | Dike base - elevation where dike starts |
+
+```{julia}
+# No protection
+no_protection = Levers(0.0, 0.0, 0.0, 0.0, 0.0)
+
+# Mixed strategy: some withdrawal, resistance, and a dike
+mixed = Levers(
+    2.0,   # W: withdraw below 2m
+    3.0,   # R: resist up to 3m above W
+    0.5,   # P: 50% of buildings resistant
+    5.0,   # D: 5m dike
+    1.0    # B: dike base 1m above W
+)
+println("Dike top elevation: $(mixed.W + mixed.B + mixed.D) m")
+```
+
+### The P < 1 Constraint
+
+The resistance percentage $P$ must be strictly less than 1.0.
+This prevents division by zero in the cost equations (Equation 3 has a $1/(1-P)$ term).
+
+```{julia}
+high_resistance = Levers(0.0, 5.0, 0.999, 0.0, 0.0)  # Valid
+println("P = 0.999 is valid")
+```
+
+### Feasibility Checking
+
+Some constraints depend on the city configuration.
+Use `is_feasible` to check if levers are valid for a specific city:
+
+```{julia}
+# Valid: dike top (2 + 1 + 5 = 8m) is below city peak (17m)
+println("Mixed strategy feasible: $(is_feasible(mixed, city))")
+
+# Invalid: withdrawal exceeds city height
+too_high = Levers(20.0, 0.0, 0.0, 0.0, 0.0)
+println("W=20m feasible: $(is_feasible(too_high, city))")
+```
+
+## Irreversibility
+
+In dynamic simulations, protection levels can only increase over time.
+The `max` function supports this constraint:
+
+```{julia}
+current = Levers(2.0, 1.0, 0.3, 3.0, 1.0)
+proposed = Levers(1.0, 2.0, 0.5, 2.0, 1.5)  # Some values lower
+
+# Irreversibility: take maximum of each lever
+actual = max(current, proposed)
+println("W: $(current.W) -> $(actual.W) (cannot decrease)")
+println("D: $(current.D) -> $(actual.D) (cannot decrease)")
+println("P: $(current.P) -> $(actual.P) (can increase)")
+```
+
+## Summary
+
+Phase 1 provides the foundation for the iCOW model:
+
+- **CityParameters**: 27 parameters with sensible defaults
+- **Levers**: 5 decision variables with built-in constraints
+- **Validation**: Physical bounds checking and feasibility tests
+- **Irreversibility**: Support for dynamic simulation constraints
+
+Next phases will build on these types to implement the physics and simulation engine.

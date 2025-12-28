@@ -117,6 +117,7 @@ The model supports two distinct evaluation modes:
   - Lever constraint enforcement
   - Type conversions and defaults
   - Edge cases and boundary conditions
+- [x] `docs/notebooks/phase1_parameters.qmd` - Quarto notebook illustrating Phase 1 features
 
 **Key Design Decisions:**
 
@@ -182,6 +183,7 @@ It answers fundamental design questions about how forcing, state, and policies i
   - Policy callable interface
   - Type stability verification
   - Calendar year calculations and clock functionality
+- [ ] `docs/notebooks/phase2_type_system.qmd` - Quarto notebook illustrating Phase 2 features
 
 **Key Design Decisions:**
 
@@ -213,6 +215,7 @@ It answers fundamental design questions about how forcing, state, and policies i
   - Monotonicity (volume increases with height)
   - Numerical stability
   - Trapezoidal approximation validation
+- [ ] `docs/notebooks/phase3_geometry.qmd` - Quarto notebook illustrating Phase 3 features
 
 **Key Implementation Notes:**
 
@@ -269,6 +272,7 @@ It answers fundamental design questions about how forcing, state, and policies i
   - **Boundary cases:** P → 1.0 handled safely (no division by zero crashes)
   - Edge cases (division by zero avoidance in withdrawal)
   - Cost component validation (sum equals total)
+- [ ] `docs/notebooks/phase4_costs.qmd` - Quarto notebook illustrating Phase 4 features
 
 **Key Implementation Notes:**
 
@@ -301,6 +305,7 @@ It answers fundamental design questions about how forcing, state, and policies i
   - Agreement between integration methods
   - Convergence to stochastic mean (Law of Large Numbers)
   - Monotonicity over time for non-stationary distributions
+- [ ] `docs/notebooks/phase5_ead.qmd` - Quarto notebook illustrating Phase 5 features
 
 **Key Implementation Notes:**
 
@@ -346,6 +351,7 @@ It answers fundamental design questions about how forcing, state, and policies i
   - Dike failure mechanics
   - Monotonicity of damage with surge height
   - Empty zones (zero volume/value) handled correctly
+- [ ] `docs/notebooks/phase6_zones.qmd` - Quarto notebook illustrating Phase 6 features
 
 **Key Implementation Notes:**
 
@@ -388,6 +394,7 @@ It answers fundamental design questions about how forcing, state, and policies i
   - **Raw flows returned without discounting**
   - Mode convergence (static policy: EAD ≈ mean(stochastic))
   - State updates and accumulation
+- [ ] `docs/notebooks/phase7_simulation.qmd` - Quarto notebook illustrating Phase 7 features
 
 **Key Implementation Notes:**
 
@@ -434,6 +441,7 @@ Policies are parameterized as $\pi = (f, \theta)$ where:
 - [ ] Documentation of policy design patterns in `src/policies.jl`
 - [ ] Validation that StaticPolicy works correctly in both modes
 - [ ] Example parameter round-trip: `policy == PolicyType(parameters(policy))`
+- [ ] `docs/notebooks/phase8_policies.qmd` - Quarto notebook illustrating Phase 8 features
 
 **Note:** StaticPolicy was implemented in Phase 2. Adaptive policy types (threshold, PID, rule-based, ML) are deferred to future work based on user needs.
 
@@ -477,6 +485,7 @@ by Monte Carlo sampling over pre-generated ensembles.
   - Cost-damage tradeoff (negative correlation)
   - Constraint handling (infeasible solutions rejected)
   - Single-lever optimization (regression test)
+- [ ] `docs/notebooks/phase9_optimization.qmd` - Quarto notebook illustrating Phase 9 features
 
 **Key Implementation Notes:**
 
@@ -525,6 +534,7 @@ by Monte Carlo sampling over pre-generated ensembles.
   - Forward mode array structure
   - Summary statistics
   - Robustness metrics calculation
+- [ ] `docs/notebooks/phase10_analysis.qmd` - Quarto notebook illustrating Phase 10 features
 
 **Key Implementation Notes:**
 
@@ -604,6 +614,7 @@ ICOW.jl/
 - [x] Create `docs/parameters.md`
 - [x] Write unit tests for parameter validation
 - [x] Write unit tests for lever constraints
+- [x] Create `docs/notebooks/phase1_parameters.qmd`
 
 ### Phase 2: Type System and Mode Design
 

@@ -1,4 +1,13 @@
 # do not have license to distribute this
 docs/ceres_2019.pdf
-*.pdf
 *.cpp
+
+# Quarto intermediate and output files
+*.pdf
+*.html
+*_files/
+.quarto/
+.cache/
+_freeze/
+_site/
+.jupyter_cache/
