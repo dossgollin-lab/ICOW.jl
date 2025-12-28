@@ -107,12 +107,12 @@ The model supports two distinct evaluation modes:
 
 **Deliverables:**
 
-- [ ] `src/parameters.jl` - Parameterized `CityParameters{T}` struct with all exogenous parameters from Table C.3
-- [ ] `src/types.jl` - Parameterized `Levers{T}` struct with physical constraint validation
-- [ ] `docs/parameters.md` - Documentation of all parameters with symbols, units, and physical interpretation
-- [ ] Validation function `validate_parameters()` for physical consistency
-- [ ] Feasibility check `is_feasible()` for lever constraints
-- [ ] Comprehensive tests covering:
+- [x] `src/parameters.jl` - Parameterized `CityParameters{T}` struct with all exogenous parameters from Table C.3
+- [x] `src/types.jl` - Parameterized `Levers{T}` struct with physical constraint validation
+- [x] `docs/parameters.md` - Documentation of all parameters with symbols, units, and physical interpretation
+- [x] Validation function `validate_parameters()` for physical consistency
+- [x] Feasibility check `is_feasible()` for lever constraints
+- [x] Comprehensive tests covering:
   - Parameter construction and validation
   - Lever constraint enforcement
   - Type conversions and defaults
@@ -599,11 +599,11 @@ ICOW.jl/
 
 ### Phase 1: Parameters & Validation
 
-- [ ] Create `src/parameters.jl` with `CityParameters{T}`
-- [ ] Create `src/types.jl` with `Levers{T}` and constraints
-- [ ] Create `docs/parameters.md`
-- [ ] Write unit tests for parameter validation
-- [ ] Write unit tests for lever constraints
+- [x] Create `src/parameters.jl` with `CityParameters{T}`
+- [x] Create `src/types.jl` with `Levers{T}` and constraints
+- [x] Create `docs/parameters.md`
+- [x] Write unit tests for parameter validation
+- [x] Write unit tests for lever constraints
 
 ### Phase 2: Type System and Mode Design
 

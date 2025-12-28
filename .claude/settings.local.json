@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pandoc:*)"
+      "Bash(pandoc:*)",
+      "Bash(git -C /Users/jamesdoss-gollin/Documents/ICOW.jl log --oneline -10)"
     ],
     "deny": [],
     "ask": []
