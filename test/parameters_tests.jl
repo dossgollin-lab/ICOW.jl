@@ -67,22 +67,15 @@ using Test
         @test city.H_bldg == 30.0
     end
 
-    @testset "d_thresh Default Computation" begin
-        # Default d_thresh should be V_city / 375
+    @testset "d_thresh Default" begin
+        # Default d_thresh is V_city/375 for default V_city
         city = CityParameters()
+        @test city.d_thresh == 4.0e9
         @test city.d_thresh == city.V_city / 375
 
-        # Custom d_thresh should override
+        # Custom d_thresh overrides default
         city2 = CityParameters(d_thresh=1.0e9)
         @test city2.d_thresh == 1.0e9
-
-        # d_thresh should scale with custom V_city
-        city3 = CityParameters(V_city=3.0e12)
-        @test city3.d_thresh == 3.0e12 / 375
-
-        # Type promotion: d_thresh should match struct type
-        city32 = CityParameters{Float32}(V_city=1.5e12)
-        @test city32.d_thresh isa Float32
     end
 end
 

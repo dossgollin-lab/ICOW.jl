@@ -61,6 +61,7 @@ snake_case for functions, CamelCase for types.
 
 ### Structs
 
+Use `Base.@kwdef` for parameter structs with defaults.
 Prefer `immutable struct` over `mutable struct` unless state modification is strictly required.
 
 ### Assertions

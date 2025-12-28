@@ -121,7 +121,7 @@ The model supports two distinct evaluation modes:
 
 **Key Design Decisions:**
 
-- Manual keyword constructor with defaults (allows computed defaults like `d_thresh = V_city/375`)
+- Use `Base.@kwdef` for convenient keyword construction with defaults
 - Parameterize by `T<:Real` to avoid writing `Float64` everywhere
 - Strict validation with `@assert` in constructors
 - `Base.max()` overload for irreversibility enforcement
