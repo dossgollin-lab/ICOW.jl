@@ -9,33 +9,32 @@
 Implement cost and damage calculation functions based on exact equations from the paper and C++ reference implementation.
 This phase implements the core physics engine that will be used by both stochastic and EAD simulation modes.
 
-## Open Questions for User
+## User Guidance (RESOLVED)
 
-Before beginning implementation, need clarification on:
+1. **Division by Zero in Equation 3 (P → 1.0)**:
+   - **Decision**: Enforce P ∈ [0, 0.999] in optimization bounds and feasibility checks
+   - Cost function can safely assume P < 1.0
+   - Handle at boundary, not in calculation
 
-1. **Division by Zero in Equation 3**: When P approaches 1.0, the term `1/(1-P)` explodes.
-   - Should we: (a) Clamp P to max 0.999? (b) Return Inf? (c) Throw error?
-   - Note: The Levers struct already prevents P >= 1.0, but optimization might push close to boundary
+2. **Division by Zero in Equation 1 (W → H_city)**:
+   - **Decision**: Enforce W $\leq$ 0.999 * H_city in optimization bounds and feasibility checks
+   - Physically: withdrawing entire city = infinite cost
+   - Cost function can safely assume W < H_city
 
-2. **Division by Zero in Equation 1**: When W approaches H_city, the denominator `H_city - W` goes to zero.
-   - Should we: (a) Clamp to small epsilon? (b) Return Inf? (c) Throw error?
-   - Note: is_feasible already prevents W > H_city, but what about W = H_city exactly?
+3. **Constrained Resistance (R $\geq$ B)**:
+   - **Clarification**: Both R and B are relative to W (not absolute)
+   - **Decision**: Allow R $\geq$ B and use Equation 5 (dominated but mathematically valid)
+   - Optimizer will naturally avoid dominated strategies
 
-3. **Constrained Resistance (R > B)**: This is a dominated strategy (costs more, no extra protection).
-   - Should we: (a) Allow it and use Equation 5? (b) Warn but allow? (c) Clamp R to B silently?
-   - Note: Equation 5 handles this case mathematically
+4. **Dike Failure Mechanics**:
+   - **EAD mode**: Use expected damage = `p_fail * damage_failed + (1 - p_fail) * damage_intact`
+   - **Stochastic mode**: Sample from `Bernoulli(p_fail)` to determine failure
+   - Implement expected damage version in Phase 4; stochastic sampling in Phase 6/7
 
-4. **Dike Failure Mechanics**: Equation 8 gives a probability.
-   - For this phase's simplified damage function, should we:
-     (a) Use expected damage: `damage = p_fail * damage_failed + (1-p_fail) * damage_intact`?
-     (b) Sample stochastically (requires RNG)?
-   - Note: Full implementation in Phase 6 may differ for stochastic vs EAD modes
-
-5. **Simplified Damage Scope**: Phase 6 will implement full zone-based damage.
-   - For Phase 4, should we implement:
-     (a) Single-zone simplified version for testing?
-     (b) Placeholder function that returns 0?
-     (c) Basic version without zones (just total city value)?
+5. **Simplified Damage Scope**:
+   - **Decision**: Implement basic expected damage calculation without full zones
+   - Use total city value after withdrawal (V_w) as basis
+   - Full zone-based damage comes in Phase 6
 
 ## Implementation Plan
 
@@ -138,9 +137,10 @@ Equation 8 from docs/equations.md (lines 129-139)
 Simplified version for testing, full implementation in Phase 6
 
 - [ ] Implement `calculate_event_damage(city, levers, surge)` - Simplified version
-  - After user clarifies approach in open questions
+  - Use expected damage: `p_fail * damage_failed + (1 - p_fail) * damage_intact`
+  - Base damage on V_w (value after withdrawal)
   - Use dike failure probability from Task 6
-  - Either expected damage or placeholder for now
+  - Use f_damage, f_intact, f_failed from city parameters
   - Document limitations and Phase 6 dependencies
 
 - [ ] Write tests for event damage:
@@ -149,14 +149,34 @@ Simplified version for testing, full implementation in Phase 6
   - Protection effect: higher D should reduce damage
   - Type stability
 
-### Task 8: Run full test suite
+### Task 8: Create Quarto notebook with visualizations
+
+- [ ] Create `docs/notebooks/phase4_costs.qmd`
+- [ ] Visualize cost functions:
+  - Withdrawal cost vs W (showing asymptote at H_city)
+  - Resistance cost fraction vs P (showing exponential growth near 1.0)
+  - Resistance cost: constrained (R $\geq$ B) vs unconstrained (R < B)
+  - Dike cost vs D (showing startup cost effect)
+  - Total investment cost surface (2D or 3D)
+
+- [ ] Visualize damage functions:
+  - Dike failure probability vs surge height (piecewise function)
+  - Expected damage vs surge height for different dike heights
+  - Protection effectiveness (damage reduction with investment)
+
+- [ ] Include clear annotations explaining:
+  - Physical meaning of each curve
+  - Edge cases and asymptotic behavior
+  - Trade-offs between strategies
+
+### Task 9: Run full test suite
 
 - [ ] Run all tests: `julia --project test/runtests.jl`
 - [ ] Fix any failures
 - [ ] Verify all tests pass
 - [ ] Check code coverage (informal review)
 
-### Task 9: Documentation and review
+### Task 10: Documentation and review
 
 - [ ] Add docstrings to all functions with:
   - Brief description
