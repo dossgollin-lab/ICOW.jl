@@ -12,6 +12,9 @@ include("policies.jl")
 # Phase 3: Geometry
 include("geometry.jl")
 
+# Phase 4: Costs and Dike Failure
+include("costs.jl")
+
 # Export Phase 1: Parameters & Validation
 export CityParameters, validate_parameters, city_slope
 export Levers, is_feasible
@@ -31,5 +34,11 @@ export StaticPolicy, parameters
 
 # Export Phase 3: Geometry
 export calculate_dike_volume
+
+# Export Phase 4: Costs and Dike Failure
+export calculate_withdrawal_cost, calculate_value_after_withdrawal
+export calculate_resistance_cost_fraction, calculate_resistance_cost
+export calculate_dike_cost, calculate_investment_cost
+export calculate_effective_surge, calculate_dike_failure_probability
 
 end # module ICOW

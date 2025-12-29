@@ -13,4 +13,7 @@ using Test
 
     # Phase 3: Geometry
     include("geometry_tests.jl")
+
+    # Phase 4: Costs and Dike Failure
+    include("costs_tests.jl")
 end
