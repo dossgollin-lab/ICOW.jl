@@ -4,7 +4,7 @@ This document is the definitive mathematical reference for the iCOW (Island City
 All equations are from Ceres et al. (2019), with corrections based on the C++ reference implementation.
 
 **C++ Reference:** [rceres/ICOW](https://github.com/rceres/ICOW/blob/master/src/iCOW_2018_06_11.cpp)
-(Download locally to `docs/` for reference; cannot be redistributed)
+(Download locally to `docs/iCOW_2018_06_11.cpp` for reference; cannot be redistributed).
 
 ## Decision Levers (`Levers` struct)
 
