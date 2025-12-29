@@ -10,4 +10,7 @@ using Test
     include("forcing_tests.jl")
     include("states_tests.jl")
     include("policies_tests.jl")
+
+    # Phase 3: Geometry
+    include("geometry_tests.jl")
 end

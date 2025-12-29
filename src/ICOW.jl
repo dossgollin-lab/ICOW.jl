@@ -9,6 +9,9 @@ include("forcing.jl")
 include("states.jl")
 include("policies.jl")
 
+# Phase 3: Geometry
+include("geometry.jl")
+
 # Export Phase 1: Parameters & Validation
 export CityParameters, validate_parameters, city_slope
 export Levers, is_feasible
@@ -25,5 +28,8 @@ export StochasticState, EADState
 
 # Export Phase 2: Policy types
 export StaticPolicy, parameters
+
+# Export Phase 3: Geometry
+export calculate_dike_volume
 
 end # module ICOW
