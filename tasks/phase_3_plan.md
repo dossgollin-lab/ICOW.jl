@@ -46,7 +46,7 @@ includes startup costs: h_d = D + D_startup.
 # Returns
 - Volume in cubic meters (m³)
 """
-function calculate_dike_volume(city::CityParameters, D)
+function calculate_dike_volume(city::CityParameters{T}, D::Real) where {T}
     # Implementation
 end
 ```
@@ -97,6 +97,18 @@ end
 # Should work with different numeric types
 city32 = CityParameters{Float32}()
 @test calculate_dike_volume(city32, 5.0f0) isa Float32
+```
+
+### C++ Bug Avoidance
+
+```julia
+# Verify we're using paper formula, not C++ bug (where dh=5 was used)
+# This is documentary - shows we know about the bug and avoid it
+# The C++ code incorrectly used dh=5 instead of dh=D+D_startup
+city = CityParameters()
+vol_d3 = calculate_dike_volume(city, 3.0)
+vol_d7 = calculate_dike_volume(city, 7.0)
+@test vol_d3 != vol_d7  # C++ bug would give same volume for all D
 ```
 
 ## Equation 6 Reference
