@@ -1,13 +1,13 @@
-# Phase 4 Plan: Core Physics - Costs and Event Damage
+# Phase 4 Plan: Core Physics - Costs and Dike Failure
 
-**Status:** Pending user approval
+**Status:** Approved - Ready to implement
 
 **Prerequisites:** Phase 3 (Geometry) - ✅ Completed
 
 ## Overview
 
-Implement cost and damage calculation functions based on exact equations from the paper and C++ reference implementation.
-This phase implements the core physics engine that will be used by both stochastic and EAD simulation modes.
+Implement cost functions and dike failure probability based on exact equations from the paper and C++ reference implementation.
+Damage calculations are deferred to Phase 6 (Zones) where they can be implemented correctly with full zone structure.
 
 ## User Guidance (RESOLVED)
 
@@ -27,24 +27,25 @@ This phase implements the core physics engine that will be used by both stochast
    - Optimizer will naturally avoid dominated strategies
 
 4. **Dike Failure Mechanics**:
-   - **EAD mode**: Use expected damage = `p_fail * damage_failed + (1 - p_fail) * damage_intact`
-   - **Stochastic mode**: Sample from `Bernoulli(p_fail)` to determine failure
-   - Implement expected damage version in Phase 4; stochastic sampling in Phase 6/7
+   - **Decision**: Implement dike failure probability calculation (Equation 8) - this is correct and complete
+   - Damage application deferred to Phase 6 where zones are available
+   - **EAD mode**: Will use expected damage = `p_fail * damage_failed + (1 - p_fail) * damage_intact`
+   - **Stochastic mode**: Will sample from `Bernoulli(p_fail)` to determine failure
 
-5. **Simplified Damage Scope**:
-   - **Decision**: Implement basic expected damage calculation without full zones
-   - Use total city value after withdrawal (V_w) as basis
-   - Full zone-based damage comes in Phase 6
+5. **Damage Implementation**:
+   - **Decision**: NO simplified/placeholder damage in Phase 4
+   - Damage requires zone structure to implement correctly (Equation 9)
+   - Full damage implementation moved to Phase 6 (Zones & City Characterization)
+   - Phase 4 focuses on costs and failure probability only
 
 ## Implementation Plan
 
 ### Task 1: Set up files and structure
 
 - [ ] Create `src/costs.jl` with module structure and imports
-- [ ] Create `src/damage.jl` with module structure and imports
 - [ ] Create `test/costs_tests.jl`
-- [ ] Create `test/damage_tests.jl`
-- [ ] Update `src/ICOW.jl` to include the new files
+- [ ] Update `src/ICOW.jl` to include costs.jl
+- [ ] Note: damage.jl will be created in Phase 6 with full zone implementation
 
 ### Task 2: Implement withdrawal cost functions
 
@@ -113,15 +114,25 @@ Equation 7 from docs/equations.md (line 108)
   - Monotonicity: increasing any lever should increase total cost
   - Type stability
 
-### Task 6: Implement dike failure probability
+### Task 6: Implement dike failure probability and effective surge
 
-Equation 8 from docs/equations.md (lines 129-139)
+Equation 8 from docs/equations.md (lines 129-139) and effective surge calculation
+
+- [ ] Implement `calculate_effective_surge(h_raw, city)` - From docs/equations.md lines 120-127
+  - If h_raw <= H_seawall: return 0
+  - If h_raw > H_seawall: return h_raw * f_runup - H_seawall
+  - Simple, correct, and will be used by Phase 6 damage calculations
 
 - [ ] Implement `calculate_dike_failure_probability(h_surge, D, city)` - Equation 8
   - Use corrected piecewise form (NOT buggy paper version)
   - Three cases: below threshold, linear rise, above dike
   - Use t_fail and p_min from city parameters
   - Handle D=0 case (no dike means certain failure if surge > 0)
+
+- [ ] Write tests for effective surge:
+  - Below seawall: should return 0
+  - Above seawall: should apply runup and subtract seawall
+  - Type stability
 
 - [ ] Write tests for dike failure:
   - Zero surge: should give p_min
@@ -132,24 +143,7 @@ Equation 8 from docs/equations.md (lines 129-139)
   - Monotonicity: increasing surge should increase probability
   - Type stability
 
-### Task 7: Implement simplified damage function
-
-Simplified version for testing, full implementation in Phase 6
-
-- [ ] Implement `calculate_event_damage(city, levers, surge)` - Simplified version
-  - Use expected damage: `p_fail * damage_failed + (1 - p_fail) * damage_intact`
-  - Base damage on V_w (value after withdrawal)
-  - Use dike failure probability from Task 6
-  - Use f_damage, f_intact, f_failed from city parameters
-  - Document limitations and Phase 6 dependencies
-
-- [ ] Write tests for event damage:
-  - Zero surge: should give zero damage (or minimal)
-  - Monotonicity: increasing surge should increase damage
-  - Protection effect: higher D should reduce damage
-  - Type stability
-
-### Task 8: Create Quarto notebook with visualizations
+### Task 7: Create Quarto notebook with visualizations
 
 - [ ] Create `docs/notebooks/phase4_costs.qmd`
 - [ ] Visualize cost functions:
@@ -159,24 +153,25 @@ Simplified version for testing, full implementation in Phase 6
   - Dike cost vs D (showing startup cost effect)
   - Total investment cost surface (2D or 3D)
 
-- [ ] Visualize damage functions:
+- [ ] Visualize dike failure and surge:
+  - Effective surge vs raw surge (showing seawall effect and runup)
   - Dike failure probability vs surge height (piecewise function)
-  - Expected damage vs surge height for different dike heights
-  - Protection effectiveness (damage reduction with investment)
+  - Failure probability for different dike heights
 
 - [ ] Include clear annotations explaining:
   - Physical meaning of each curve
   - Edge cases and asymptotic behavior
   - Trade-offs between strategies
+  - Note: Damage visualizations will come in Phase 6
 
-### Task 9: Run full test suite
+### Task 8: Run full test suite
 
 - [ ] Run all tests: `julia --project test/runtests.jl`
 - [ ] Fix any failures
 - [ ] Verify all tests pass
 - [ ] Check code coverage (informal review)
 
-### Task 10: Documentation and review
+### Task 9: Documentation and review
 
 - [ ] Add docstrings to all functions with:
   - Brief description
@@ -207,16 +202,19 @@ Simplified version for testing, full implementation in Phase 6
 
 ## Success Criteria
 
-- [ ] All cost functions implemented and tested
+- [ ] All cost functions implemented and tested (Equations 1-7)
+- [ ] Effective surge calculation implemented (correct preprocessing for damage)
 - [ ] Dike failure probability matches corrected Equation 8
-- [ ] Simplified damage function ready for integration
 - [ ] All tests pass
 - [ ] No allocations in hot paths (verify with @time)
-- [ ] User approval on approach
+- [ ] Quarto notebook shows cost and failure probability behavior
+- [ ] Clean handoff to Phase 6 for damage implementation
 
 ## Notes
 
-- This phase implements mode-agnostic calculations (work for both stochastic and EAD)
-- Simplified damage in this phase; full zone-based calculation comes in Phase 6
+- **Phase 4 scope**: Costs (complete) + Failure probability (complete)
+- **Phase 6 scope**: Damage calculations (requires zones)
+- All functions are mode-agnostic (work for both stochastic and EAD)
 - Following exact C++ reference values where paper differs
 - Division by zero protection is critical for optimization (solvers will test boundaries)
+- No half-implemented features - everything is correct and complete

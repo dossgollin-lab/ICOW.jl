@@ -106,7 +106,7 @@ The model supports two distinct evaluation modes:
 | 1 | Parameters & Validation | Completed | [phase01_parameters.md](phase01_parameters.md) |
 | 2 | Type System and Mode Design | Completed | [phase02_type_system.md](phase02_type_system.md) |
 | 3 | Geometry | Completed | [phase03_geometry.md](phase03_geometry.md) |
-| 4 | Core Physics - Costs and Event Damage | Pending | [phase04_costs.md](phase04_costs.md) |
+| 4 | Core Physics - Costs and Dike Failure | Pending | [phase04_costs.md](phase04_costs.md) |
 | 5 | Expected Annual Damage | Pending | [phase05_ead.md](phase05_ead.md) |
 | 6 | Zones & City Characterization | Pending | [phase06_zones.md](phase06_zones.md) |
 | 7 | Simulation Engine | Pending | [phase07_simulation.md](phase07_simulation.md) |
