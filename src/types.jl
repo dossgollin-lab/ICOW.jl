@@ -1,5 +1,10 @@
 # Core types for the iCOW model
 
+# Abstract type hierarchy for dual-mode simulation
+abstract type AbstractForcing{T<:Real} end
+abstract type AbstractSimulationState{T<:Real} end
+abstract type AbstractPolicy{T<:Real} end
+
 """
     Levers{T<:Real}
 

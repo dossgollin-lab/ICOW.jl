@@ -1,9 +1,10 @@
 name = "ICOW"
 uuid = "3f0c05cb-d2a1-4c03-b976-c0e1c11e0dd4"
-authors = ["James Doss-Gollin <jdossgollin@rice.edu>"]
 version = "0.1.0"
+authors = ["James Doss-Gollin <jdossgollin@rice.edu>"]
 
 [deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Metaheuristics = "bcdb8e00-2c21-11e9-3065-2b553b22f898"
@@ -13,6 +14,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
 
 [compat]
+CairoMakie = "0.15.8"
 DataFrames = "1.8.1"
 Distributions = "0.25.122"
 Metaheuristics = "3.4.1"

@@ -1,0 +1,232 @@
+---
+title: "Phase 2: Type System & Simulation Modes"
+subtitle: "Forcing, state, and policy types for dual-mode simulation"
+format:
+  html:
+    code-fold: false
+engine: julia
+execute:
+  exeflags: ["+1.12", "--project=../..", "--threads=auto"]
+  cache: true
+  freeze: auto
+---
+
+## Overview
+
+Phase 2 establishes the type system for dual-mode simulation:
+
+- **Forcing types**: `StochasticForcing` and `DistributionalForcing`
+- **State types**: `StochasticState` and `EADState`
+- **Policy types**: `StaticPolicy`
+
+```{julia}
+using ICOW
+using Distributions
+using Random
+using Statistics
+Random.seed!(42)
+```
+
+## Forcing Types
+
+Forcing represents the exogenous storm surge uncertainty.
+
+### StochasticForcing
+
+Pre-generated surge realizations stored as a matrix `[n_scenarios, n_years]`.
+
+```{julia}
+# Generate 100 scenarios over 50 years using GEV distribution
+num_scenarios = 100
+num_years = 50
+
+# GEV parameters for annual maximum surge (NYC-like)
+gev = GeneralizedExtremeValue(1.0, 0.5, 0.1)
+surges = rand(gev, num_scenarios, num_years)
+
+forcing = StochasticForcing(surges, 2020)
+println("Scenarios: $(n_scenarios(forcing)), Years: $(n_years(forcing))")
+```
+
+Access individual surges:
+
+```{julia}
+println("Scenario 1, Year 1: $(round(get_surge(forcing, 1, 1), digits=2)) m")
+println("Scenario 50, Year 25: $(round(get_surge(forcing, 50, 25), digits=2)) m")
+```
+
+#### Spaghetti Plot Validation
+
+Visualizing the surge matrix confirms the data orientation and scale.
+Grey lines show individual scenarios; red shows the mean.
+
+```{julia}
+#| label: fig-stochastic-spaghetti
+#| fig-cap: "StochasticForcing validation: 20 random scenarios (grey) with mean (red)"
+
+using CairoMakie
+
+fig = Figure(size=(800, 400))
+ax = Axis(fig[1,1],
+    xlabel="Year",
+    ylabel="Surge Height (m)",
+    title="StochasticForcing: Scenario Spaghetti Plot")
+
+years = 1:num_years
+
+# Plot 20 random scenarios in grey
+scenario_idx = rand(1:num_scenarios, 20)
+for s in scenario_idx
+    lines!(ax, years, forcing.surges[s, :], color=(:grey, 0.3), linewidth=0.5)
+end
+
+# Plot mean in red
+mean_surge = vec(mean(forcing.surges, dims=1))
+lines!(ax, years, mean_surge, color=:red, linewidth=2, label="Mean")
+
+axislegend(ax, position=:rt)
+fig
+```
+
+### DistributionalForcing
+
+For EAD mode, each year has a probability distribution.
+
+```{julia}
+# Stationary GEV distribution for 50 years
+dists = [GeneralizedExtremeValue(1.0, 0.5, 0.1) for _ in 1:50]
+dist_forcing = DistributionalForcing(dists, 2020)
+println("Years: $(n_years(dist_forcing))")
+```
+
+#### Non-stationary Example
+
+With sea level rise, distributions shift over time:
+
+```{julia}
+# 3mm/year SLR over 50 years
+slr_rate = 0.003  # m/year
+dists_slr = [GeneralizedExtremeValue(1.0 + slr_rate * t, 0.5, 0.1) for t in 1:50]
+forcing_slr = DistributionalForcing(dists_slr, 2020)
+```
+
+#### PDF Comparison Validation
+
+Comparing Year 1 vs Year 50 distributions shows the SLR shift.
+
+```{julia}
+#| label: fig-distributional-pdf
+#| fig-cap: "DistributionalForcing validation: PDF shift from Year 1 (blue) to Year 50 (orange)"
+
+fig = Figure(size=(800, 400))
+ax = Axis(fig[1,1],
+    xlabel="Surge Height (m)",
+    ylabel="Probability Density",
+    title="DistributionalForcing: PDF Comparison (with SLR)")
+
+x = range(-1, 5, length=200)
+
+# Year 1 distribution
+d1 = get_distribution(forcing_slr, 1)
+lines!(ax, x, pdf.(d1, x), color=:blue, linewidth=2, label="Year 1")
+
+# Year 50 distribution
+d50 = get_distribution(forcing_slr, 50)
+lines!(ax, x, pdf.(d50, x), color=:orange, linewidth=2, label="Year 50")
+
+axislegend(ax, position=:rt)
+fig
+```
+
+## State Types
+
+States track simulation progress and accumulated metrics.
+Both state types are mutable for in-place updates.
+
+### StochasticState
+
+Tracks realized damages from specific surge events.
+
+```{julia}
+levers = Levers(2.0, 3.0, 0.5, 5.0, 1.0)
+state = StochasticState(levers)
+
+println("Initial cost: $(state.accumulated_cost)")
+println("Initial damage: $(state.accumulated_damage)")
+println("Current year: $(state.current_year)")
+```
+
+States are mutable:
+
+```{julia}
+state.accumulated_cost = 1e9
+state.accumulated_damage = 5e8
+state.current_year = 10
+println("After update - Year: $(state.current_year), Cost: \$$(state.accumulated_cost/1e9)B")
+```
+
+### EADState
+
+Tracks expected annual damage (integrated over distributions).
+
+```{julia}
+ead_state = EADState(levers)
+println("Initial EAD: $(ead_state.accumulated_ead)")
+```
+
+## Policy Types
+
+Policies determine lever settings based on state and forcing.
+
+### StaticPolicy
+
+A static policy returns fixed levers regardless of conditions.
+
+```{julia}
+policy = StaticPolicy(levers)
+result = policy(state, forcing, 1)
+println("Policy returns: W=$(result.W), D=$(result.D)")
+```
+
+The callable interface ignores state and year:
+
+```{julia}
+# Same result regardless of year or state
+r1 = policy(state, forcing, 1)
+r50 = policy(state, forcing, 50)
+println("Year 1 == Year 50: $(r1 === r50)")
+```
+
+### Parameter Extraction
+
+For optimization, extract policy parameters as a vector:
+
+```{julia}
+params = parameters(policy)
+println("Parameters: $(params)")
+println("Order: [W, R, P, D, B]")
+```
+
+## Abstract Type Hierarchy
+
+All types inherit from abstract bases for dispatch:
+
+```{julia}
+println("StochasticForcing <: AbstractForcing: $(StochasticForcing <: AbstractForcing)")
+println("EADState <: AbstractSimulationState: $(EADState <: AbstractSimulationState)")
+println("StaticPolicy <: AbstractPolicy: $(StaticPolicy <: AbstractPolicy)")
+```
+
+## Summary
+
+Phase 2 establishes the type system for dual-mode simulation:
+
+| Type | Purpose | Key Features |
+|------|---------|--------------|
+| `StochasticForcing` | Realized surge scenarios | Matrix `[scenarios, years]` |
+| `DistributionalForcing` | Surge distributions | Vector of `Distribution` |
+| `StochasticState` | Track realized damages | Mutable, zero-init constructor |
+| `EADState` | Track expected damages | Mutable, zero-init constructor |
+| `StaticPolicy` | Fixed decisions | Callable struct |
+
+Next phases will implement the physics (geometry, costs, damage) that operate on these types.
