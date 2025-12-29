@@ -1,0 +1,400 @@
+---
+title: "Phase 4: Cost Functions and Dike Failure Probability"
+author: "ICOW.jl"
+format:
+  html:
+    code-fold: true
+    toc: true
+    toc-depth: 3
+jupyter: julia-1.10
+---
+
+# Overview
+
+This notebook visualizes the cost functions (Equations 1-7) and dike failure probability (Equation 8) implemented in Phase 4 of the ICOW model.
+
+All functions are:
+- **Pure** (no side effects)
+- **Type-stable** (work with Float32/Float64)
+- **Mode-agnostic** (used by both stochastic and EAD modes)
+
+## Setup
+
+```{julia}
+using ICOW
+using Plots
+using LaTeXStrings
+
+# Use default NYC-like parameters
+city = CityParameters()
+
+# Display key parameters
+println("City Parameters:")
+println("  V_city = \$$(city.V_city/1e12) trillion")
+println("  H_city = $(city.H_city) m")
+println("  H_seawall = $(city.H_seawall) m")
+println("  f_runup = $(city.f_runup)")
+println("  t_fail = $(city.t_fail)")
+println("  p_min = $(city.p_min)")
+```
+
+# Cost Functions
+
+## Withdrawal Cost (Equation 1)
+
+Withdrawal cost increases nonlinearly as more of the city is abandoned.
+The cost approaches infinity as $W \to H_{city}$ because the denominator $(H_{city} - W) \to 0$.
+
+```{julia}
+# Withdrawal cost vs W
+W_range = range(0, 0.95 * city.H_city, length=100)
+C_W = [calculate_withdrawal_cost(city, W) for W in W_range]
+
+plot(W_range, C_W / 1e9,
+    xlabel = "Withdrawal Height W (m)",
+    ylabel = "Withdrawal Cost (billions \$)",
+    title = "Withdrawal Cost vs Height",
+    label = false,
+    linewidth = 2,
+    grid = true)
+
+# Add asymptote annotation
+vline!([0.95 * city.H_city], linestyle=:dash, color=:red,
+       label="0.95 × H_city (optimization bound)", linewidth=1.5)
+annotate!(city.H_city * 0.5, maximum(C_W) / 1e9 * 0.8,
+         text("Cost → ∞ as W → H_city", 10, :red))
+```
+
+**Physical interpretation:** As withdrawal height increases, the cost of relocating infrastructure grows rapidly. The asymptotic behavior near $H_{city}$ reflects the impossibility of withdrawing the entire city.
+
+## Value After Withdrawal (Equation 2)
+
+City value decreases linearly with withdrawal height due to loss fraction $f_l$.
+
+```{julia}
+V_w = [calculate_value_after_withdrawal(city, W) for W in W_range]
+
+plot(W_range, V_w / 1e12,
+    xlabel = "Withdrawal Height W (m)",
+    ylabel = "Remaining Value (trillion \$)",
+    title = "City Value After Withdrawal",
+    label = false,
+    linewidth = 2,
+    grid = true,
+    color = :blue)
+
+hline!([city.V_city / 1e12], linestyle=:dash, color=:gray,
+       label="Initial value", linewidth=1.5)
+```
+
+**Physical interpretation:** The loss fraction $f_l = $(city.f_l)$ represents the portion of value that leaves the city permanently rather than relocating to higher ground.
+
+## Resistance Cost Fraction (Equation 3)
+
+The resistance cost fraction has both linear and exponential components.
+Near $P = 1$, the exponential term dominates due to the $1/(1-P)$ factor.
+
+```{julia}
+P_range = range(0, 0.99, length=100)
+f_cR = [calculate_resistance_cost_fraction(city, P) for P in P_range]
+
+plot(P_range, f_cR,
+    xlabel = "Resistance Percentage P",
+    ylabel = "Cost Fraction f_cR",
+    title = "Resistance Cost Fraction vs P",
+    label = false,
+    linewidth = 2,
+    grid = true,
+    color = :orange)
+
+# Highlight exponential growth region
+vline!([city.t_exp], linestyle=:dash, color=:purple,
+       label="t_exp = $(city.t_exp) (exponential onset)", linewidth=1.5)
+vline!([0.99], linestyle=:dash, color=:red,
+       label="P = 0.99 (optimization bound)", linewidth=1.5)
+
+annotate!(0.95, maximum(f_cR) * 0.5,
+         text("Exponential growth\nnear P = 1", 9, :red))
+```
+
+**Physical interpretation:** Making 100% of buildings resistant is theoretically impossible and extremely expensive. The exponential term captures the diminishing returns and increasing difficulty as $P \to 1$.
+
+## Resistance Cost: Constrained vs Unconstrained
+
+When resistance height $R$ exceeds dike base $B$, the strategy becomes dominated (Equation 5) - you pay more but get no additional protection.
+
+```{julia}
+# Create levers with varying R, fixed P, and two different B values
+R_range = range(0, 8, length=100)
+B_low = 3.0   # R will exceed this
+B_high = 10.0 # R stays below this
+
+# Unconstrained case (R < B)
+levers_unc = [Levers(0.0, R, 0.5, 0.0, B_high) for R in R_range]
+C_R_unc = [calculate_resistance_cost(city, lev) for lev in levers_unc]
+
+# Constrained case (R crosses B)
+levers_con = [Levers(0.0, R, 0.5, 0.0, B_low) for R in R_range]
+C_R_con = [calculate_resistance_cost(city, lev) for lev in levers_con]
+
+plot(R_range, C_R_unc / 1e9,
+    xlabel = "Resistance Height R (m)",
+    ylabel = "Resistance Cost (billions \$)",
+    title = "Resistance Cost: Constrained vs Unconstrained (P = 0.5)",
+    label = "Unconstrained (B = $B_high m)",
+    linewidth = 2,
+    grid = true,
+    color = :blue)
+
+plot!(R_range, C_R_con / 1e9,
+     label = "Constrained (B = $B_low m)",
+     linewidth = 2,
+     color = :red)
+
+vline!([B_low], linestyle=:dash, color=:red, alpha=0.5,
+       label = "B = $B_low (constraint onset)", linewidth=1.5)
+
+annotate!(5.5, maximum(C_R_con) / 1e9 * 0.7,
+         text("Dominated region:\nR > B increases cost\nbut not protection", 9, :red))
+```
+
+**Physical interpretation:** Beyond the dike base, flood-proofing provides no additional protection (water doesn't reach those elevations), but construction costs continue to increase. This is a dominated strategy that optimizers should avoid.
+
+## Dike Cost (Equation 7)
+
+Dike cost is non-zero even at $D = 0$ due to startup costs ($D_{startup} = $(city.D_startup)$ m).
+
+```{julia}
+D_range = range(0, 15, length=100)
+C_D = [calculate_dike_cost(city, D, 0.0) for D in D_range]
+
+plot(D_range, C_D / 1e9,
+    xlabel = "Dike Height D (m)",
+    ylabel = "Dike Cost (billions \$)",
+    title = "Dike Cost vs Height",
+    label = false,
+    linewidth = 2,
+    grid = true,
+    color = :green)
+
+# Show startup cost
+hline!([calculate_dike_cost(city, 0.0, 0.0) / 1e9],
+       linestyle=:dash, color=:gray,
+       label = "Startup cost (D = 0)", linewidth=1.5)
+
+annotate!(D_range[end] * 0.5, calculate_dike_cost(city, 0.0, 0.0) / 1e9 * 1.2,
+         text("Fixed startup cost\n(D_startup = $(city.D_startup) m)", 9, :gray))
+```
+
+**Physical interpretation:** Even a minimal dike incurs fixed costs (planning, permitting, base construction). The cost increases super-linearly due to the volume scaling with height squared.
+
+## Total Investment Cost
+
+Total cost is the sum of withdrawal, resistance, and dike costs.
+
+```{julia}
+# Fix some levers and vary one dimension
+D_test = [0.0, 5.0, 10.0]
+colors = [:blue, :orange, :green]
+labels = ["D = 0 m", "D = 5 m", "D = 10 m"]
+
+# Plot total cost vs W for different dike heights
+W_range_inv = range(0, 0.95 * city.H_city, length=50)
+
+p = plot(xlabel = "Withdrawal Height W (m)",
+         ylabel = "Total Investment Cost (billions \$)",
+         title = "Total Investment Cost (R=2, P=0.3, B=2)",
+         grid = true,
+         legend = :topleft)
+
+for (i, D) in enumerate(D_test)
+    levers = [Levers(W, 2.0, 0.3, D, 2.0) for W in W_range_inv]
+    C_total = [calculate_investment_cost(city, lev) for lev in levers]
+    plot!(p, W_range_inv, C_total / 1e9,
+         label = labels[i],
+         linewidth = 2,
+         color = colors[i])
+end
+
+p
+```
+
+**Physical interpretation:** Higher dikes increase upfront investment but may reduce long-term damage. The optimal strategy depends on the balance between investment costs and expected damages (analyzed in later phases).
+
+# Surge and Failure Functions
+
+## Effective Surge Transformation
+
+Raw ocean surge is transformed by wave runup and the seawall before reaching the city.
+
+```{julia}
+h_raw_range = range(0, 10, length=100)
+h_eff = [calculate_effective_surge(h_raw, city) for h_raw in h_raw_range]
+
+plot(h_raw_range, h_eff,
+    xlabel = "Raw Ocean Surge (m)",
+    ylabel = "Effective Surge at City (m)",
+    title = "Effective Surge Transformation",
+    label = "h_eff = h_raw × f_runup - H_seawall",
+    linewidth = 2,
+    grid = true,
+    color = :blue)
+
+# Add reference lines
+plot!(h_raw_range, h_raw_range,
+     linestyle=:dash, color=:gray, alpha=0.5,
+     label = "1:1 reference", linewidth=1.5)
+
+vline!([city.H_seawall], linestyle=:dash, color=:red,
+       label = "H_seawall = $(city.H_seawall) m", linewidth=1.5)
+
+annotate!(7, 8,
+         text("Amplification:\nf_runup = $(city.f_runup)", 9, :blue))
+annotate!(city.H_seawall * 0.8, 1.5,
+         text("Seawall\nprotection", 8, :red))
+```
+
+**Physical interpretation:**
+- Below the seawall ($h_{raw} \le H_{seawall}$): No flooding ($h_{eff} = 0$)
+- Above the seawall: Wave runup amplifies surge by factor $f_{runup}$, then seawall height is subtracted
+- The slope is steeper than 1:1 due to runup amplification
+
+## Dike Failure Probability (Equation 8)
+
+Failure probability follows a corrected piecewise function with three regions.
+
+```{julia}
+# Test multiple dike heights
+D_test_fail = [3.0, 5.0, 8.0]
+h_surge_range = range(0, 10, length=200)
+
+p_fail = plot(xlabel = "Effective Surge Height (m)",
+              ylabel = "Failure Probability",
+              title = "Dike Failure Probability (Corrected Piecewise Form)",
+              grid = true,
+              legend = :bottomright,
+              ylims = (0, 1.05))
+
+for (i, D) in enumerate(D_test_fail)
+    p_vals = [calculate_dike_failure_probability(h, D, city) for h in h_surge_range]
+    plot!(p_fail, h_surge_range, p_vals,
+         label = "D = $D m",
+         linewidth = 2,
+         color = colors[i])
+
+    # Mark key points
+    threshold = city.t_fail * D
+    vline!(p_fail, [threshold], linestyle=:dash, color=colors[i], alpha=0.3,
+          label = false, linewidth=1)
+    vline!(p_fail, [D], linestyle=:dot, color=colors[i], alpha=0.3,
+          label = false, linewidth=1)
+end
+
+# Add horizontal reference lines
+hline!([city.p_min], linestyle=:dash, color=:black, alpha=0.3,
+       label = "p_min = $(city.p_min)", linewidth=1.5)
+hline!([1.0], linestyle=:dash, color=:black, alpha=0.3,
+       label = "Certain failure", linewidth=1.5)
+
+annotate!(6.5, 0.15,
+         text("Three regions:\n1. h < t_fail·D: p_min\n2. t_fail·D ≤ h < D: linear\n3. h ≥ D: certain", 8, :black))
+```
+
+**Physical interpretation:**
+1. **Below threshold** ($h_{surge} < t_{fail} \cdot D$): Minimal failure probability $p_{min}$
+2. **Linear rise** ($t_{fail} \cdot D \le h_{surge} < D$): Probability increases linearly
+3. **Overtopping** ($h_{surge} \ge D$): Certain failure ($p = 1$)
+
+The threshold parameter $t_{fail} = $(city.t_fail)$ represents the point where structural stress becomes significant.
+
+## Failure Probability for No Dike
+
+Without a dike ($D = 0$), any positive surge causes certain failure.
+
+```{julia}
+p_vals_nodike = [calculate_dike_failure_probability(h, 0.0, city) for h in h_surge_range]
+
+plot(h_surge_range, p_vals_nodike,
+    xlabel = "Effective Surge Height (m)",
+    ylabel = "Failure Probability",
+    title = "Dike Failure Probability with D = 0 (No Dike)",
+    label = "No dike",
+    linewidth = 2,
+    grid = true,
+    color = :red,
+    ylims = (0, 1.05))
+
+hline!([city.p_min], linestyle=:dash, color=:gray,
+       label = "p_min = $(city.p_min)", linewidth=1.5)
+
+annotate!(5, 0.6,
+         text("Step function:\np = p_min if h = 0\np = 1.0 if h > 0", 9, :red))
+```
+
+**Physical interpretation:** Without any dike, the city is unprotected. Even small surges above the seawall cause complete flooding (failure probability = 1).
+
+# Trade-off Analysis
+
+## Investment Cost vs Protection Level
+
+Visualize the cost-protection trade-off for different strategies.
+
+```{julia}
+# Create strategies with varying protection levels
+D_levels = range(0, 12, length=20)
+strategies = [Levers(0.0, 0.0, 0.0, D, 0.0) for D in D_levels]
+costs = [calculate_investment_cost(city, lev) for lev in strategies]
+
+# Calculate failure probability at a reference surge (e.g., 5m)
+h_ref = 5.0
+p_fail_ref = [calculate_dike_failure_probability(h_ref, lev.D, city) for lev in strategies]
+
+plot(costs / 1e9, p_fail_ref,
+    xlabel = "Investment Cost (billions \$)",
+    ylabel = "Failure Probability at h = $(h_ref) m",
+    title = "Cost-Protection Trade-off (Dike Only Strategy)",
+    label = false,
+    linewidth = 2,
+    grid = true,
+    marker = :circle,
+    color = :purple)
+
+annotate!(costs[end] / 1e9 * 0.7, 0.5,
+         text("Higher investment\n→ Lower failure risk", 9, :purple))
+```
+
+**Physical interpretation:** This Pareto-like curve shows the fundamental trade-off: more investment buys better protection. The optimal point depends on damage costs (analyzed in Phase 6) and risk preferences.
+
+# Summary
+
+This notebook visualized all Phase 4 functions:
+
+## Cost Functions ✅
+1. **Withdrawal cost** (Eq 1): Asymptotic growth as $W \to H_{city}$
+2. **Value after withdrawal** (Eq 2): Linear decrease with $W$
+3. **Resistance cost fraction** (Eq 3): Exponential growth near $P = 1$
+4. **Resistance cost** (Eq 4-5): Constrained vs unconstrained strategies
+5. **Dike cost** (Eq 7): Super-linear growth with startup costs
+6. **Total investment** (sum): Combined cost surface
+
+## Surge and Failure ✅
+7. **Effective surge**: Transformation with runup and seawall
+8. **Dike failure probability** (Eq 8): Corrected piecewise function
+
+## Key Insights
+
+- **Division by zero protection**: Enforced via optimization bounds ($P < 0.999$, $W < 0.999 H_{city}$)
+- **Dominated strategies**: $R > B$ increases cost without benefit
+- **Startup costs**: Even minimal protection ($D = 0$) has fixed costs
+- **Nonlinear trade-offs**: Cost grows super-linearly, protection grows sub-linearly
+
+## Next Steps
+
+- **Phase 5**: Expected Annual Damage calculations
+- **Phase 6**: Full zone-based damage with spatial structure
+- **Phase 7**: Simulation engine integrating costs and damages
+- **Phase 9**: Multi-objective optimization to find Pareto-optimal strategies
+
+---
+
+*Generated by ICOW.jl Phase 4 implementation*
