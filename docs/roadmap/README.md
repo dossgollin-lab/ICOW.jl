@@ -163,7 +163,7 @@ Summary of completion status:
 
 - [x] Phase 1: Parameters & Validation
 - [x] Phase 2: Type System and Mode Design
-- [ ] Phase 3: Geometry
+- [x] Phase 3: Geometry
 - [ ] Phase 4: Core Physics - Costs and Event Damage
 - [ ] Phase 5: Expected Annual Damage
 - [ ] Phase 6: Zones & City Characterization
