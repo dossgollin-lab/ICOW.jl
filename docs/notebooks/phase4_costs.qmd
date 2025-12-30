@@ -162,7 +162,7 @@ annotate!(5.5, maximum(C_R_con) / 1e9 * 0.7,
 
 ## Dike Cost (Equation 7)
 
-Dike cost is zero at $D = 0$ (not building). When $D > 0$, startup costs ($D_{startup} = $(city.D_startup)$ m) are included.
+Dike cost is zero at $D = 0$ (not building a dike means no cost). When $D > 0$, costs increase due to the dike volume calculation which includes startup height ($D_{startup} = $(city.D_startup)$ m).
 
 ```{julia}
 D_range = range(0, 15, length=100)
@@ -183,7 +183,7 @@ scatter!([0.0], [0.0],
          label = "D = 0 (no dike, zero cost)")
 
 annotate!(D_range[end] * 0.6, maximum(C_D) / 1e9 * 0.3,
-         text("D > 0 includes startup costs\n(D_startup = $(city.D_startup) m)", 9, :green))
+         text("D > 0: cost includes volume\nwith startup height offset", 9, :green))
 ```
 
 **Physical interpretation:** Not building a dike (D=0) costs nothing. Any dike (D>0) incurs fixed startup costs (planning, permitting) plus variable costs. Cost increases super-linearly due to volume scaling with height squared.
@@ -385,7 +385,7 @@ This notebook visualized all Phase 4 functions:
 
 - **Division by zero protection**: Enforced via optimization bounds ($P < 0.999$, $W < 0.999 H_{city}$)
 - **Dominated strategies**: $R > B$ increases cost without benefit
-- **Startup costs**: Even minimal protection ($D = 0$) has fixed costs
+- **No-build option**: $D = 0$ returns zero cost (no dike construction)
 - **Nonlinear trade-offs**: Cost grows super-linearly, protection grows sub-linearly
 
 ## Next Steps

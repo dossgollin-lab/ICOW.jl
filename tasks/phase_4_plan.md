@@ -96,7 +96,7 @@ Equation 7 from docs/equations.md (line 108)
   - Note: B parameter needed for feasibility but not used in cost calc directly
 
 - [ ] Write tests for dike cost:
-  - Zero test: D=0 should give cost > 0 (due to D_startup)
+  - Zero test: D=0 should give cost = 0 (no dike means no cost)
   - Monotonicity: increasing D should increase cost
   - Type stability
   - Match volume test expectations
@@ -253,7 +253,7 @@ All functions are pure, type-stable, and allocation-free:
 
 5. `calculate_dike_cost(city, D, B)` - Equation 7
    - Uses Phase 3 `calculate_dike_volume`
-   - Returns 0 when D=0 (no dike), includes startup costs when D>0
+   - Returns 0 when D=0 (no dike construction means no cost)
 
 6. `calculate_investment_cost(city, levers)` - Total
    - Sum of C_W + C_R + C_D
