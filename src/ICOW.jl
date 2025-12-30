@@ -1,5 +1,7 @@
 module ICOW
 
+using Random
+
 # Phase 1: Parameters & Validation
 include("parameters.jl")
 include("types.jl")
@@ -14,6 +16,10 @@ include("geometry.jl")
 
 # Phase 4: Costs and Dike Failure
 include("costs.jl")
+
+# Phase 5: Zones & Event Damage
+include("zones.jl")
+include("damage.jl")
 
 # Export Phase 1: Parameters & Validation
 export CityParameters, validate_parameters, city_slope
@@ -40,5 +46,11 @@ export calculate_withdrawal_cost, calculate_value_after_withdrawal
 export calculate_resistance_cost_fraction, calculate_resistance_cost
 export calculate_dike_cost, calculate_investment_cost
 export calculate_effective_surge, calculate_dike_failure_probability
+
+# Export Phase 5: Zones & Event Damage
+export AbstractZone
+export WithdrawnZone, ResistantZone, UnprotectedZone, DikeProtectedZone, AboveDikeZone
+export CityZones, calculate_city_zones
+export calculate_zone_damage, calculate_event_damage, calculate_event_damage_stochastic
 
 end # module ICOW

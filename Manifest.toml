@@ -2,7 +2,7 @@
 
 julia_version = "1.12.3"
 manifest_format = "2.0"
-project_hash = "798bc94bb01ded47d61e4fb8d57de6ff51f859fe"
+project_hash = "9ed792560f6d05da2f096c4a1a9c04f96e8a8860"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "8b2b045b22740e4be20654175cc38291d48539db"
@@ -993,7 +993,7 @@ uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 version = "0.3.28"
 
 [[deps.ICOW]]
-deps = ["DataFrames", "Distributions", "Metaheuristics", "NetCDF", "StaticArrays", "Test", "YAXArrays"]
+deps = ["CairoMakie", "DataFrames", "Distributions", "Metaheuristics", "NetCDF", "StaticArrays", "Test", "YAXArrays"]
 path = "."
 uuid = "3f0c05cb-d2a1-4c03-b976-c0e1c11e0dd4"
 version = "0.1.0"

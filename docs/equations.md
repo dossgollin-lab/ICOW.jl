@@ -280,14 +280,22 @@ In this case, $Val_{Z2} = 0$ and $d_2 = 0$.
 
 ### Surge Height Variables
 
-Equation 8 (Dike Failure) uses $h_{surge}$.
-This refers to **effective surge** $h_{eff}$, not raw ocean surge $h_{raw}$.
+The model uses multiple surge height variables:
 
-The chain is:
+1. $h_{raw}$ = raw ocean surge from GEV distribution (absolute elevation)
+2. $h_{eff} = h_{raw} \cdot f_{runup} - H_{seawall}$ = effective surge after seawall and runup (absolute elevation from sea level)
+3. $h_{at\_dike} = \max(0, h_{eff} - (\mathbf{W} + \mathbf{B}))$ = surge height above dike base
 
-1. $h_{raw}$ = raw ocean surge from GEV distribution
-2. $h_{eff} = h_{raw} \cdot f_{runup} - H_{seawall}$ (if $h_{raw} > H_{seawall}$, else 0)
-3. $h_{surge} = h_{eff}$ in Equation 8 and all damage calculations
+**Critical**: Equation 8 (Dike Failure) uses $h_{surge} = h_{at\_dike}$, the surge height **above the dike base**, not the absolute elevation.
+This makes physical sense: dike failure depends on water depth AT the dike, not the absolute surge elevation.
+
+**C++ Reference**: Line 584 of iCOW_2018_06_11.cpp confirms this:
+```cpp
+double pf = std::max(pfBase, ((sl-cityChar[tz2])/cityChar[dh]-pfThreshold)/(1-pfThreshold));
+```
+where `sl - cityChar[tz2]` = surge level - dike base = $h_{at\_dike}$.
+
+Zone flooding uses $h_{eff}$ (absolute elevation) compared to zone boundaries.
 
 ### Cost vs Damage Integration
 

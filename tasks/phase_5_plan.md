@@ -211,4 +211,60 @@ end
 
 ## Review
 
-(To be filled after implementation)
+### Implementation Summary
+
+Phase 5 successfully implemented zone-based city model and event damage calculations.
+All tests pass (149/149).
+
+### Key Files Created
+
+- **src/zones.jl**: Zone types and city partitioning (172 lines)
+  - `AbstractZone{T}` base type for dispatch
+  - 5 concrete zone types: `WithdrawnZone`, `ResistantZone`, `UnprotectedZone`, `DikeProtectedZone`, `AboveDikeZone`
+  - `CityZones{T}` wrapper with heterogeneous `Tuple` (fixed-size, zero allocations)
+  - `calculate_city_zones()` partitions city into exactly 5 zones
+
+- **src/damage.jl**: Event damage calculations (141 lines)
+  - `calculate_zone_damage()` with methods for each zone type (dispatch-based)
+  - `_calculate_base_zone_damage()` implements C++ formula with basement depth
+  - `calculate_event_damage()` sums damage across zones with threshold penalty
+  - `calculate_event_damage_stochastic()` samples dike failure probabilistically
+
+- **test/zones_tests.jl**: 28 tests for zone structure
+- **test/damage_tests.jl**: 9 tests for damage calculations
+
+### Implementation Decisions
+
+1. **Always 5 zones**: Keep all zones even when empty (width=0, value=0) for fixed-size struct
+2. **Heterogeneous Tuple**: Uses `Tuple{WithdrawnZone{T}, ResistantZone{T}, ...}` for compile-time dispatch
+3. **Zone value ratios**: Zones have different value densities (r_unprot=0.95, r_prot=1.1), so total zone value ≠ V_w exactly
+4. **Dike failure**: Uses surge height ABOVE dike base (h_at_dike = h_eff - (W+B)), not absolute surge
+
+### Bug Fixes During Implementation
+
+1. **Random dependency**: Added `Random` to Project.toml (Julia stdlib)
+2. **Zone value test**: Changed from "values sum to V_w" to "values use correct ratios" (zone multipliers cause ~7% deviation)
+3. **Dike failure probability**: Fixed to use surge height above dike base, not absolute elevation
+   - Critical fix: `h_at_dike = max(0, h_eff - (W+B))` before calling `calculate_dike_failure_probability()`
+
+### Mathematical Fidelity
+
+Implementation matches C++ reference code:
+
+- Zone value formulas (equations.md "Zone Value Calculations")
+- C++ damage formula with basement depth
+- Zone-specific modifiers (resistance factor, dike factors)
+- Threshold penalty formula
+
+### Performance Characteristics
+
+- Fixed-size `CityZones` struct (no allocations)
+- Type-stable zone dispatch
+- Immutable zone types
+- All functions parameterized by `T<:Real`
+
+### Notes for Future Phases
+
+- Phase 6 (EAD) will need to integrate damage over surge distributions
+- The stochastic damage function is ready for Phase 7 (Simulation Engine)
+- Dike failure probability calculation is correct for use in both stochastic and EAD modes

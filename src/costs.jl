@@ -127,7 +127,7 @@ end
     calculate_dike_failure_probability(h_surge, D, city::CityParameters) -> probability
 
 Calculate dike failure probability (Equation 8). See docs/equations.md.
-h_surge should be effective surge (use calculate_effective_surge first).
+h_surge should be surge height above dike base: h_at_dike = max(0, h_eff - (W+B)).
 """
 function calculate_dike_failure_probability(h_surge::Real, D::Real, city::CityParameters{T}) where {T}
     # Special case: no dike means certain failure if surge > 0

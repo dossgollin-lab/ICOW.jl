@@ -16,4 +16,8 @@ using Test
 
     # Phase 4: Costs and Dike Failure
     include("costs_tests.jl")
+
+    # Phase 5: Zones & Event Damage
+    include("zones_tests.jl")
+    include("damage_tests.jl")
 end
