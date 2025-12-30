@@ -178,12 +178,18 @@ calculation from Phase 3 (geometry.jl).
 \$\$C_D = V_d \\cdot c_d\$\$
 
 # Notes
-- V_d is calculated using calculate_dike_volume(city, D)
-- Even when D = 0, cost > 0 due to D_startup fixed costs
+- When D = 0 (no dike), cost is 0
+- When D > 0, D_startup adds fixed costs via calculate_dike_volume
 - B parameter included for API consistency but not used in calculation
 """
-function calculate_dike_cost(city::CityParameters, D::Real, B::Real)
+function calculate_dike_cost(city::CityParameters{T}, D::Real, B::Real) where {T}
+    # If not building a dike, no cost
+    if D == zero(T)
+        return zero(T)
+    end
+
     # Equation 7: C_D = V_d * c_d
+    # D_startup is included in the volume calculation
     V_d = calculate_dike_volume(city, D)
     return V_d * city.c_d
 end

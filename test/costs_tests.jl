@@ -146,10 +146,16 @@ using Test
     end
 
     @testset "calculate_dike_cost" begin
-        @testset "Positive Even at Zero" begin
-            # D=0 still has cost due to D_startup
+        @testset "Zero When No Dike" begin
+            # D=0 means no dike, so cost should be 0
             cost_zero = calculate_dike_cost(city, 0.0, 0.0)
-            @test cost_zero > 0
+            @test cost_zero == 0.0
+        end
+
+        @testset "Positive for Any Dike" begin
+            # Even minimal dike (D > 0) has startup costs
+            cost_minimal = calculate_dike_cost(city, 0.1, 0.0)
+            @test cost_minimal > 0
         end
 
         @testset "Monotonicity" begin
@@ -169,13 +175,10 @@ using Test
 
     @testset "calculate_investment_cost" begin
         @testset "Zero Test" begin
-            # All levers at 0 should give minimal cost (only D_startup)
+            # All levers at 0 should give zero cost (no protection)
             levers_zero = Levers(0.0, 0.0, 0.0, 0.0, 0.0)
             cost_zero = calculate_investment_cost(city, levers_zero)
-
-            # Should be positive (dike startup cost for 43km coastline is ~$9.5M)
-            @test cost_zero > 0
-            @test cost_zero < 1e8  # Sanity check: less than $100M
+            @test cost_zero == 0.0
         end
 
         @testset "Component Sum" begin
