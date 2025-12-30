@@ -162,7 +162,7 @@ annotate!(5.5, maximum(C_R_con) / 1e9 * 0.7,
 
 ## Dike Cost (Equation 7)
 
-Dike cost is non-zero even at $D = 0$ due to startup costs ($D_{startup} = $(city.D_startup)$ m).
+Dike cost is zero at $D = 0$ (not building). When $D > 0$, startup costs ($D_{startup} = $(city.D_startup)$ m) are included.
 
 ```{julia}
 D_range = range(0, 15, length=100)
@@ -177,16 +177,16 @@ plot(D_range, C_D / 1e9,
     grid = true,
     color = :green)
 
-# Show startup cost
-hline!([calculate_dike_cost(city, 0.0, 0.0) / 1e9],
-       linestyle=:dash, color=:gray,
-       label = "Startup cost (D = 0)", linewidth=1.5)
+# Show that D=0 gives zero cost
+scatter!([0.0], [0.0],
+         color=:red, markersize=6,
+         label = "D = 0 (no dike, zero cost)")
 
-annotate!(D_range[end] * 0.5, calculate_dike_cost(city, 0.0, 0.0) / 1e9 * 1.2,
-         text("Fixed startup cost\n(D_startup = $(city.D_startup) m)", 9, :gray))
+annotate!(D_range[end] * 0.6, maximum(C_D) / 1e9 * 0.3,
+         text("D > 0 includes startup costs\n(D_startup = $(city.D_startup) m)", 9, :green))
 ```
 
-**Physical interpretation:** Even a minimal dike incurs fixed costs (planning, permitting, base construction). The cost increases super-linearly due to the volume scaling with height squared.
+**Physical interpretation:** Not building a dike (D=0) costs nothing. Any dike (D>0) incurs fixed startup costs (planning, permitting) plus variable costs. Cost increases super-linearly due to volume scaling with height squared.
 
 ## Total Investment Cost
 

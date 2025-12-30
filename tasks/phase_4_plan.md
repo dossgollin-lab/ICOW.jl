@@ -253,7 +253,7 @@ All functions are pure, type-stable, and allocation-free:
 
 5. `calculate_dike_cost(city, D, B)` - Equation 7
    - Uses Phase 3 `calculate_dike_volume`
-   - Positive even at D=0 due to startup costs
+   - Returns 0 when D=0 (no dike), includes startup costs when D>0
 
 6. `calculate_investment_cost(city, levers)` - Total
    - Sum of C_W + C_R + C_D
@@ -270,7 +270,7 @@ All functions are pure, type-stable, and allocation-free:
 ### Test Coverage
 
 All 8 functions tested with:
-- **Zero tests**: Zero inputs → zero/minimal outputs
+- **Zero tests**: Zero inputs → zero outputs
 - **Monotonicity**: Increasing levers → increasing costs/probabilities
 - **Boundary tests**: P → 1.0, W → H_city behavior
 - **Component validation**: C_total = C_W + C_R + C_D
@@ -336,4 +336,18 @@ Each plot includes:
 2. **If tests pass**: Review PR and merge
 3. **If tests fail**: Report errors, will fix immediately
 4. **After merge**: Continue to Phase 5 (Expected Annual Damage)
+
+### Design Change from Original Plan
+
+**Original plan**: D=0 would return positive cost due to D_startup (treating it as fixed costs even without building)
+
+**Final implementation**: D=0 returns exactly 0 (no dike = no cost)
+
+**Rationale**:
+- Physical: Not building a dike should cost $0
+- Economic: Fixed costs only incurred when initiating a project (D > 0)
+- Testing: Zero-test principle requires zero inputs → zero outputs
+- Optimization: Enables "no dike" as valid baseline strategy for Van Dantzig case
+
+**Impact**: D_startup now represents marginal fixed costs when D > 0, not a sunk cost for doing nothing
 
