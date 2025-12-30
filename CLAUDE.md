@@ -26,6 +26,17 @@
   Download locally to `docs/` for reference (file is in .gitignore and cannot be redistributed).
   Except for a few errors identified in `docs/equations.md`, this is a source of truth.
 
+### Mathematical Fidelity
+
+**CRITICAL**: The Julia implementation MUST match the C++ math exactly.
+
+- No "simplified" formulas that approximate the C++ behavior.
+- No shortcuts that change numerical results.
+- The code can be cleaner/more readable, but the math must be identical.
+- Only exception: bugs explicitly identified in `docs/equations.md` should be fixed.
+- If you find the C++ formula complex, implement it faithfully anyway.
+- Document any C++ bugs you fix in `docs/equations.md`.
+
 ## Code Quality & Style
 
 - Physics functions (geometry.jl, costs.jl) must be pure (no side effects).

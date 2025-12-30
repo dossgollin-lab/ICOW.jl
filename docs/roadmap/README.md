@@ -107,8 +107,8 @@ The model supports two distinct evaluation modes:
 | 2 | Type System and Mode Design | Completed | [phase02_type_system.md](phase02_type_system.md) |
 | 3 | Geometry | Completed | [phase03_geometry.md](phase03_geometry.md) |
 | 4 | Core Physics - Costs and Dike Failure | Completed | [phase04_costs.md](phase04_costs.md) |
-| 5 | Expected Annual Damage | Pending | [phase05_ead.md](phase05_ead.md) |
-| 6 | Zones & City Characterization | Pending | [phase06_zones.md](phase06_zones.md) |
+| 5 | Zones & Event Damage | Pending | [phase05_zones.md](phase05_zones.md) |
+| 6 | Expected Annual Damage Integration | Pending | [phase06_ead.md](phase06_ead.md) |
 | 7 | Simulation Engine | Pending | [phase07_simulation.md](phase07_simulation.md) |
 | 8 | Policies | Pending | [phase08_policies.md](phase08_policies.md) |
 | 9 | Optimization | Pending | [phase09_optimization.md](phase09_optimization.md) |
@@ -164,8 +164,8 @@ Summary of completion status:
 - [x] Phase 2: Type System and Mode Design
 - [x] Phase 3: Geometry
 - [x] Phase 4: Core Physics - Costs and Dike Failure
-- [ ] Phase 5: Expected Annual Damage
-- [ ] Phase 6: Zones & City Characterization
+- [ ] Phase 5: Zones & Event Damage
+- [ ] Phase 6: Expected Annual Damage Integration
 - [ ] Phase 7: Simulation Engine
 - [ ] Phase 8: Policies
 - [ ] Phase 9: Optimization
