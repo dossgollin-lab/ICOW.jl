@@ -23,7 +23,6 @@ Implement the geometrically complex dike volume calculation (Equation 6).
   - Monotonicity (volume increases with height)
   - Numerical stability
   - Trapezoidal approximation validation
-- [ ] `docs/notebooks/phase3_geometry.qmd` - Quarto notebook illustrating Phase 3 features
 
 ## Key Design Decisions
 

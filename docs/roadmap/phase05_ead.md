@@ -28,8 +28,6 @@ Implement integration of event damage over surge distributions for EAD mode.
   - Convergence to stochastic mean (Law of Large Numbers)
   - Monotonicity over time for non-stationary distributions
 
-- [ ] `docs/notebooks/phase5_ead.qmd` - Quarto notebook illustrating Phase 5 features
-
 ## Key Design Decisions
 
 - Uses cached samples from `DistributionalForcing` for efficiency

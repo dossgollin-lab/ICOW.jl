@@ -106,7 +106,7 @@ The model supports two distinct evaluation modes:
 | 1 | Parameters & Validation | Completed | [phase01_parameters.md](phase01_parameters.md) |
 | 2 | Type System and Mode Design | Completed | [phase02_type_system.md](phase02_type_system.md) |
 | 3 | Geometry | Completed | [phase03_geometry.md](phase03_geometry.md) |
-| 4 | Core Physics - Costs and Dike Failure | Pending | [phase04_costs.md](phase04_costs.md) |
+| 4 | Core Physics - Costs and Dike Failure | Completed | [phase04_costs.md](phase04_costs.md) |
 | 5 | Expected Annual Damage | Pending | [phase05_ead.md](phase05_ead.md) |
 | 6 | Zones & City Characterization | Pending | [phase06_zones.md](phase06_zones.md) |
 | 7 | Simulation Engine | Pending | [phase07_simulation.md](phase07_simulation.md) |
@@ -131,8 +131,7 @@ ICOW.jl/
 │   ├── equations.md             # All equations from paper
 │   ├── parameters.md            # Parameter documentation
 │   ├── zones.md                 # Zone structure documentation
-│   ├── figures/
-│   └── notebooks/
+│   └── figures/
 ├── src/
 │   ├── ICOW.jl                  # Main module file
 │   ├── types.jl                 # Abstract types, Levers
@@ -164,7 +163,7 @@ Summary of completion status:
 - [x] Phase 1: Parameters & Validation
 - [x] Phase 2: Type System and Mode Design
 - [x] Phase 3: Geometry
-- [ ] Phase 4: Core Physics - Costs and Event Damage
+- [x] Phase 4: Core Physics - Costs and Dike Failure
 - [ ] Phase 5: Expected Annual Damage
 - [ ] Phase 6: Zones & City Characterization
 - [ ] Phase 7: Simulation Engine

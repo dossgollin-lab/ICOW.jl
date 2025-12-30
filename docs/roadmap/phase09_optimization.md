@@ -45,8 +45,6 @@ by Monte Carlo sampling over pre-generated ensembles.
   - Constraint handling (infeasible solutions rejected)
   - Single-lever optimization (regression test)
 
-- [ ] `docs/notebooks/phase9_optimization.qmd` - Quarto notebook illustrating Phase 9 features
-
 ## Key Design Decisions
 
 - **Simulation-optimization:** Each $f(\theta)$ call runs `simulate()` for all ensemble members

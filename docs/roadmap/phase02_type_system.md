@@ -62,8 +62,6 @@ It answers fundamental design questions about how forcing, state, and policies i
   - Type stability verification
   - Calendar year calculations and clock functionality
 
-- [ ] `docs/notebooks/phase2_type_system.qmd` - Quarto notebook illustrating Phase 2 features
-
 ## Key Design Decisions
 
 - **Modular uncertainty representation:** `AbstractForcing` interface allows "plug and play" of different uncertainty structures (e.g., deep uncertainty with drifting parameters)

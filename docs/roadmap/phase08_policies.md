@@ -27,7 +27,6 @@ Policies are parameterized as $\pi = (f, \theta)$ where:
 - [ ] Documentation of policy design patterns in `src/policies.jl`
 - [ ] Validation that StaticPolicy works correctly in both modes
 - [ ] Example parameter round-trip: `policy == PolicyType(parameters(policy))`
-- [ ] `docs/notebooks/phase8_policies.qmd` - Quarto notebook illustrating Phase 8 features
 
 ## Implementation Notes
 

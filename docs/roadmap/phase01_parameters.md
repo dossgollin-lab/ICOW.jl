@@ -20,7 +20,6 @@ Establish the foundational parameter types and constraint validation.
   - Lever constraint enforcement
   - Type conversions and defaults
   - Edge cases and boundary conditions
-- [x] `docs/notebooks/phase1_parameters.qmd` - Quarto notebook illustrating Phase 1 features
 
 ## Key Design Decisions
 

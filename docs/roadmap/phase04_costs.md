@@ -1,6 +1,6 @@
 # Phase 4: Core Physics - Costs and Dike Failure
 
-**Status:** Pending
+**Status:** Completed
 
 **Prerequisites:** Phase 3 (Geometry)
 
@@ -23,7 +23,7 @@ Event damage functions (Equation 9) are deferred to Phase 6 where zones are full
 
 - [x] `docs/equations.md` - Already complete with all equations (1-9)
 
-- [ ] `src/costs.jl` - Cost calculation functions (Equations 1-7):
+- [x] `src/costs.jl` - Cost calculation functions (Equations 1-7):
   - `calculate_withdrawal_cost(city, W)` - Equation 1
   - `calculate_value_after_withdrawal(city, W)` - Equation 2
   - `calculate_resistance_cost_fraction(city, P)` - Equation 3
@@ -32,21 +32,15 @@ Event damage functions (Equation 9) are deferred to Phase 6 where zones are full
   - `calculate_investment_cost(city, levers)` - Total cost
   - `calculate_effective_surge(h_raw, city)` - Surge preprocessing
 
-- [ ] `src/costs.jl` - Dike failure probability (Equation 8):
+- [x] `src/costs.jl` - Dike failure probability (Equation 8):
   - `calculate_dike_failure_probability(h_surge, D, city)` - Corrected piecewise form
 
-- [ ] Comprehensive tests (`test/costs_tests.jl`):
+- [x] Comprehensive tests (`test/costs_tests.jl`):
   - Cost monotonicity (increasing levers → increasing costs)
   - Zero inputs → zero outputs (or minimal for D=0 due to startup)
   - Component validation (sum equals total)
   - Type stability (Float32/Float64)
   - Constrained vs unconstrained resistance (R < B vs R ≥ B)
-
-- [ ] `docs/notebooks/phase4_costs.qmd` - Quarto notebook with visualizations:
-  - Cost function curves (withdrawal, resistance, dike, total)
-  - Effective surge transformation
-  - Dike failure probability (piecewise function)
-  - Trade-off surfaces
 
 ## Key Design Decisions
 
