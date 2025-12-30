@@ -37,8 +37,6 @@ Forward mode analysis with rich scenario outputs.
   - Summary statistics
   - Robustness metrics calculation
 
-- [ ] `docs/notebooks/phase10_analysis.qmd` - Quarto notebook illustrating Phase 10 features
-
 ## Key Design Decisions
 
 - **Core outputs:** Standard Julia Arrays/NamedTuples only (lightweight)

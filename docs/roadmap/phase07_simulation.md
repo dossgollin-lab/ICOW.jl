@@ -36,8 +36,6 @@ Unified time-stepping simulation with dispatch on forcing/state types.
   - Mode convergence (static policy: EAD $\approx$ mean(stochastic))
   - State updates and accumulation
 
-- [ ] `docs/notebooks/phase7_simulation.qmd` - Quarto notebook illustrating Phase 7 features
-
 ## Key Design Decisions
 
 - **Policy interface:** Policies return TARGET lever state, not final decision

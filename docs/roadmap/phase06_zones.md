@@ -42,8 +42,6 @@ Implement the complete zone-based city model from Figure 3 of the paper.
   - Monotonicity of damage with surge height
   - Empty zones (zero volume/value) handled correctly
 
-- [ ] `docs/notebooks/phase6_zones.qmd` - Quarto notebook illustrating Phase 6 features
-
 ## Key Design Decisions
 
 - **Critical for performance:** Zone structure MUST be fixed-size to avoid allocations in hot loop

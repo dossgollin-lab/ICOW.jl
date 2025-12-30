@@ -1,48 +1,44 @@
 # Dike geometry calculations for the iCOW model
+# Implements Equation 6 from docs/equations.md
 
 """
     calculate_dike_volume(city::CityParameters, D) -> volume
 
-Calculate the volume of dike material needed for a dike of height D.
-
-Based on the C++ reference code. Note: The C++ code has an integer division bug
-where `pow(T, 1/2)` evaluates to `pow(T, 0) = 1` because 1/2 = 0 in C integer
-division. This means the complex tetrahedron correction term is effectively
-ignored, and the formula simplifies to the main volume terms plus a constant 1/6.
-
-The total effective height includes startup costs: ch = D + D_startup.
-
-# Arguments
-- `city`: City parameters containing geometry (W_city, s_dike, w_d, D_startup)
-- `D`: Dike height in meters (relative to dike base)
-
-# Returns
-- Volume in cubic meters (m³)
+Calculate dike material volume (Equation 6). See docs/equations.md.
 """
 function calculate_dike_volume(city::CityParameters{R}, D::Real) where {R}
-    # Cost height is the dike height plus the equivalent height for startup costs
-    ch = D + city.D_startup
+    # Effective height includes startup costs
+    h_d = D + city.D_startup
 
-    # Shorthand for readability
-    sd = city.s_dike      # dike side slope
-    wdt = city.w_d        # dike top width
+    # Shorthand
+    s = city.s_dike       # dike side slope
+    w_d = city.w_d        # dike top width
     W = city.W_city       # coastline length
+    S = city.W_city / city.D_city  # city slope (C++ definition, see equations.md)
 
-    # Note: The C++ code uses CityLength/CityWidth (= W_city/D_city) for the slope,
-    # NOT H_city/D_city as stated in the paper.
-    S = city.W_city / city.D_city
-
-    # Precompute common terms
-    sd2 = sd * sd
+    # Precompute powers
+    s2 = s * s
     S2 = S * S
-    ch2 = ch * ch
+    S4 = S2 * S2
+    h_d2 = h_d * h_d
+    h_d3 = h_d2 * h_d
+    h_d4 = h_d3 * h_d
+    h_d5 = h_d4 * h_d
+    h_d6 = h_d5 * h_d
 
-    # Dike volume formula (matching C++ behavior):
-    # V_d = W*ch*(wdt + ch/sd^2) + 1/6 + W*ch^2/S^2
-    #
-    # The 1/6 comes from the C++ bug where pow(T, 1/2) = pow(T, 0) = 1 due to
-    # integer division, making the tetrahedron correction term just 1/6.
-    V_d = W * ch * (wdt + ch / sd2) + one(R) / 6 + W * ch2 / S2
+    # Tetrahedron correction term T (Equation 6)
+    h_plus_inv_s = h_d + one(R) / s
+    term1 = -h_d4 * h_plus_inv_s^2 / s2
+    term2 = -2 * h_d5 * h_plus_inv_s / S4
+    term3 = -4 * h_d6 / (s2 * S4)
+    term4 = 4 * h_d4 * (2 * h_d * h_plus_inv_s - 3 * h_d2 / s2) / (s2 * S2)
+    term5 = 2 * h_d3 * h_plus_inv_s / S2
+    T = term1 + term2 + term3 + term4 + term5
+
+    # Dike volume (Equation 6)
+    # V_d = W_city * h_d * (w_d + h_d/s²) + (1/6)*sqrt(T) + w_d * h_d²/S²
+    sqrt_T = T >= zero(R) ? sqrt(T) : zero(R)  # Guard against numerical issues
+    V_d = W * h_d * (w_d + h_d / s2) + sqrt_T / 6 + w_d * h_d2 / S2
 
     return V_d
 end

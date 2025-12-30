@@ -1,63 +1,51 @@
-# Phase 4: Core Physics - Costs and Event Damage
+# Phase 4: Core Physics - Costs and Dike Failure
 
-**Status:** Pending
+**Status:** Completed
 
 **Prerequisites:** Phase 3 (Geometry)
 
 ## Goal
 
-Implement cost and damage functions based on exact equations from the paper.
+Implement cost functions (Equations 1-7) and dike failure probability (Equation 8) based on exact equations from the paper.
+Event damage functions (Equation 9) are deferred to Phase 6 where zones are fully implemented.
 
-**Prerequisite:** Complete `docs/equations.md` with all equations (1-9) before implementation.
+**Note:** `docs/equations.md` already contains all equations (1-9) from Ceres et al. (2019) in LaTeX.
 
-## Open Questions
+## Decisions (RESOLVED)
 
-1. **Edge case handling:** How should we handle division by zero cases (return Inf, throw error, clamp)?
-2. **Numerical tolerances:** What tolerance for floating point comparisons in physical constraints?
-3. **Constrained resistance:** When R > B (dominated strategy), should we warn, clamp silently, or allow?
-4. **Dike failure mechanics:** Should failure be deterministic (use probability as damage weight) or stochastic (sample from probability)?
-5. **Simplified damage scope:** How much functionality should the Phase 4 damage function have before full zones in Phase 6?
+1. **Division by zero:** Enforce P < 0.999 and W < 0.999*H_city in optimization bounds, not in cost functions
+2. **Constrained resistance:** Allow R ≥ B, use Equation 5 (dominated but mathematically valid)
+3. **Dike failure probability:** Implement calculation only; damage application deferred to Phase 6
+4. **Event damage:** NO implementation in Phase 4 - requires zones (Phase 6)
+5. **Scope:** Costs (complete) + Failure probability (complete) only
 
 ## Deliverables
 
-- [ ] `docs/equations.md` - All equations from Ceres et al. (2019) in LaTeX:
-  - Equation 1: Withdrawal cost
-  - Equation 2: City value after withdrawal
-  - Equation 3: Resistance cost fraction
-  - Equations 4-5: Resistance cost (unconstrained and constrained)
-  - Equation 6: Dike volume (from Phase 3)
-  - Equation 7: Dike cost
-  - Equation 8: Dike failure probability
-  - Equation 9: Damage by zone
-  - Symbol definitions and units
+- [x] `docs/equations.md` - Already complete with all equations (1-9)
 
-- [ ] `src/costs.jl` - Cost calculation functions:
-  - `calculate_withdrawal_cost(city, W)`
-  - `calculate_value_after_withdrawal(city, W)`
-  - `calculate_resistance_cost_fraction(city, P)` **with bounds checking**
-  - `calculate_resistance_cost(city, levers)`
-  - `calculate_dike_cost(city, D, B)`
-  - `calculate_investment_cost(city, levers)` (total)
-  - **Boundary safety:** Implement `check_bounds` or `clamp` logic to ensure P < 1.0 before evaluation
+- [x] `src/costs.jl` - Cost calculation functions (Equations 1-7):
+  - `calculate_withdrawal_cost(city, W)` - Equation 1
+  - `calculate_value_after_withdrawal(city, W)` - Equation 2
+  - `calculate_resistance_cost_fraction(city, P)` - Equation 3
+  - `calculate_resistance_cost(city, levers)` - Equations 4-5 (handles R ≥ B)
+  - `calculate_dike_cost(city, D, B)` - Equation 7 (uses Phase 3 volume)
+  - `calculate_investment_cost(city, levers)` - Total cost
+  - `calculate_effective_surge(h_raw, city)` - Surge preprocessing
 
-- [ ] `src/damage.jl` - Event damage calculation:
-  - `calculate_event_damage(city, levers, surge)` (simplified version)
-  - `calculate_dike_failure_probability(surge_height, D, threshold)`
-  - Helper functions for damage components
+- [x] `src/costs.jl` - Dike failure probability (Equation 8):
+  - `calculate_dike_failure_probability(h_surge, D, city)` - Corrected piecewise form
 
-- [ ] Comprehensive tests covering:
-  - Cost monotonicity (increasing levers $\to$ increasing costs)
-  - Zero inputs $\to$ zero outputs
-  - **Boundary cases:** P $\to$ 1.0 handled safely (no division by zero crashes)
-  - Edge cases (division by zero avoidance in withdrawal)
-  - Cost component validation (sum equals total)
-
-- [ ] `docs/notebooks/phase4_costs.qmd` - Quarto notebook illustrating Phase 4 features
+- [x] Comprehensive tests (`test/costs_tests.jl`):
+  - Cost monotonicity (increasing levers → increasing costs)
+  - Zero inputs → zero outputs (or minimal for D=0 due to startup)
+  - Component validation (sum equals total)
+  - Type stability (Float32/Float64)
+  - Constrained vs unconstrained resistance (R < B vs R ≥ B)
 
 ## Key Design Decisions
 
-- **Critical:** Equation 3 has `(1 - P)` denominator - must prevent $P \geq 1.0$ to avoid division by zero in optimization
-- Event damage calculation is mode-agnostic (single surge realization)
-- Used directly by stochastic mode
-- Used indirectly by EAD mode (integrated over distribution)
-- Simplified version in this phase; full zone-based calculation in Phase 6
+- **Costs only in Phase 4:** Full, correct implementation of Equations 1-7
+- **Failure probability only:** Equation 8 implemented, but damage application deferred to Phase 6
+- **No half-measures:** Event damage requires zones; moved entirely to Phase 6
+- **Boundary safety:** Division by zero prevented via optimization bounds, not function logic
+- **Mode-agnostic:** All functions work for both stochastic and EAD modes

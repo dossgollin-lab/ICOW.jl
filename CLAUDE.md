@@ -35,6 +35,25 @@
   - Ensure these are instantiated with concrete types (e.g., Float64) during simulation to maintain type stability.
 - Use snake_case for functions, CamelCase for types.
 
+## Docstrings
+
+Keep docstrings minimal and reference `docs/equations.md` for formulas.
+
+- **Format**: Signature + one-sentence description + equation reference
+- **No duplication**: Don't repeat equations from equations.md
+- **No verbose sections**: Omit Arguments/Returns/Notes unless truly necessary
+- **No examples**: Tests serve that purpose
+
+Example:
+
+```julia
+"""
+    calculate_dike_volume(city::CityParameters, D) -> volume
+
+Calculate dike material volume (Equation 6). See docs/equations.md.
+"""
+```
+
 ## Julia Best Practices
 
 ### Structs
@@ -83,9 +102,22 @@ After completing each phase:
 
 ## Testing Strategy
 
-- **Zero-Test**: If inputs are 0, output should be 0 (or baseline).
-- **Monotonicity**: Increasing defenses must always increase cost.
-- **Regression**: The "Van Dantzig" case (Static Dike optimization) must yield a convex cost curve.
+**Keep tests minimal.** Only test key invariants, not every possible case.
+
+### What to Test
+
+- **Zero/edge cases**: If inputs are 0, output should be 0 (or baseline)
+- **Monotonicity**: Increasing defenses must always increase cost
+- **Component sums**: Verify that parts add up to totals
+- **Key constraints**: One test per constraint category, not per parameter
+- **Type stability**: One test per file, not per function
+
+### What NOT to Test
+
+- Every default parameter value (test a few key ones)
+- Every boundary condition (test the important ones)
+- Redundant cases (if monotonicity passes, don't also test "values differ")
+- Verbose type stability checks for every function
 
 **Always** include explanatory comments for test groups that clarify the physical or logical reasoning.
 

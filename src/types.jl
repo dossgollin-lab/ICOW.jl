@@ -8,33 +8,8 @@ abstract type AbstractPolicy{T<:Real} end
 """
     Levers{T<:Real}
 
-Decision levers for the iCOW coastal flood model.
-
-Five decision variables control the city's flood protection strategy:
-- `W`: Withdrawal height (m) - absolute elevation below which city is relocated
-- `R`: Resistance height (m) - height of flood-proofing above W (relative)
-- `P`: Resistance percentage - fraction of buildings made resistant [0, 1)
-- `D`: Dike height (m) - height of dike above its base (relative)
-- `B`: Dike base height (m) - elevation of dike base above W (relative)
-
-# Coordinate System
-W is the only absolute lever (measured from seawall/sea level).
-All other levers (R, B, D) are relative to W.
-- Dike base is at absolute elevation: W + B
-- Dike top is at absolute elevation: W + B + D
-
-# Constraints (enforced in constructor)
-- W >= 0, R >= 0, D >= 0, B >= 0 (non-negative)
-- 0 <= P < 1.0 (strictly less than 1 to avoid division by zero in Equation 3)
-
-City-dependent constraints are checked separately via `is_feasible(levers, city)`.
-
-# Examples
-```julia
-levers = Levers(0.0, 0.0, 0.0, 0.0, 0.0)  # No protection
-levers = Levers(5.0, 2.0, 0.5, 5.0, 2.0)  # Mixed strategy
-levers = Levers{Float32}(1.0f0, 2.0f0, 0.5f0, 3.0f0, 1.0f0)  # Single precision
-```
+Decision levers (W, R, P, D, B) for flood protection strategy.
+W is absolute; R, P, D, B are relative to W. See docs/equations.md.
 """
 struct Levers{T<:Real}
     W::T  # Withdrawal height (m) - absolute
@@ -80,18 +55,6 @@ end
     is_feasible(levers::Levers, city::CityParameters) -> Bool
 
 Check if lever settings are feasible for the given city.
-Returns `true` if all city-dependent constraints are satisfied.
-
-# Constraints Checked
-- W <= H_city (cannot withdraw above city peak)
-- W + B + D <= H_city (dike cannot exceed city elevation)
-
-# Examples
-```julia
-city = CityParameters()  # H_city = 17.0
-is_feasible(Levers(5.0, 2.0, 0.5, 5.0, 2.0), city)  # true
-is_feasible(Levers(18.0, 0.0, 0.0, 0.0, 0.0), city)  # false (W > H_city)
-```
 """
 function is_feasible(levers::Levers, city::CityParameters)
     # W <= H_city; cannot withdraw above city peak
@@ -107,16 +70,6 @@ end
     Base.max(a::Levers{T}, b::Levers{T}) where {T}
 
 Element-wise maximum of two Levers, for irreversibility enforcement.
-
-In the simulation engine, protection levels can only increase over time.
-This function supports the idiom: `new_levers = max(target_levers, current_levers)`
-
-# Examples
-```julia
-current = Levers(1.0, 2.0, 0.3, 4.0, 1.0)
-target = Levers(2.0, 1.0, 0.5, 3.0, 2.0)
-result = max(current, target)  # (2.0, 2.0, 0.5, 4.0, 2.0)
-```
 """
 function Base.max(a::Levers{T}, b::Levers{T}) where {T}
     Levers{T}(

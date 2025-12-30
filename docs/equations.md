@@ -91,16 +91,14 @@ $$
 
 And $h_d = \mathbf{D} + D_{startup}$ (total effective dike height including startup costs).
 
-**WARNING - Multiple C++ Bugs:**
+**C++ Bugs (documented for reference):**
 
-1. **Integer division bug**: The C++ code uses `pow(T, 1/2)` where `1/2` is integer division (equals 0).
-   This means `pow(T, 1/2) = pow(T, 0) = 1`, and the complex tetrahedron term is ignored entirely.
-   The effective formula in C++ is: `V_d = W*ch*(wdt + ch/sd^2) + 1/6 + W*ch^2/S^2`
-2. **dh=5 bug**: The C++ code uses `dh=5` (an array index) instead of `ch` (cost height) in the T formula.
-   This bug is masked by the integer division bug above.
-3. **Slope definition**: C++ uses `CityLength/CityWidth` (= 21.5), not `H_city/D_city` (= 0.0085).
+1. **Integer division bug**: C++ uses `pow(T, 1/2)` where `1/2 = 0` (integer division), making `pow(T, 0) = 1`.
+2. **dh=5 bug**: C++ uses array index `dh=5` instead of actual cost height in T formula.
+3. **Slope definition**: C++ uses `W_city/D_city` (= 21.5), not `H_city/D_city` (= 0.0085).
 
-Our implementation matches the C++ behavior (including the integer division bug).
+**Our implementation:** Uses the correct sqrt(T) formula (fixing bugs 1-2).
+Uses C++ slope definition (W_city/D_city) because paper slope causes numerical instability (T becomes negative).
 
 ### Equation 7: Dike Cost (p. 17)
 

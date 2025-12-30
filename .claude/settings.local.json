@@ -3,7 +3,9 @@
     "allow": [
       "Bash(pandoc:*)",
       "Bash(git -C /Users/jamesdoss-gollin/Documents/ICOW.jl log --oneline -10)",
-      "Bash(julia --project:*)"
+      "Bash(julia --project:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

@@ -5,29 +5,7 @@
     CityParameters{T<:Real}
 
 Exogenous parameters for the iCOW coastal flood model.
-
-Contains 27 parameters organized by category:
-
-- Geometry (6): City dimensions and seawall
-- Dike (4): Dike construction parameters
-- Zones (2): Value ratios for protected/unprotected zones
-- Withdrawal (2): Relocation cost factors
-- Resistance (5): Flood-proofing cost factors
-- Damage (6): Damage calculation factors
-- Threshold (3): Catastrophic damage threshold parameters
-
-All monetary values are in raw dollars (not scaled).
-Heights are in meters.
-
-Note: `d_thresh` defaults to `V_city/375` for the default `V_city`.
-If you change `V_city`, consider updating `d_thresh` accordingly.
-
-# Examples
-
-```julia
-city = CityParameters()  # Default NYC-like parameters
-city = CityParameters(V_city=2.0e12, H_city=20.0)  # Custom values
-```
+See docs/equations.md for full parameter documentation.
 """
 Base.@kwdef struct CityParameters{T<:Real}
     # Geometry (6)
@@ -76,16 +54,7 @@ end
 """
     validate_parameters(city::CityParameters)
 
-Validate physical bounds on city parameters.
-Throws `AssertionError` if any constraint is violated.
-
-# Constraints checked
-
-- Positive: V_city, H_bldg, H_city, D_city, W_city, s_dike
-- Non-negative: H_seawall, D_startup, w_d, c_d, b_basement, d_thresh
-- Fractions [0,1]: f_l, f_damage, t_fail, p_min, t_exp
-- Positive multipliers: f_w, f_adj, r_prot, r_unprot
-- f_runup >= 1.0 (amplification factor)
+Validate physical bounds on city parameters. Throws AssertionError if violated.
 """
 function validate_parameters(city::CityParameters)
     # Positive values (must be > 0)
@@ -126,9 +95,6 @@ end
 """
     city_slope(city::CityParameters)
 
-Compute the city's elevation gradient (H_city / D_city).
-
-Note: Uses the correct formula from the paper, NOT the buggy C++ implementation
-which incorrectly uses CityLength/CityWidth.
+Compute city elevation gradient (H_city / D_city).
 """
 city_slope(city::CityParameters) = city.H_city / city.D_city
