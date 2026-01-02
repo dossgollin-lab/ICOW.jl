@@ -1,6 +1,6 @@
 # Phase 8: Policies
 
-**Status:** Pending
+**Status:** Completed
 
 **Prerequisites:** Phase 7 (Simulation Engine)
 
@@ -24,9 +24,9 @@ Policies are parameterized as $\pi = (f, \theta)$ where:
 
 ## Deliverables
 
-- [ ] Documentation of policy design patterns in `src/policies.jl`
-- [ ] Validation that StaticPolicy works correctly in both modes
-- [ ] Example parameter round-trip: `policy == PolicyType(parameters(policy))`
+- [x] Documentation of policy design patterns in `src/policies.jl`
+- [x] Validation that StaticPolicy works correctly in both modes
+- [x] Example parameter round-trip: `policy == PolicyType(parameters(policy))`
 
 ## Implementation Notes
 

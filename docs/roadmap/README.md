@@ -109,8 +109,8 @@ The model supports two distinct evaluation modes:
 | 4 | Core Physics - Costs and Dike Failure | Completed | [phase04_costs.md](phase04_costs.md) |
 | 5 | Zones & Event Damage | Completed | [phase05_zones.md](phase05_zones.md) |
 | 6 | Expected Annual Damage Integration | Completed | [phase06_ead.md](phase06_ead.md) |
-| 7 | Simulation Engine | ✅ Approved | [phase07_simulation.md](phase07_simulation.md) |
-| 8 | Policies | Pending | [phase08_policies.md](phase08_policies.md) |
+| 7 | Simulation Engine | Completed | [phase07_simulation.md](phase07_simulation.md) |
+| 8 | Policies | Completed | [phase08_policies.md](phase08_policies.md) |
 | 9 | Optimization | Pending | [phase09_optimization.md](phase09_optimization.md) |
 | 10 | Analysis & Data | Pending | [phase10_analysis.md](phase10_analysis.md) |
 
@@ -166,8 +166,8 @@ Summary of completion status:
 - [x] Phase 4: Core Physics - Costs and Dike Failure
 - [x] Phase 5: Zones & Event Damage
 - [x] Phase 6: Expected Annual Damage Integration
-- [x] Phase 7: Simulation Engine ✅
-- [ ] Phase 8: Policies
+- [x] Phase 7: Simulation Engine
+- [x] Phase 8: Policies
 - [ ] Phase 9: Optimization
 - [ ] Phase 10: Analysis & Data
 
