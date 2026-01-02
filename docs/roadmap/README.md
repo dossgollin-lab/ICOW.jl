@@ -171,6 +171,25 @@ Summary of completion status:
 - [ ] Phase 9: Optimization
 - [ ] Phase 10: Analysis & Data
 
+### C++ Reference Validation
+
+**Status:** ✅ Completed (Jan 2026)
+
+A debugged version of the C++ reference implementation has been created for validation:
+
+- **Location:** `test/cpp_reference/`
+- **Bugs Fixed:** 7 total (5 in dike volume, 2 in resistance cost)
+- **Validation:** All Julia implementations match corrected C++ within floating-point precision (rtol=1e-10)
+- **Documentation:** All bugs documented in `docs/equations.md`
+- **Test Coverage:** 8 test cases covering edge cases, zero inputs, and typical scenarios
+
+This provides:
+1. Independent verification that Julia matches paper formulas exactly
+2. Regression testing infrastructure for future changes
+3. Executable reference for correct calculations
+
+See `CLAUDE.md` for usage instructions.
+
 ### Documentation & Release
 
 - [ ] Complete all `docs/*.md` files
@@ -179,4 +198,5 @@ Summary of completion status:
 - [ ] Create example notebooks
 - [ ] Run full test suite
 - [ ] Profile performance (both modes)
+- [x] C++ reference validation completed
 - [ ] Tag v0.1.0 release

@@ -1,6 +1,12 @@
-# do not have license to distribute this
+# do not have license to distribute original C++ reference
 docs/ceres_2019.pdf
-*.cpp
+docs/*.cpp
+docs/iCOW_2018_06_11.cpp
+
+# C++ reference validation outputs (generated, not tracked)
+test/cpp_reference/outputs/*.txt
+test/cpp_reference/icow_test
+test/cpp_reference/*.o
 
 # Claude Code local settings
 .claude/

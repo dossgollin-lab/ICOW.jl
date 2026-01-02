@@ -16,6 +16,7 @@
 
 - **docs/equations.md**: The definitive mathematical reference.
   Contains all equations, parameters, zone definitions, and implementation guidance (paper vs C++ discrepancies).
+  **All bugs found in the C++ reference are documented here** (7 total as of Jan 2026).
 - **docs/roadmap/**: The implementation plan.
   The master overview is in `README.md`.
   Each phase has its own detailed file (`phase01_*.md`, `phase02_*.md`, etc.).
@@ -23,19 +24,59 @@
   Note key considerations and dependencies, but do not include code snippets or work out implementation details.
   Details belong in the source files and their tests.
 - **C++ Reference**: The original implementation is at [rceres/ICOW](https://github.com/rceres/ICOW/blob/master/src/iCOW_2018_06_11.cpp).
-  Download locally to `docs/` for reference (file is in .gitignore and cannot be redistributed).
-  Except for a few errors identified in `docs/equations.md`, this is a source of truth.
+  Download locally to `docs/iCOW_2018_06_11.cpp` for reference (file is in .gitignore and cannot be redistributed).
+  **Contains 7 bugs** - see `docs/equations.md` for complete documentation.
 
 ### Mathematical Fidelity
 
-**CRITICAL**: The Julia implementation MUST match the C++ math exactly.
+**CRITICAL**: The Julia implementation MUST match the **paper formulas** exactly, not the buggy C++ code.
 
-- No "simplified" formulas that approximate the C++ behavior.
+- The Julia code fixes all documented C++ bugs to match the paper.
+- No "simplified" formulas that approximate the correct behavior.
 - No shortcuts that change numerical results.
-- The code can be cleaner/more readable, but the math must be identical.
-- Only exception: bugs explicitly identified in `docs/equations.md` should be fixed.
-- If you find the C++ formula complex, implement it faithfully anyway.
-- Document any C++ bugs you fix in `docs/equations.md`.
+- The code can be cleaner/more readable, but the math must match the paper.
+- All C++ bugs are documented in `docs/equations.md` with detailed explanations.
+- If you find new C++ bugs, document them in `docs/equations.md` immediately.
+
+### C++ Reference Validation
+
+**Location:** `test/cpp_reference/`
+
+A debugged version of the C++ code is maintained for validation purposes:
+
+- **icow_debugged.cpp**: C++ code with all 7 bugs fixed to match paper formulas
+- **compile.sh**: Build script (requires Homebrew g++-15 on macOS)
+- **outputs/**: Reference test outputs generated from debugged C++
+- **validate_cpp_outputs.jl**: Julia script to validate implementation matches C++
+
+**Purpose:**
+
+1. **Validation**: Ensures Julia implementation matches corrected C++ math (within floating-point precision)
+2. **Regression Testing**: Prevents introduction of bugs during refactoring
+3. **Documentation**: Provides executable examples of correct calculations
+
+**Usage:**
+
+```bash
+cd test/cpp_reference
+./compile.sh              # Compile debugged C++
+./icow_test               # Generate reference outputs
+cd ../..
+julia --project test/cpp_reference/validate_cpp_outputs.jl  # Validate Julia
+```
+
+**What's tested:**
+
+- 8 test cases covering edge cases (zero levers, R $\geq$ B, high surge, etc.)
+- All cost calculations (withdrawal, resistance, dike, total)
+- All zone value calculations
+- Validation tolerance: rtol=1e-10 (floating-point precision)
+
+**Maintenance:**
+
+- When adding new physics functions, add corresponding test cases to the C++ harness
+- Re-run validation after any changes to `src/costs.jl`, `src/geometry.jl`, or `src/zones.jl`
+- If validation fails, investigate whether Julia or C++ is correct by checking `docs/equations.md`
 
 ## Code Quality & Style
 

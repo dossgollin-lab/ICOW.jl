@@ -93,12 +93,30 @@ And $h_d = \mathbf{D} + D_{startup}$ (total effective dike height including star
 
 **C++ Bugs (documented for reference):**
 
-1. **Integer division bug**: C++ uses `pow(T, 1/2)` where `1/2 = 0` (integer division), making `pow(T, 0) = 1`.
-2. **dh=5 bug**: C++ uses array index `dh=5` instead of actual cost height in T formula.
-3. **Slope definition**: C++ uses `W_city/D_city` (= 21.5), not `H_city/D_city` (= 0.0085).
+The original C++ implementation (iCOW_2018_06_11.cpp) has multiple bugs in the dike volume calculation:
 
-**Our implementation:** Uses the correct sqrt(T) formula (fixing bugs 1-2).
-Uses C++ slope definition (W_city/D_city) because paper slope causes numerical instability (T becomes negative).
+1. **Integer division bug (line 147)**: C++ uses `pow(T, 1/2)` where `1/2 = 0` in integer division, making `pow(T, 0) = 1`. Should use `sqrt(T)`.
+
+2. **Array index bug in T formula (line 145)**: C++ uses array index constant `dh=5` instead of actual cost height variable `ch` in the fourth term of T. Specifically, `2*dh*(ch+1/sd)` should be `2*ch*(ch+1/sd)`.
+
+3. **Algebraic error in fourth term (line 145)**: C++ has `-4*ch2+ch2/pow(sd,2)` which simplifies to `ch2*(-4 + 1/sd^2)`. The correct formula from the paper is `-3*ch2/s^2`. This appears to be a separate algebraic mistake.
+
+4. **Wrong variable in third term (line 148)**: C++ uses `W*(ch2/pow(S,2))` where `W` is city width (43000m). Should use `wdt*(ch2/pow(S,2))` where `wdt` is dike top width (3m). This causes ~4,558 m³ error in volume for D=5.
+
+5. **Slope definition (line 35)**: C++ uses `CitySlope=CityLength/CityWidth` (= 0.0465), not `H_city/D_city` (= 0.0085) as in paper.
+
+**Additional C++ bugs in resistance cost:**
+
+6. **Uses zone value instead of V_w (lines 213, 227)**: Resistance cost functions use `vz1` (zone 1 value with $r_{unprot}$ = 0.95 multiplier) instead of `V_w$ (total value after withdrawal). This incorrectly reduces resistance costs by 5% in cases 2 and 6 (when $R \geq B$). Equations 4-5 clearly specify $V_w$, not zone values.
+
+7. **Wrong V_w calculation (line 377)**: C++ computes `V_w = V_city - C_W` (subtracting withdrawal cost), but Equation 2 specifies `V_w = V_city * (1 - f_l * W / H_city)` (accounting for infrastructure loss fraction $f_l$ = 0.01). This causes significant errors in zone values and resistance costs when W > 0.
+
+**Our implementation:**
+- Fixes bugs 1-5 to match the paper's dike volume formula exactly
+- Uses C++ slope definition (W_city/D_city = 21.5) because paper slope causes numerical instability (T becomes negative)
+- Guards against negative T with `sqrt_T = T >= 0 ? sqrt(T) : 0` for numerical stability
+- Uses $V_w$ directly in resistance cost (Equations 4-5), not zone values, fixing bug #6
+- Calculates $V_w$ using Equation 2 correctly, fixing bug #7
 
 ### Equation 7: Dike Cost (p. 17)
 
