@@ -2,6 +2,9 @@
 docs/ceres_2019.pdf
 *.cpp
 
+# Claude Code local settings
+.claude/
+
 # Quarto intermediate and output files
 *.pdf
 *.html
