@@ -84,8 +84,14 @@ function StaticPolicy(params::AbstractVector{T}) where {T<:Real}
     return StaticPolicy(Levers{T}(params[1], params[2], params[3], params[4], params[5]))
 end
 
-# Callable interface: returns fixed levers (ignores state, forcing, year)
-(policy::StaticPolicy)(state, forcing, year) = policy.levers
+# Callable interface: returns fixed levers in year 1, zero levers otherwise
+function (policy::StaticPolicy{T})(state, forcing, year) where {T}
+    if year == 1
+        return policy.levers
+    else
+        return Levers{T}(zero(T), zero(T), zero(T), zero(T), zero(T))
+    end
+end
 
 """Extract policy parameters as a vector for optimization."""
 function parameters end

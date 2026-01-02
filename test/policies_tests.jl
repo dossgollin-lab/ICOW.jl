@@ -8,11 +8,13 @@ using ICOW
     @test policy.levers === levers
     @test policy isa AbstractPolicy{Float64}
 
-    # Callable: returns fixed levers regardless of state/year
+    # Callable: returns fixed levers in year 1, zero levers otherwise
     state = StochasticState(Levers(0.0, 0.0, 0.0, 0.0, 0.0))
     forcing = StochasticForcing(rand(10, 5), 2020)
+    zero_levers = Levers(0.0, 0.0, 0.0, 0.0, 0.0)
     @test policy(state, forcing, 1) === levers
-    @test policy(state, forcing, 5) === levers
+    @test policy(state, forcing, 2) == zero_levers
+    @test policy(state, forcing, 5) == zero_levers
 
     # Parameters extraction
     params = parameters(policy)
@@ -20,6 +22,7 @@ using ICOW
 
     # Type stability
     @test (@inferred policy(state, forcing, 1)) isa Levers{Float64}
+    @test (@inferred policy(state, forcing, 2)) isa Levers{Float64}
     @test (@inferred parameters(policy)) isa Vector{Float64}
 
     # Single precision
@@ -87,10 +90,16 @@ end
     state_s = StochasticState(Levers(0.0, 0.0, 0.0, 0.0, 0.0))
     state_e = EADState(Levers(0.0, 0.0, 0.0, 0.0, 0.0))
 
-    levers_s = policy(state_s, forcing_stochastic, 1)
-    levers_e = policy(state_e, forcing_ead, 1)
+    # Year 1: returns policy levers
+    levers_s1 = policy(state_s, forcing_stochastic, 1)
+    levers_e1 = policy(state_e, forcing_ead, 1)
+    @test levers_s1 == levers_e1
+    @test levers_s1 == policy.levers
 
-    # StaticPolicy returns same levers regardless of state type
-    @test levers_s == levers_e
-    @test levers_s == policy.levers
+    # Year > 1: returns zero levers
+    levers_s2 = policy(state_s, forcing_stochastic, 2)
+    levers_e2 = policy(state_e, forcing_ead, 2)
+    zero_levers = Levers(0.0, 0.0, 0.0, 0.0, 0.0)
+    @test levers_s2 == levers_e2
+    @test levers_s2 == zero_levers
 end
