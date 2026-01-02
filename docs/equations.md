@@ -178,6 +178,33 @@ d_{total} = \begin{cases}
 \end{cases}
 $$
 
+### Expected Annual Damage (EAD) Integration
+
+The EAD mode integrates event damage over the surge distribution using two-level integration:
+
+$$
+\text{EAD} = \mathbb{E}_h\left[\mathbb{E}_{\text{dike}}[\text{damage} \mid h]\right] = \int p_h(h) \cdot \mathbb{E}[\text{damage} \mid h] \, dh
+$$
+
+Where the inner expectation (analytical) is:
+
+$$
+\mathbb{E}[\text{damage} \mid h] = p_{\text{fail}}(h) \cdot d_{\text{failed}}(h) + (1 - p_{\text{fail}}(h)) \cdot d_{\text{intact}}(h)
+$$
+
+And the outer expectation (numerical) integrates over the surge distribution $p_h(h)$.
+
+**Implementation:**
+
+- **Inner expectation** (analytical, exact): `calculate_expected_damage_given_surge(h, city, levers)`
+- **Outer expectation** (numerical): Monte Carlo (`calculate_expected_damage_mc`) or adaptive quadrature (`calculate_expected_damage_quad`)
+
+**Key properties:**
+
+- The inner expectation eliminates stochastic dike failure uncertainty analytically
+- The outer expectation is computed numerically over the surge distribution
+- For static policies, EAD mode converges to the mean of stochastic mode (Law of Large Numbers)
+
 ## Parameters (`CityParameters` struct)
 
 All exogenous parameters are fields in the `CityParameters` struct.

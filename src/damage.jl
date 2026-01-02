@@ -175,7 +175,7 @@ function calculate_expected_damage_mc(city::CityParameters{T}, levers::Levers{T}
     surges = rand(rng, dist, n_samples)
 
     # Calculate expected damage for each surge sample
-    damages = [calculate_expected_damage_given_surge(h, city, levers) for h in surges]
+    damages = T[calculate_expected_damage_given_surge(h, city, levers) for h in surges]
 
     # Return mean damage
     return mean(damages)
