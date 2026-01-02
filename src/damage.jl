@@ -138,3 +138,93 @@ function calculate_event_damage_stochastic(h_surge::Real, city::CityParameters{T
     # Calculate damage with sampled dike state
     return calculate_event_damage(h_eff, city, levers; dike_failed=dike_failed)
 end
+
+"""
+    calculate_expected_damage_given_surge(h_raw, city, levers) -> expected_damage
+
+Calculate expected damage for a single surge height, integrating over dike failure.
+Uses analytical expectation. See docs/equations.md.
+"""
+function calculate_expected_damage_given_surge(h_raw::Real, city::CityParameters{T}, levers::Levers{T}) where {T<:Real}
+    # Convert raw surge to effective surge
+    h_eff = calculate_effective_surge(h_raw, city)
+
+    # Calculate surge height at dike (above dike base)
+    dike_base = levers.W + levers.B
+    h_at_dike = max(zero(T), h_eff - dike_base)
+
+    # Get dike failure probability
+    p_fail = calculate_dike_failure_probability(h_at_dike, levers.D, city)
+
+    # Calculate damage for both dike states
+    d_intact = calculate_event_damage(h_eff, city, levers; dike_failed=false)
+    d_failed = calculate_event_damage(h_eff, city, levers; dike_failed=true)
+
+    # Return analytical expectation: E[damage|h] = p_fail*d_failed + (1-p_fail)*d_intact
+    return p_fail * d_failed + (one(T) - p_fail) * d_intact
+end
+
+"""
+    calculate_expected_damage_mc(city, levers, dist; n_samples=1000, rng=default_rng())
+
+Monte Carlo integration over surge distribution (Equation 9 integrated).
+See docs/equations.md.
+"""
+function calculate_expected_damage_mc(city::CityParameters{T}, levers::Levers{T}, dist::Distribution; n_samples::Int=1000, rng::AbstractRNG=Random.default_rng()) where {T<:Real}
+    # Sample surges from distribution
+    surges = rand(rng, dist, n_samples)
+
+    # Calculate expected damage for each surge sample
+    damages = [calculate_expected_damage_given_surge(h, city, levers) for h in surges]
+
+    # Return mean damage
+    return mean(damages)
+end
+
+"""
+    calculate_expected_damage_quad(city, levers, dist; lower_quantile=0.001, upper_quantile=0.999)
+
+Numerical quadrature integration over surge distribution. See docs/equations.md.
+
+Special handling: Dirac distributions are evaluated directly (deterministic case).
+"""
+function calculate_expected_damage_quad(city::CityParameters{T}, levers::Levers{T}, dist::Distribution; lower_quantile::Real=0.001, upper_quantile::Real=0.999) where {T<:Real}
+    # Special case: Dirac distribution (deterministic)
+    # Dirac has pdf=0 everywhere except at single point (infinite), so quadrature fails
+    # Instead, directly evaluate at the deterministic value
+    if dist isa Dirac
+        return calculate_expected_damage_given_surge(dist.value, city, levers)
+    end
+
+    # Determine integration bounds from quantiles
+    a = quantile(dist, lower_quantile)
+    b = quantile(dist, upper_quantile)
+
+    # Define integrand: pdf(h) * E[damage|h]
+    integrand(h) = pdf(dist, h) * calculate_expected_damage_given_surge(h, city, levers)
+
+    # Integrate using adaptive quadrature
+    result, err = quadgk(integrand, a, b; rtol=1e-6)
+
+    return result
+end
+
+"""
+    calculate_expected_damage(city, levers, forcing, year; method=:mc, kwargs...)
+
+Calculate expected annual damage for a given year. Dispatches to MC or quadrature.
+See docs/equations.md.
+"""
+function calculate_expected_damage(city::CityParameters, levers::Levers, forcing::DistributionalForcing, year::Int; method::Symbol=:mc, kwargs...)
+    # Extract distribution for this year
+    dist = get_distribution(forcing, year)
+
+    # Dispatch based on method
+    if method == :mc
+        return calculate_expected_damage_mc(city, levers, dist; kwargs...)
+    elseif method == :quad
+        return calculate_expected_damage_quad(city, levers, dist; kwargs...)
+    else
+        throw(ArgumentError("method must be :mc or :quad, got $method"))
+    end
+end

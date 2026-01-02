@@ -1,6 +1,9 @@
 module ICOW
 
 using Random
+using Statistics
+using Distributions
+using QuadGK
 
 # Phase 1: Parameters & Validation
 include("parameters.jl")
@@ -52,5 +55,10 @@ export AbstractZone
 export WithdrawnZone, ResistantZone, UnprotectedZone, DikeProtectedZone, AboveDikeZone
 export CityZones, calculate_city_zones
 export calculate_zone_damage, calculate_event_damage, calculate_event_damage_stochastic
+
+# Export Phase 6: Expected Annual Damage Integration
+export calculate_expected_damage_given_surge
+export calculate_expected_damage_mc, calculate_expected_damage_quad
+export calculate_expected_damage
 
 end # module ICOW

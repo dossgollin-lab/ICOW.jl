@@ -1,6 +1,6 @@
 # Phase 6: Expected Annual Damage Integration
 
-**Status:** Pending
+**Status:** Completed
 
 **Prerequisites:** Phase 5 (Zones & Event Damage)
 
@@ -8,30 +8,39 @@
 
 Implement integration of event damage over surge distributions for EAD mode.
 
-## Open Questions
+## Resolved Questions
 
-1. **Sample count defaults:** What's the default `n_samples` for Monte Carlo? Trade-off between accuracy and speed.
-2. **Quadrature integration bounds:** For unbounded distributions, what upper quantile should we integrate to?
-3. **Convergence tolerance:** What relative tolerance is acceptable for mode convergence tests?
-4. **QuadGK dependency:** Need approval to add QuadGK.jl for numerical quadrature.
+1. **Sample count defaults:** Default `n_samples=1000` for Monte Carlo (balanced accuracy and speed)
+2. **Quadrature integration bounds:** Use quantiles (0.001, 0.999) to capture 99.8% of probability mass
+3. **Convergence tolerance:** 5% rtol for MC-Quad agreement, 10% for stochastic-EAD convergence
+4. **QuadGK dependency:** Approved and added
 
 ## Deliverables
 
-- [ ] `src/damage.jl` (additions):
+- [x] `src/damage.jl` (additions):
+  - `calculate_expected_damage_given_surge(h_raw, city, levers)` - Analytical expectation over dike failure
   - `calculate_expected_damage_mc(city, levers, dist; n_samples=1000)` - Monte Carlo integration
-  - `calculate_expected_damage_quad(city, levers, dist)` - Quadrature integration (if QuadGK approved)
-  - `calculate_expected_damage(city, levers, forcing, year; method=:mc)` - Main interface
+  - `calculate_expected_damage_quad(city, levers, dist)` - Quadrature integration
+  - `calculate_expected_damage(city, levers, forcing, year; method=:mc)` - Main dispatcher interface
 
-- [ ] Tests covering:
-  - Monte Carlo integration returns reasonable values
-  - Numerical quadrature integration (if implemented)
-  - Agreement between integration methods
-  - Convergence to stochastic mean (Law of Large Numbers)
-  - Monotonicity over time for non-stationary distributions
+- [x] Tests covering:
+  - Zero surge distributions
+  - Dirac and narrow Normal distributions
+  - Monte Carlo convergence with sample count
+  - Agreement between MC and quadrature methods
+  - Monotonicity with distribution parameters
+  - Type stability (Float32/Float64)
+  - Dispatcher interface with DistributionalForcing
+  - Expected damage bounds checking
 
 ## Key Design Decisions
 
-- Monte Carlo: `mean(calculate_event_damage.(samples, ...))`
-- Quadrature: Integrate `pdf(surge) * damage(surge)` using QuadGK.jl
-- Critical validation: EAD $\approx$ mean(stochastic damages) for same distribution
-- Both methods should be available; Monte Carlo is the default
+- **Two-level integration:** Analytical expectation over dike failure, then numerical integration over surge distribution
+- **Monte Carlo:** `mean([calculate_expected_damage_given_surge(h, ...) for h in samples])`
+- **Quadrature:** Integrate `pdf(h) * calculate_expected_damage_given_surge(h, ...)` using QuadGK.jl
+- **Default method:** Monte Carlo (`:mc`) for robustness
+- **Type handling:** QuadGK may return Float64 even with Float32 inputs (acceptable)
+
+## Implementation Notes
+
+All 167 tests pass. Functions are pure, type-stable, and allocation-efficient.

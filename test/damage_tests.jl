@@ -1,6 +1,8 @@
 using ICOW
 using Test
 using Random
+using Distributions
+using Statistics
 
 @testset "Event Damage Calculations" begin
     city = CityParameters()
@@ -94,5 +96,132 @@ using Random
 
         rng = MersenneTwister(42)
         @test calculate_event_damage_stochastic(5.0f0, city32, levers32, rng) isa Float32
+    end
+end
+
+@testset "Expected Annual Damage" begin
+    city = CityParameters()
+    levers = Levers(2.0, 3.0, 0.5, 4.0, 5.0)
+
+    @testset "Zero surge distribution" begin
+        # Zero surge → zero damage
+        dist_zero = Dirac(0.0)
+        @test calculate_expected_damage_mc(city, levers, dist_zero) == 0.0
+        @test calculate_expected_damage_quad(city, levers, dist_zero) ≈ 0.0 atol=1e-10
+    end
+
+    @testset "Dirac distribution matches deterministic" begin
+        # Dirac distribution represents deterministic case (no surge uncertainty)
+        # Using Dirac ensures type stability - always returns a Distribution
+        h = 5.0
+        dist = Dirac(h)
+        expected = calculate_expected_damage_given_surge(h, city, levers)
+
+        # Monte Carlo should match (all samples have same value)
+        ead_mc = calculate_expected_damage_mc(city, levers, dist; n_samples=100)
+        @test ead_mc ≈ expected rtol=1e-6
+
+        # Quadrature has special handling for Dirac (evaluates directly)
+        ead_quad = calculate_expected_damage_quad(city, levers, dist)
+        @test ead_quad ≈ expected rtol=1e-10
+    end
+
+    @testset "Monte Carlo convergence" begin
+        # Higher n_samples → lower variance across trials
+        dist = Normal(5.0, 2.0)
+        rng = MersenneTwister(42)
+
+        # Run multiple trials with different sample counts
+        trials_100 = [calculate_expected_damage_mc(city, levers, dist; n_samples=100, rng=MersenneTwister(i)) for i in 1:20]
+        trials_1000 = [calculate_expected_damage_mc(city, levers, dist; n_samples=1000, rng=MersenneTwister(i)) for i in 1:20]
+
+        # Standard deviation should decrease with more samples
+        @test std(trials_1000) < std(trials_100)
+    end
+
+    @testset "MC vs Quadrature agreement" begin
+        # Methods should agree within tolerance for smooth distributions
+        dist = Normal(5.0, 2.0)
+        rng = MersenneTwister(42)
+
+        ead_mc = calculate_expected_damage_mc(city, levers, dist; n_samples=10000, rng=rng)
+        ead_quad = calculate_expected_damage_quad(city, levers, dist)
+
+        # 5% relative tolerance
+        @test ead_mc ≈ ead_quad rtol=0.05
+    end
+
+    @testset "Monotonicity with distribution mean" begin
+        # Higher mean surge → higher EAD
+        dist_low = Normal(3.0, 1.0)
+        dist_high = Normal(6.0, 1.0)
+
+        ead_low = calculate_expected_damage_mc(city, levers, dist_low; n_samples=1000)
+        ead_high = calculate_expected_damage_mc(city, levers, dist_high; n_samples=1000)
+
+        @test ead_high > ead_low
+    end
+
+    @testset "Type stability" begin
+        # Float32 calculations
+        city32 = CityParameters{Float32}()
+        levers32 = Levers(2.0f0, 3.0f0, 0.5f0, 4.0f0, 1.0f0)
+        dist32 = Normal{Float32}(5.0f0, 2.0f0)
+
+        @test calculate_expected_damage_given_surge(5.0f0, city32, levers32) isa Float32
+        @test calculate_expected_damage_mc(city32, levers32, dist32; n_samples=100) isa Float32
+        # Note: QuadGK may not preserve Float32, returns Float64 - this is acceptable
+        @test calculate_expected_damage_quad(city32, levers32, dist32) isa Real
+    end
+
+    @testset "Dispatcher interface" begin
+        # Main interface works with DistributionalForcing
+        dist1 = Normal(5.0, 2.0)
+        dist2 = Normal(6.0, 2.5)
+        forcing = DistributionalForcing([dist1, dist2], 2020)
+
+        # Test MC method
+        ead_mc = calculate_expected_damage(city, levers, forcing, 1; method=:mc, n_samples=1000)
+        @test ead_mc > 0.0
+
+        # Test quad method
+        ead_quad = calculate_expected_damage(city, levers, forcing, 1; method=:quad)
+        @test ead_quad > 0.0
+
+        # Should agree within tolerance
+        @test ead_mc ≈ ead_quad rtol=0.1
+
+        # Year 2 has higher mean, should have higher EAD
+        ead_year2 = calculate_expected_damage(city, levers, forcing, 2; method=:mc, n_samples=1000)
+        @test ead_year2 > ead_mc
+
+        # Invalid method should error
+        @test_throws ArgumentError calculate_expected_damage(city, levers, forcing, 1; method=:invalid)
+    end
+
+    @testset "Expected damage given surge properties" begin
+        # Expected damage should be weighted average of intact and failed damages
+        h_raw = 8.0
+        city_test = CityParameters()
+        levers_test = Levers(2.0, 3.0, 0.0, 4.0, 5.0)
+
+        # Calculate expected damage (treats h as raw surge)
+        expected = calculate_expected_damage_given_surge(h_raw, city_test, levers_test)
+
+        # For comparison, compute using effective surge
+        h_eff = calculate_effective_surge(h_raw, city_test)
+        d_intact = calculate_event_damage(h_eff, city_test, levers_test; dike_failed=false)
+        d_failed = calculate_event_damage(h_eff, city_test, levers_test; dike_failed=true)
+
+        # Expected should be between the two extremes
+        @test expected >= min(d_intact, d_failed) - abs(expected) * 1e-10
+        @test expected <= max(d_intact, d_failed) + abs(expected) * 1e-10
+
+        # Should also be close to manual weighted average
+        dike_base = levers_test.W + levers_test.B
+        h_at_dike = max(0.0, h_eff - dike_base)
+        p_fail = calculate_dike_failure_probability(h_at_dike, levers_test.D, city_test)
+        manual_expected = p_fail * d_failed + (1 - p_fail) * d_intact
+        @test expected ≈ manual_expected rtol=1e-10
     end
 end
