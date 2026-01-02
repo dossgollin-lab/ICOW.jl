@@ -993,7 +993,7 @@ uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 version = "0.3.28"
 
 [[deps.ICOW]]
-deps = ["CairoMakie", "DataFrames", "Distributions", "Metaheuristics", "NetCDF", "QuadGK", "Random", "StaticArrays", "Test", "YAXArrays"]
+deps = ["CairoMakie", "DataFrames", "Distributions", "Metaheuristics", "NetCDF", "QuadGK", "Random", "StaticArrays", "Statistics", "Test", "YAXArrays"]
 path = "."
 uuid = "3f0c05cb-d2a1-4c03-b976-c0e1c11e0dd4"
 version = "0.1.0"

@@ -20,4 +20,7 @@ using Test
     # Phase 5: Zones & Event Damage
     include("zones_tests.jl")
     include("damage_tests.jl")
+
+    # Phase 7: Simulation Engine & Objectives
+    include("simulation_tests.jl")
 end
