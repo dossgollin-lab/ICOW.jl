@@ -44,7 +44,7 @@ function simulate(
     policy::AbstractPolicy{T},
     forcing::DistributionalForcing{T,D};
     mode::Symbol=:scalar,
-    method::Symbol=:mc,
+    method::Symbol=:quad,
     safe::Bool=false,
     kwargs...
 ) where {T<:Real, D<:Distribution}
@@ -107,11 +107,9 @@ function _simulate_stochastic(
         # Get surge for this scenario and year
         h_raw = get_surge(forcing, scenario, year)
 
-        # Apply seawall and runup effects
-        h_eff = calculate_effective_surge(h_raw, city)
-
         # Calculate damage (stochastic: samples dike failure)
-        damage = calculate_event_damage_stochastic(h_eff, city, new_levers, rng)
+        # Note: calculate_event_damage_stochastic applies effective surge conversion internally
+        damage = calculate_event_damage_stochastic(h_raw, city, new_levers, rng)
 
         # Update state
         _update_state!(state, new_levers, cost, damage)

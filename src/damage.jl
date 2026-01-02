@@ -182,13 +182,14 @@ function calculate_expected_damage_mc(city::CityParameters{T}, levers::Levers{T}
 end
 
 """
-    calculate_expected_damage_quad(city, levers, dist; lower_quantile=0.001, upper_quantile=0.999)
+    calculate_expected_damage_quad(city, levers, dist; rtol=1e-6)
 
 Numerical quadrature integration over surge distribution. See docs/equations.md.
 
 Special handling: Dirac distributions are evaluated directly (deterministic case).
+Uses infinite bounds to capture heavy tails in GEV distributions.
 """
-function calculate_expected_damage_quad(city::CityParameters{T}, levers::Levers{T}, dist::Distribution; lower_quantile::Real=0.001, upper_quantile::Real=0.999) where {T<:Real}
+function calculate_expected_damage_quad(city::CityParameters{T}, levers::Levers{T}, dist::Distribution; rtol::Real=1e-6) where {T<:Real}
     # Special case: Dirac distribution (deterministic)
     # Dirac has pdf=0 everywhere except at single point (infinite), so quadrature fails
     # Instead, directly evaluate at the deterministic value
@@ -196,26 +197,23 @@ function calculate_expected_damage_quad(city::CityParameters{T}, levers::Levers{
         return calculate_expected_damage_given_surge(dist.value, city, levers)
     end
 
-    # Determine integration bounds from quantiles
-    a = quantile(dist, lower_quantile)
-    b = quantile(dist, upper_quantile)
-
     # Define integrand: pdf(h) * E[damage|h]
     integrand(h) = pdf(dist, h) * calculate_expected_damage_given_surge(h, city, levers)
 
-    # Integrate using adaptive quadrature
-    result, err = quadgk(integrand, a, b; rtol=1e-6)
+    # Integrate using adaptive quadrature with infinite bounds
+    # This correctly handles heavy-tailed distributions (e.g., GEV with ξ > 0)
+    result, err = quadgk(integrand, -Inf, Inf; rtol=rtol)
 
     return result
 end
 
 """
-    calculate_expected_damage(city, levers, forcing, year; method=:mc, kwargs...)
+    calculate_expected_damage(city, levers, forcing, year; method=:quad, kwargs...)
 
 Calculate expected annual damage for a given year. Dispatches to MC or quadrature.
 See docs/equations.md.
 """
-function calculate_expected_damage(city::CityParameters, levers::Levers, forcing::DistributionalForcing, year::Int; method::Symbol=:mc, kwargs...)
+function calculate_expected_damage(city::CityParameters, levers::Levers, forcing::DistributionalForcing, year::Int; method::Symbol=:quad, kwargs...)
     # Extract distribution for this year
     dist = get_distribution(forcing, year)
 

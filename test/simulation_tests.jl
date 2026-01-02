@@ -95,11 +95,15 @@ using Statistics
         # Use policy with lower protection to ensure damage occurs
         damage_policy = StaticPolicy(Levers(0.0, 0.0, 0.0, 2.0, 0.0))
 
-        # Run simulation in scalar mode with larger surges
-        (cost_scalar, damage_scalar) = simulate(city, damage_policy, stoch_forcing; scenario=1)
+        # Create separate RNGs to ensure scalar and trace modes sample the same random events
+        rng1 = Random.MersenneTwister(456)
+        rng2 = Random.MersenneTwister(456)  # Same seed for identical sampling
 
-        # Run simulation in trace mode
-        trace = simulate(city, damage_policy, stoch_forcing; mode=:trace, scenario=1)
+        # Run simulation in scalar mode
+        (cost_scalar, damage_scalar) = simulate(city, damage_policy, stoch_forcing; scenario=1, rng=rng1)
+
+        # Run simulation in trace mode (with same RNG sequence)
+        trace = simulate(city, damage_policy, stoch_forcing; mode=:trace, scenario=1, rng=rng2)
 
         # Scalar totals should equal sum of trace (both undiscounted)
         @test cost_scalar ≈ sum(trace.investment)
