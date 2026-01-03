@@ -80,9 +80,10 @@ function calculate_city_zones(city::CityParameters{T}, levers::Levers{T}) where 
     z4_high = city.H_city
 
     # Zone values (from equations.md)
+    # When R >= B, Zone 1 width = min(R,B) = B and Zone 2 width = max(0, B-R) = 0
     val_z0 = zero(T)  # Withdrawn
     val_z1 = V_w * city.r_unprot * min(levers.R, levers.B) / remaining_height
-    val_z2 = V_w * city.r_unprot * max(zero(T), levers.B - levers.R) / remaining_height
+    val_z2 = V_w * city.r_unprot * max(zero(T), levers.B - levers.R) / remaining_height  # Zero when R >= B
     val_z3 = V_w * city.r_prot * levers.D / remaining_height
     val_z4 = V_w * (remaining_height - levers.B - levers.D) / remaining_height
 

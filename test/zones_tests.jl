@@ -64,9 +64,10 @@ using Test
         expected_z3 = V_w * city.r_prot * levers.D / remaining_height
         @test zones[4].value ≈ expected_z3
 
-        # Total value should be close to V_w
+        # Total value differs from V_w due to r_unprot (0.95) and r_prot (1.1) multipliers
+        # Expected ratio is approximately 1.0071 for these levers, not exactly 1.0
         total_value = sum(zone.value for zone in zones)
-        @test total_value / V_w ≈ 1.0 atol=0.2
+        @test total_value / V_w ≈ 1.0 rtol=0.02
     end
 
     @testset "Type stability" begin

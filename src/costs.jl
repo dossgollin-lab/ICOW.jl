@@ -58,13 +58,12 @@ function calculate_resistance_cost(city::CityParameters{T}, levers::Levers{T}) w
     denominator = city.H_bldg * (city.H_city - levers.W)
 
     # Choose equation based on whether resistance is constrained by dike base
+    # Note: R >= B is a dominated strategy (costs more, provides no extra protection)
     if levers.R < levers.B
-        # Unconstrained: Equation 4
-        # C_R = (V_w * f_cR * R * (R/2 + b)) / (H_bldg * (H_city - W))
+        # Eq 4: C_R = (V_w * f_cR * R * (R/2 + b)) / (H_bldg * (H_city - W))
         numerator = V_w * f_cR * levers.R * (levers.R / 2 + city.b_basement)
     else
-        # Constrained: Equation 5
-        # C_R = (V_w * f_cR * B * (R - B/2 + b)) / (H_bldg * (H_city - W))
+        # Eq 5: C_R = (V_w * f_cR * B * (R - B/2 + b)) / (H_bldg * (H_city - W))
         numerator = V_w * f_cR * levers.B * (levers.R - levers.B / 2 + city.b_basement)
     end
 

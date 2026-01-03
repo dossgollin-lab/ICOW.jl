@@ -68,9 +68,14 @@ julia --project test/cpp_reference/validate_cpp_outputs.jl  # Validate Julia
 **What's tested:**
 
 - 8 test cases covering edge cases (zero levers, R $\geq$ B, high surge, etc.)
-- All cost calculations (withdrawal, resistance, dike, total)
+- Withdrawal and resistance cost calculations
 - All zone value calculations
 - Validation tolerance: rtol=1e-10 (floating-point precision)
+
+**Note on Dike Volume:**
+Dike and total investment cost comparisons are **skipped** because Julia uses a corrected geometric formula for dike volume (see Equation 6 in `docs/equations.md`).
+The paper's original formula is numerically unstable for realistic city slopes (S $\approx$ 0.0085 causes negative values under the square root).
+The Julia formula computes the same geometric shape but via direct integration, avoiding the instability.
 
 **Maintenance:**
 

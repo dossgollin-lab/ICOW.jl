@@ -77,46 +77,66 @@ $$
 
 Note: $R > B$ is a **dominated strategy** - physical protection is capped at $B$ but cost increases with $R$.
 
-### Equation 6: Dike Volume (p. 17)
+### Equation 6: Dike Volume (Corrected)
+
+The paper's original Equation 6 contains a complex polynomial $T$ under a square root that is **numerically unstable** for physically realistic terrain slopes.
+The original C++ implementation never actually computed this formula correctly due to an integer division bug.
+
+This implementation uses a **simplified geometric derivation** that is numerically stable and physically correct:
 
 $$
-V_d = W_{city} \cdot h_d \left( w_d + \frac{h_d}{s^2} \right) + \frac{1}{6} \sqrt{T} + w_d \frac{h_d^2}{S^2}
+V_{dike} = \underbrace{W_{city} \cdot h_d \left( w_d + \frac{h_d}{s^2} \right)}_{\text{Main Seawall}} + \underbrace{\frac{h_d^2}{S} \left( w_d + \frac{2 h_d}{3 s^2} \right)}_{\text{Side Wings}}
 $$
 
-Where the term under the square root is:
+Where:
 
-$$
-T = -\frac{h_d^4 (h_d + 1/s)^2}{s^2} - \frac{2h_d^5(h_d + 1/s)}{S^4} - \frac{4h_d^6}{s^2 S^4} + \frac{4h_d^4(2h_d(h_d + 1/s) - 3h_d^2/s^2)}{s^2 S^2} + \frac{2h_d^3(h_d + 1/s)}{S^2}
-$$
+- $h_d = \mathbf{D} + D_{startup}$ = effective dike height (design height + startup costs)
+- $W_{city}$ = length of coastline (43,000 m)
+- $w_d$ = width of dike top (3.0 m)
+- $s$ = dike side slope parameter (0.5, so horizontal run per unit rise = $1/s^2$ = 4)
+- $S = H_{city} / D_{city}$ = city terrain slope (17/2000 = 0.0085)
 
-And $h_d = \mathbf{D} + D_{startup}$ (total effective dike height including startup costs).
+**Derivation:**
 
-**C++ Bugs (documented for reference):**
+The dike consists of two geometric components:
 
-The original C++ implementation (iCOW_2018_06_11.cpp) has multiple bugs in the dike volume calculation:
+1. **Main Seawall**: A trapezoidal prism running along the 43 km coastline.
+   Cross-sectional area $A = h_d (w_d + h_d/s^2)$, so $V_{main} = W_{city} \cdot A$.
 
-1. **Integer division bug (line 147)**: C++ uses `pow(T, 1/2)` where `1/2 = 0` in integer division, making `pow(T, 0) = 1`. Should use `sqrt(T)`.
+2. **Side Wings**: Two tapered prisms running inland up the city slope.
+   At distance $x$ from coast, ground elevation is $S \cdot x$, so local dike height is $h(x) = h_d - S \cdot x$.
+   The wing extends from $x=0$ (coast, $h=h_d$) to $x=h_d/S$ (where ground reaches dike height, $h=0$).
 
-2. **Array index bug in T formula (line 145)**: C++ uses array index constant `dh=5` instead of actual cost height variable `ch` in the fourth term of T. Specifically, `2*dh*(ch+1/sd)` should be `2*ch*(ch+1/sd)`.
+   Integrating the cross-section along one wing:
 
-3. **Algebraic error in fourth term (line 145)**: C++ has `-4*ch2+ch2/pow(sd,2)` which simplifies to `ch2*(-4 + 1/sd^2)`. The correct formula from the paper is `-3*ch2/s^2`. This appears to be a separate algebraic mistake.
+   $$V_{wing} = \int_0^{h_d/S} h(x) \left( w_d + \frac{h(x)}{s^2} \right) dx = \frac{h_d^2}{S} \left( \frac{w_d}{2} + \frac{h_d}{3s^2} \right)$$
 
-4. **Wrong variable in third term (line 148)**: C++ uses `W*(ch2/pow(S,2))` where `W` is city width (43000m). Should use `wdt*(ch2/pow(S,2))` where `wdt` is dike top width (3m). This causes ~4,558 m³ error in volume for D=5.
+   For two wings: $V_{wings} = \frac{h_d^2}{S} \left( w_d + \frac{2h_d}{3s^2} \right)$
 
-5. **Slope definition (line 35)**: C++ uses `CitySlope=CityLength/CityWidth` (= 0.0465), not `H_city/D_city` (= 0.0085) as in paper.
+**Why the paper's formula fails:**
 
-**Additional C++ bugs in resistance cost:**
+The paper's $T$ polynomial has $S^4$ in denominators.
+With $S = 0.0085$, we get $1/S^4 \approx 1.9 \times 10^8$, causing negative terms to dominate and $T < 0$.
+The original C++ avoided this by accidentally computing `pow(T, 0) = 1` instead of `sqrt(T)`.
 
-6. **Uses zone value instead of V_w (lines 213, 227)**: Resistance cost functions use `vz1` (zone 1 value with $r_{unprot}$ = 0.95 multiplier) instead of `V_w$ (total value after withdrawal). This incorrectly reduces resistance costs by 5% in cases 2 and 6 (when $R \geq B$). Equations 4-5 clearly specify $V_w$, not zone values.
+**Original C++ Bugs (historical documentation):**
 
-7. **Wrong V_w calculation (line 377)**: C++ computes `V_w = V_city - C_W` (subtracting withdrawal cost), but Equation 2 specifies `V_w = V_city * (1 - f_l * W / H_city)` (accounting for infrastructure loss fraction $f_l$ = 0.01). This causes significant errors in zone values and resistance costs when W > 0.
+The original C++ implementation (iCOW_2018_06_11.cpp) had 7 bugs:
+
+1. **Integer division**: `pow(T, 1/2)` evaluated as `pow(T, 0) = 1` (never computed sqrt)
+2. **Array index**: Used constant `dh=5` instead of variable `ch`
+3. **Algebraic error**: Wrong coefficient in fourth term of T
+4. **Wrong variable**: Used `W` (43000m) instead of `wdt` (3m) in third term
+5. **Slope definition**: Used inverted slope ratio
+6. **Resistance cost**: Used zone value instead of $V_w$
+7. **V_w calculation**: Used $V_{city} - C_W$ instead of Equation 2
 
 **Our implementation:**
-- Fixes bugs 1-5 to match the paper's dike volume formula exactly
-- Uses C++ slope definition (W_city/D_city = 21.5) because paper slope causes numerical instability (T becomes negative)
-- Guards against negative T with `sqrt_T = T >= 0 ? sqrt(T) : 0` for numerical stability
-- Uses $V_w$ directly in resistance cost (Equations 4-5), not zone values, fixing bug #6
-- Calculates $V_w$ using Equation 2 correctly, fixing bug #7
+
+- Uses simplified geometric formula (numerically stable, physically correct)
+- Uses correct terrain slope $S = H_{city}/D_{city} = 0.0085$
+- Fixes bugs #6-7 in resistance cost and $V_w$ calculations
+- C++ validation (`test/cpp_reference/`) validates cost calculations only (dike volume uses different formula)
 
 ### Equation 7: Dike Cost (p. 17)
 
