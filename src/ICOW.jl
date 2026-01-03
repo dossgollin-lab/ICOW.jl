@@ -28,6 +28,9 @@ include("damage.jl")
 include("simulation.jl")
 include("objectives.jl")
 
+# Phase 9: Optimization
+include("optimization.jl")
+
 # Export Phase 1: Parameters & Validation
 export CityParameters, validate_parameters, city_slope
 export Levers, is_feasible
@@ -43,7 +46,7 @@ export n_scenarios, n_years, get_surge, get_distribution
 export StochasticState, EADState
 
 # Export Phase 2: Policy types
-export StaticPolicy, parameters
+export StaticPolicy, parameters, bounds
 
 # Export Phase 3: Geometry
 export calculate_dike_volume
@@ -68,5 +71,8 @@ export calculate_expected_damage
 # Export Phase 7: Simulation Engine & Objectives
 export simulate
 export apply_discount, calculate_npv, objective_total_cost
+
+# Export Phase 9: Optimization
+export OptimizationResult, make_objective, optimize, optimize_scalar
 
 end # module ICOW

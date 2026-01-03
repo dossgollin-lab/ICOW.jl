@@ -104,3 +104,17 @@ parameters(policy::StaticPolicy{T}) where {T} = T[
     policy.levers.D,
     policy.levers.B
 ]
+
+"""Return (lower_bounds, upper_bounds) vectors for policy parameters."""
+function bounds end
+
+# StaticPolicy bounds: lever bounds ensuring W + B + D ≤ H_city
+# Conservative bounds so random initialization is feasible
+function bounds(::Type{StaticPolicy}, city::CityParameters{T}) where {T}
+    lb = zeros(T, 5)
+    # W, R, P, D, B - ensure W + B + D ≤ H_city even at upper bounds
+    # Typical values: W small (0-5m), B small (0-2m), D is main variable
+    H = city.H_city
+    ub = T[H / 3, H, T(0.99), H / 3, H / 3]
+    return (lb, ub)
+end
