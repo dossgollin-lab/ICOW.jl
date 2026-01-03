@@ -2,66 +2,38 @@
 # Implements Equation 9 and zone-specific damage from docs/equations.md
 
 """
-    calculate_zone_damage(zone::WithdrawnZone, h_surge, city, levers; dike_failed=false)
+    calculate_zone_damage(zone::Zone, h_surge, city, levers; dike_failed=false)
 
-Zone 0 damage: always zero (no value remains).
+Calculate damage for a single zone based on zone type.
 """
-function calculate_zone_damage(zone::WithdrawnZone{T}, h_surge::Real, city::CityParameters{T}, levers::Levers{T}; dike_failed::Bool=false) where {T<:Real}
-    return zero(T)
-end
+function calculate_zone_damage(zone::Zone{T}, h_surge::Real, city::CityParameters{T}, levers::Levers{T}; dike_failed::Bool=false) where {T<:Real}
+    # Zone 0 (withdrawn): no value remains
+    if zone.zone_type == ZONE_WITHDRAWN
+        return zero(T)
+    end
 
-"""
-    calculate_zone_damage(zone::ResistantZone, h_surge, city, levers; dike_failed=false)
-
-Zone 1 damage: standard formula multiplied by (1-P) for resistance.
-"""
-function calculate_zone_damage(zone::ResistantZone{T}, h_surge::Real, city::CityParameters{T}, levers::Levers{T}; dike_failed::Bool=false) where {T<:Real}
-    # Calculate base damage using C++ formula
+    # Calculate base damage for zones 1-4
     base_damage = _calculate_base_zone_damage(zone, h_surge, city)
 
-    # Apply resistance factor (1-P)
-    return base_damage * (one(T) - levers.P)
+    if zone.zone_type == ZONE_RESISTANT
+        # Zone 1: apply resistance factor (1-P)
+        return base_damage * (one(T) - levers.P)
+    elseif zone.zone_type == ZONE_DIKE_PROTECTED
+        # Zone 3: apply dike factor
+        dike_factor = dike_failed ? city.f_failed : city.f_intact
+        return base_damage * dike_factor
+    else
+        # Zones 2, 4: standard damage, no modifiers
+        return base_damage
+    end
 end
 
 """
-    calculate_zone_damage(zone::UnprotectedZone, h_surge, city, levers; dike_failed=false)
-
-Zone 2 damage: standard formula, no modifiers.
-"""
-function calculate_zone_damage(zone::UnprotectedZone{T}, h_surge::Real, city::CityParameters{T}, levers::Levers{T}; dike_failed::Bool=false) where {T<:Real}
-    return _calculate_base_zone_damage(zone, h_surge, city)
-end
-
-"""
-    calculate_zone_damage(zone::DikeProtectedZone, h_surge, city, levers; dike_failed=false)
-
-Zone 3 damage: standard formula multiplied by f_intact or f_failed.
-"""
-function calculate_zone_damage(zone::DikeProtectedZone{T}, h_surge::Real, city::CityParameters{T}, levers::Levers{T}; dike_failed::Bool=false) where {T<:Real}
-    # Calculate base damage using C++ formula
-    base_damage = _calculate_base_zone_damage(zone, h_surge, city)
-
-    # Apply dike factor
-    dike_factor = dike_failed ? city.f_failed : city.f_intact
-    return base_damage * dike_factor
-end
-
-"""
-    calculate_zone_damage(zone::AboveDikeZone, h_surge, city, levers; dike_failed=false)
-
-Zone 4 damage: standard formula, no modifiers.
-"""
-function calculate_zone_damage(zone::AboveDikeZone{T}, h_surge::Real, city::CityParameters{T}, levers::Levers{T}; dike_failed::Bool=false) where {T<:Real}
-    return _calculate_base_zone_damage(zone, h_surge, city)
-end
-
-"""
-    _calculate_base_zone_damage(zone::AbstractZone, h_surge, city)
+    _calculate_base_zone_damage(zone::Zone, h_surge, city)
 
 Internal: C++ damage formula with basement depth.
-Matches C++ functions CalculateDamageResiliantUnprotectedZone1, etc.
 """
-function _calculate_base_zone_damage(zone::AbstractZone{T}, h_surge::Real, city::CityParameters{T}) where {T<:Real}
+function _calculate_base_zone_damage(zone::Zone{T}, h_surge::Real, city::CityParameters{T}) where {T<:Real}
     # WashOver = surge height above zone bottom
     washOver = max(zero(T), h_surge - zone.z_low)
 

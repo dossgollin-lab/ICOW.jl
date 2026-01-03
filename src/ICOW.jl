@@ -43,7 +43,7 @@ export StochasticForcing, DistributionalForcing
 export n_scenarios, n_years, get_surge, get_distribution
 
 # Export Phase 2: State types
-export StochasticState, EADState
+export State
 
 # Export Phase 2: Policy types
 export StaticPolicy, parameters
@@ -58,9 +58,8 @@ export calculate_dike_cost, calculate_investment_cost
 export calculate_effective_surge, calculate_dike_failure_probability
 
 # Export Phase 5: Zones & Event Damage
-export AbstractZone
-export WithdrawnZone, ResistantZone, UnprotectedZone, DikeProtectedZone, AboveDikeZone
-export CityZones, calculate_city_zones
+export Zone, CityZones, calculate_city_zones
+export ZONE_WITHDRAWN, ZONE_RESISTANT, ZONE_UNPROTECTED, ZONE_DIKE_PROTECTED, ZONE_ABOVE_DIKE
 export calculate_zone_damage, calculate_event_damage, calculate_event_damage_stochastic
 
 # Export Phase 6: Expected Annual Damage Integration

@@ -34,7 +34,6 @@ end
     objective_total_cost(city, policy, forcing, discount_rate; kwargs...)
 
 Objective function for optimization: total discounted cost (investment + damage).
-Uses safe mode by default to handle infeasible policies gracefully.
 """
 function objective_total_cost(
     city::CityParameters,
@@ -44,12 +43,7 @@ function objective_total_cost(
     kwargs...
 )
     # Run simulation in trace mode to get year-by-year flows
-    trace = simulate(city, policy, forcing; mode=:trace, safe=true, kwargs...)
-
-    # Check if simulation failed (safe mode returns (Inf, Inf))
-    if isa(trace, Tuple) && length(trace) == 2 && isinf(trace[1])
-        return Inf
-    end
+    trace = simulate(city, policy, forcing; mode=:trace, kwargs...)
 
     # Calculate NPV
     (npv_investment, npv_damage) = calculate_npv(trace, discount_rate)

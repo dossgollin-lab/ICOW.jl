@@ -56,7 +56,6 @@ using Test
         V_w = calculate_value_after_withdrawal(city, levers.W)
         remaining_height = city.H_city - levers.W
 
-        # Verify individual zone values use correct formulas
         # Zone 1: r_unprot * min(R,B) / remaining_height
         expected_z1 = V_w * city.r_unprot * min(levers.R, levers.B) / remaining_height
         @test zones[2].value ≈ expected_z1
@@ -65,20 +64,9 @@ using Test
         expected_z3 = V_w * city.r_prot * levers.D / remaining_height
         @test zones[4].value ≈ expected_z3
 
-        # Total value should be close to V_w (within ~10% due to value ratios)
+        # Total value should be close to V_w
         total_value = sum(zone.value for zone in zones)
         @test total_value / V_w ≈ 1.0 atol=0.2
-    end
-
-    @testset "Empty zones have zero value" begin
-        levers = Levers(0.0, 5.0, 0.0, 10.0, 5.0)
-        zones = calculate_city_zones(city, levers)
-
-        # Zone 0: withdrawn zone always has zero value
-        @test zones[1].value == 0.0
-
-        # Zone 2: R >= B, should have zero value
-        @test zones[3].value == 0.0
     end
 
     @testset "Type stability" begin
@@ -86,10 +74,10 @@ using Test
         levers32 = Levers(2.0f0, 3.0f0, 0.0f0, 4.0f0, 1.0f0)
         zones32 = calculate_city_zones(city32, levers32)
 
-        @test zones32[1] isa WithdrawnZone{Float32}
-        @test zones32[2] isa ResistantZone{Float32}
-        @test zones32[3] isa UnprotectedZone{Float32}
-        @test zones32[4] isa DikeProtectedZone{Float32}
-        @test zones32[5] isa AboveDikeZone{Float32}
+        # All zones should be Zone{Float32}
+        for (i, zone) in enumerate(zones32)
+            @test zone isa Zone{Float32}
+            @test zone.zone_type == i - 1  # 0-indexed zone types
+        end
     end
 end

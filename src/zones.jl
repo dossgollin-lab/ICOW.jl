@@ -1,78 +1,35 @@
 # Zone-based city model for the iCOW model
 # Implements zone partitioning from Figure 3 and docs/equations.md
 
-"""
-    AbstractZone{T<:Real}
-
-Base type for city zones. Enables dispatch on zone-specific damage behavior.
-"""
-abstract type AbstractZone{T<:Real} end
-
-"""
-    WithdrawnZone{T<:Real}
-
-Zone 0: Withdrawn area (0 to W). No value remains, no damage.
-"""
-struct WithdrawnZone{T<:Real} <: AbstractZone{T}
-    z_low::T    # Lower boundary (absolute elevation)
-    z_high::T   # Upper boundary (absolute elevation)
-    value::T    # Economic value in this zone
-end
+# Zone type constants
+const ZONE_WITHDRAWN = 0
+const ZONE_RESISTANT = 1
+const ZONE_UNPROTECTED = 2
+const ZONE_DIKE_PROTECTED = 3
+const ZONE_ABOVE_DIKE = 4
 
 """
-    ResistantZone{T<:Real}
+    Zone{T<:Real}
 
-Zone 1: Resistant area (W to W+min(R,B)). Damage reduced by (1-P).
+City zone with type, boundaries, and economic value.
+Zone types: 0=withdrawn, 1=resistant, 2=unprotected, 3=dike protected, 4=above dike.
 """
-struct ResistantZone{T<:Real} <: AbstractZone{T}
-    z_low::T
-    z_high::T
-    value::T
-end
-
-"""
-    UnprotectedZone{T<:Real}
-
-Zone 2: Unprotected gap (W+min(R,B) to W+B). Standard damage.
-"""
-struct UnprotectedZone{T<:Real} <: AbstractZone{T}
-    z_low::T
-    z_high::T
-    value::T
-end
-
-"""
-    DikeProtectedZone{T<:Real}
-
-Zone 3: Dike-protected area (W+B to W+B+D). Uses f_intact or f_failed multiplier.
-"""
-struct DikeProtectedZone{T<:Real} <: AbstractZone{T}
-    z_low::T
-    z_high::T
-    value::T
-end
-
-"""
-    AboveDikeZone{T<:Real}
-
-Zone 4: Above dike (W+B+D to H_city). Standard damage.
-"""
-struct AboveDikeZone{T<:Real} <: AbstractZone{T}
-    z_low::T
-    z_high::T
-    value::T
+struct Zone{T<:Real}
+    zone_type::Int  # 0-4, see constants above
+    z_low::T        # Lower boundary (absolute elevation)
+    z_high::T       # Upper boundary (absolute elevation)
+    value::T        # Economic value in this zone
 end
 
 """
     CityZones{T<:Real}
 
 Fixed-size container for exactly 5 city zones.
-Uses heterogeneous Tuple for compile-time dispatch and zero allocations.
 """
 struct CityZones{T<:Real}
-    zones::Tuple{WithdrawnZone{T}, ResistantZone{T}, UnprotectedZone{T}, DikeProtectedZone{T}, AboveDikeZone{T}}
+    zones::NTuple{5, Zone{T}}
 
-    function CityZones{T}(zones::Tuple{WithdrawnZone{T}, ResistantZone{T}, UnprotectedZone{T}, DikeProtectedZone{T}, AboveDikeZone{T}}) where {T<:Real}
+    function CityZones{T}(zones::NTuple{5, Zone{T}}) where {T<:Real}
         # Validate zones are ordered
         for i in 1:4
             @assert zones[i].z_high <= zones[i+1].z_low "Zones must be ordered and non-overlapping"
@@ -88,7 +45,7 @@ struct CityZones{T<:Real}
 end
 
 # Constructor from tuple
-CityZones(zones::Tuple{WithdrawnZone{T}, ResistantZone{T}, UnprotectedZone{T}, DikeProtectedZone{T}, AboveDikeZone{T}}) where {T<:Real} = CityZones{T}(zones)
+CityZones(zones::NTuple{5, Zone{T}}) where {T<:Real} = CityZones{T}(zones)
 
 # Indexing support
 Base.getindex(cz::CityZones, i::Int) = cz.zones[i]
@@ -123,27 +80,20 @@ function calculate_city_zones(city::CityParameters{T}, levers::Levers{T}) where 
     z4_high = city.H_city
 
     # Zone values (from equations.md)
-    # Val_Z0 = 0 (withdrawn)
-    val_z0 = zero(T)
-
-    # Val_Z1 = V_w * r_unprot * min(R, B) / (H_city - W)
+    val_z0 = zero(T)  # Withdrawn
     val_z1 = V_w * city.r_unprot * min(levers.R, levers.B) / remaining_height
-
-    # Val_Z2 = V_w * r_unprot * max(0, B - R) / (H_city - W)
     val_z2 = V_w * city.r_unprot * max(zero(T), levers.B - levers.R) / remaining_height
-
-    # Val_Z3 = V_w * r_prot * D / (H_city - W)
     val_z3 = V_w * city.r_prot * levers.D / remaining_height
-
-    # Val_Z4 = V_w * (H_city - W - B - D) / (H_city - W)
     val_z4 = V_w * (remaining_height - levers.B - levers.D) / remaining_height
 
     # Create zones
-    zone0 = WithdrawnZone{T}(z0_low, z0_high, val_z0)
-    zone1 = ResistantZone{T}(z1_low, z1_high, val_z1)
-    zone2 = UnprotectedZone{T}(z2_low, z2_high, val_z2)
-    zone3 = DikeProtectedZone{T}(z3_low, z3_high, val_z3)
-    zone4 = AboveDikeZone{T}(z4_low, z4_high, val_z4)
+    zones = (
+        Zone{T}(ZONE_WITHDRAWN, z0_low, z0_high, val_z0),
+        Zone{T}(ZONE_RESISTANT, z1_low, z1_high, val_z1),
+        Zone{T}(ZONE_UNPROTECTED, z2_low, z2_high, val_z2),
+        Zone{T}(ZONE_DIKE_PROTECTED, z3_low, z3_high, val_z3),
+        Zone{T}(ZONE_ABOVE_DIKE, z4_low, z4_high, val_z4)
+    )
 
-    return CityZones((zone0, zone1, zone2, zone3, zone4))
+    return CityZones(zones)
 end

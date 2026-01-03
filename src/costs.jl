@@ -7,16 +7,8 @@
 Calculate withdrawal cost (Equation 1). See docs/equations.md.
 """
 function calculate_withdrawal_cost(city::CityParameters{T}, W::Real) where {T}
-    # When W = 0, no withdrawal occurs, so cost is 0
-    if W == zero(T)
-        return zero(T)
-    end
-
     # Equation 1: C_W = (V_city * W * f_w) / (H_city - W)
-    numerator = city.V_city * W * city.f_w
-    denominator = city.H_city - W
-
-    return numerator / denominator
+    return city.V_city * W * city.f_w / (city.H_city - W)
 end
 
 """
