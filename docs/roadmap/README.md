@@ -111,7 +111,7 @@ The model supports two distinct evaluation modes:
 | 6 | Expected Annual Damage Integration | Completed | [phase06_ead.md](phase06_ead.md) |
 | 7 | Simulation Engine | Completed | [phase07_simulation.md](phase07_simulation.md) |
 | 8 | Policies | Completed | [phase08_policies.md](phase08_policies.md) |
-| 9 | Optimization | Pending | [phase09_optimization.md](phase09_optimization.md) |
+| 9 | Optimization | Completed | [phase09_optimization.md](phase09_optimization.md) |
 | 10 | Analysis & Data | Pending | [phase10_analysis.md](phase10_analysis.md) |
 
 ## Package Structure
@@ -168,7 +168,7 @@ Summary of completion status:
 - [x] Phase 6: Expected Annual Damage Integration
 - [x] Phase 7: Simulation Engine
 - [x] Phase 8: Policies
-- [ ] Phase 9: Optimization
+- [x] Phase 9: Optimization
 - [ ] Phase 10: Analysis & Data
 
 ### C++ Reference Validation
@@ -184,6 +184,7 @@ A debugged version of the C++ reference implementation has been created for vali
 - **Test Coverage:** 8 test cases covering edge cases, zero inputs, and typical scenarios
 
 This provides:
+
 1. Independent verification that Julia matches paper formulas exactly
 2. Regression testing infrastructure for future changes
 3. Executable reference for correct calculations

@@ -19,19 +19,9 @@ function simulate(
     mode::Symbol=:scalar,
     scenario::Int=1,
     rng::AbstractRNG=Random.default_rng(),
-    safe::Bool=false
+    discount_rate::Real=0.0
 ) where {T<:Real}
-    # Wrap in try-catch if safe mode requested
-    if safe
-        try
-            return _simulate_stochastic(city, policy, forcing, mode, scenario, rng)
-        catch e
-            @warn "Simulation failed in safe mode" exception=e
-            return (T(Inf), T(Inf))
-        end
-    else
-        return _simulate_stochastic(city, policy, forcing, mode, scenario, rng)
-    end
+    return _simulate_stochastic(city, policy, forcing, mode, scenario, rng, T(discount_rate))
 end
 
 """
@@ -45,20 +35,10 @@ function simulate(
     forcing::DistributionalForcing{T,D};
     mode::Symbol=:scalar,
     method::Symbol=:quad,
-    safe::Bool=false,
+    discount_rate::Real=0.0,
     kwargs...
 ) where {T<:Real, D<:Distribution}
-    # Wrap in try-catch if safe mode requested
-    if safe
-        try
-            return _simulate_ead(city, policy, forcing, mode, method; kwargs...)
-        catch e
-            @warn "Simulation failed in safe mode" exception=e
-            return (T(Inf), T(Inf))
-        end
-    else
-        return _simulate_ead(city, policy, forcing, mode, method; kwargs...)
-    end
+    return _simulate_ead(city, policy, forcing, mode, method, T(discount_rate); kwargs...)
 end
 
 # ============================================================================
@@ -71,7 +51,8 @@ function _simulate_stochastic(
     forcing::StochasticForcing{T},
     mode::Symbol,
     scenario::Int,
-    rng::AbstractRNG
+    rng::AbstractRNG,
+    discount_rate::T
 ) where {T<:Real}
     # Initialize state with zero levers (first year pays full cost)
     state = StochasticState(Levers{T}(zero(T), zero(T), zero(T), zero(T), zero(T)))
@@ -111,10 +92,15 @@ function _simulate_stochastic(
         # Note: calculate_event_damage_stochastic applies effective surge conversion internally
         damage = calculate_event_damage_stochastic(h_raw, city, new_levers, rng)
 
-        # Update state
-        _update_state!(state, new_levers, cost, damage)
+        # Apply discounting (year is 1-indexed, so year 1 has factor 1/(1+r)^1)
+        discount_factor = one(T) / (one(T) + discount_rate)^year
+        discounted_cost = cost * discount_factor
+        discounted_damage = damage * discount_factor
 
-        # Record trace if needed
+        # Update state with discounted values
+        _update_state!(state, new_levers, discounted_cost, discounted_damage)
+
+        # Record trace if needed (store undiscounted values for analysis)
         if mode == :trace
             year_vec[year] = year
             W_vec[year] = new_levers.W
@@ -140,7 +126,8 @@ function _simulate_ead(
     policy::AbstractPolicy{T},
     forcing::DistributionalForcing{T,D},
     mode::Symbol,
-    method::Symbol;
+    method::Symbol,
+    discount_rate::T;
     kwargs...
 ) where {T<:Real, D<:Distribution}
     # Initialize state with zero levers (first year pays full cost)
@@ -177,10 +164,15 @@ function _simulate_ead(
         # Calculate expected annual damage (integrates over surge distribution)
         ead = calculate_expected_damage(city, new_levers, forcing, year; method, kwargs...)
 
-        # Update state
-        _update_state!(state, new_levers, cost, ead)
+        # Apply discounting (year is 1-indexed, so year 1 has factor 1/(1+r)^1)
+        discount_factor = one(T) / (one(T) + discount_rate)^year
+        discounted_cost = cost * discount_factor
+        discounted_ead = ead * discount_factor
 
-        # Record trace if needed
+        # Update state with discounted values
+        _update_state!(state, new_levers, discounted_cost, discounted_ead)
+
+        # Record trace if needed (store undiscounted values for analysis)
         if mode == :trace
             year_vec[year] = year
             W_vec[year] = new_levers.W

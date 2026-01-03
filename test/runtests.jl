@@ -23,4 +23,7 @@ using Test
 
     # Phase 7: Simulation Engine & Objectives
     include("simulation_tests.jl")
+
+    # Phase 9: Optimization
+    include("optimization_tests.jl")
 end

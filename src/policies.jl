@@ -104,3 +104,14 @@ parameters(policy::StaticPolicy{T}) where {T} = T[
     policy.levers.D,
     policy.levers.B
 ]
+
+"""
+    valid_bounds(::Type{StaticPolicy}, city)
+
+Return (lower, upper) bounds for StaticPolicy parameters [W, R, P, D, B].
+"""
+function valid_bounds(::Type{StaticPolicy}, city::CityParameters{T}) where {T<:Real}
+    lower = (zero(T), zero(T), zero(T), zero(T), zero(T))
+    upper = (city.H_city, city.H_city, T(0.99), city.H_city, city.H_city)
+    return (lower, upper)
+end
