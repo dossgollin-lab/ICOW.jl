@@ -7,6 +7,9 @@
 Calculate withdrawal cost (Equation 1). See docs/equations.md.
 """
 function calculate_withdrawal_cost(city::CityParameters{T}, W::Real) where {T}
+    # W < H_city; full withdrawal causes division by zero
+    @assert W < city.H_city "W must be strictly less than H_city to avoid division by zero"
+
     # Equation 1: C_W = (V_city * W * f_w) / (H_city - W)
     return city.V_city * W * city.f_w / (city.H_city - W)
 end
@@ -58,11 +61,14 @@ function calculate_resistance_cost(city::CityParameters{T}, levers::Levers{T}) w
     denominator = city.H_bldg * (city.H_city - levers.W)
 
     # Choose equation based on whether resistance is constrained by dike base
-    # Note: R >= B is a dominated strategy (costs more, provides no extra protection)
     if levers.R < levers.B
         # Eq 4: C_R = (V_w * f_cR * R * (R/2 + b)) / (H_bldg * (H_city - W))
         numerator = V_w * f_cR * levers.R * (levers.R / 2 + city.b_basement)
     else
+        # R >= B is dominated: protection capped at B but costs still increase with R
+        if levers.R > levers.B && levers.B > zero(T)
+            @warn "R > B is a dominated strategy: protection is capped at B but costs increase with R" maxlog=1
+        end
         # Eq 5: C_R = (V_w * f_cR * B * (R - B/2 + b)) / (H_bldg * (H_city - W))
         numerator = V_w * f_cR * levers.B * (levers.R - levers.B / 2 + city.b_basement)
     end
@@ -71,12 +77,11 @@ function calculate_resistance_cost(city::CityParameters{T}, levers::Levers{T}) w
 end
 
 """
-    calculate_dike_cost(city::CityParameters, D, B) -> cost
+    calculate_dike_cost(city::CityParameters, D) -> cost
 
 Calculate dike construction cost (Equation 7). See docs/equations.md.
-B parameter unused but kept for API consistency.
 """
-function calculate_dike_cost(city::CityParameters{T}, D::Real, B::Real) where {T}
+function calculate_dike_cost(city::CityParameters{T}, D::Real) where {T}
     # If not building a dike, no cost
     if D == zero(T)
         return zero(T)
@@ -96,7 +101,7 @@ Calculate total investment cost (sum of withdrawal, resistance, dike costs).
 function calculate_investment_cost(city::CityParameters, levers::Levers)
     C_W = calculate_withdrawal_cost(city, levers.W)
     C_R = calculate_resistance_cost(city, levers)
-    C_D = calculate_dike_cost(city, levers.D, levers.B)
+    C_D = calculate_dike_cost(city, levers.D)
 
     return C_W + C_R + C_D
 end

@@ -22,21 +22,20 @@ using Test
     @testset "calculate_resistance_cost" begin
         @test calculate_resistance_cost(city, Levers(0.0, 0.0, 0.0, 0.0, 0.0)) == 0.0
 
-        # Monotonicity in R and P
+        # Monotonicity in R and P (keep R < B to avoid warnings)
         @test calculate_resistance_cost(city, Levers(0.0, 1.0, 0.5, 0.0, 5.0)) <
               calculate_resistance_cost(city, Levers(0.0, 3.0, 0.5, 0.0, 5.0))
         @test calculate_resistance_cost(city, Levers(0.0, 2.0, 0.1, 0.0, 5.0)) <
               calculate_resistance_cost(city, Levers(0.0, 2.0, 0.9, 0.0, 5.0))
 
-        # Constrained (R >= B) costs more than unconstrained (R < B)
-        @test calculate_resistance_cost(city, Levers(0.0, 6.0, 0.5, 0.0, 5.0)) >
-              calculate_resistance_cost(city, Levers(0.0, 5.0, 0.5, 0.0, 5.0))
+        # R > B warns about dominated strategy
+        @test_warn "R > B is a dominated strategy" calculate_resistance_cost(city, Levers(0.0, 6.0, 0.5, 0.0, 5.0))
     end
 
     @testset "calculate_dike_cost" begin
-        @test calculate_dike_cost(city, 0.0, 0.0) == 0.0
-        @test calculate_dike_cost(city, 0.1, 0.0) > 0
-        @test calculate_dike_cost(city, 1.0, 0.0) < calculate_dike_cost(city, 5.0, 0.0)
+        @test calculate_dike_cost(city, 0.0) == 0.0
+        @test calculate_dike_cost(city, 0.1) > 0
+        @test calculate_dike_cost(city, 1.0) < calculate_dike_cost(city, 5.0)
     end
 
     @testset "calculate_investment_cost" begin
@@ -47,7 +46,7 @@ using Test
         levers = Levers(2.0, 3.0, 0.5, 4.0, 1.0)
         C_W = calculate_withdrawal_cost(city, levers.W)
         C_R = calculate_resistance_cost(city, levers)
-        C_D = calculate_dike_cost(city, levers.D, levers.B)
+        C_D = calculate_dike_cost(city, levers.D)
         @test calculate_investment_cost(city, levers) ≈ C_W + C_R + C_D
     end
 

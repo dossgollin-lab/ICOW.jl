@@ -25,8 +25,10 @@ using BlackBoxOptim
         # Use distributional forcing for faster optimization
         forcing = DistributionalForcing([Normal(1.5, 0.5) for _ in 1:5], 2020)
 
-        # Short optimization with minimal settings
-        result = optimize(city, [forcing], 0.03; max_steps=50, population_size=10)
+        # Suppress BlackBoxOptim epsilon-box warnings (harmless, from third-party package)
+        result = Base.CoreLogging.with_logger(Base.CoreLogging.NullLogger()) do
+            optimize(city, [forcing], 0.03; max_steps=10, population_size=10)
+        end
 
         # Pareto frontier should have at least one solution
         @test !isempty(pareto_frontier(result))

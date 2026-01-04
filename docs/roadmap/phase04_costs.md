@@ -28,7 +28,7 @@ Event damage functions (Equation 9) are deferred to Phase 6 where zones are full
   - `calculate_value_after_withdrawal(city, W)` - Equation 2
   - `calculate_resistance_cost_fraction(city, P)` - Equation 3
   - `calculate_resistance_cost(city, levers)` - Equations 4-5 (handles R ≥ B)
-  - `calculate_dike_cost(city, D, B)` - Equation 7 (uses Phase 3 volume)
+  - `calculate_dike_cost(city, D)` - Equation 7 (uses Phase 3 volume)
   - `calculate_investment_cost(city, levers)` - Total cost
   - `calculate_effective_surge(h_raw, city)` - Surge preprocessing
 

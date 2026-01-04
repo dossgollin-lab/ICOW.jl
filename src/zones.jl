@@ -1,24 +1,26 @@
 # Zone-based city model for the iCOW model
 # Implements zone partitioning from Figure 3 and docs/equations.md
 
-# Zone type constants
-const ZONE_WITHDRAWN = 0
-const ZONE_RESISTANT = 1
-const ZONE_UNPROTECTED = 2
-const ZONE_DIKE_PROTECTED = 3
-const ZONE_ABOVE_DIKE = 4
+# Zone type enum for type safety
+@enum ZoneType begin
+    ZONE_WITHDRAWN = 0
+    ZONE_RESISTANT = 1
+    ZONE_UNPROTECTED = 2
+    ZONE_DIKE_PROTECTED = 3
+    ZONE_ABOVE_DIKE = 4
+end
 
 """
     Zone{T<:Real}
 
 City zone with type, boundaries, and economic value.
-Zone types: 0=withdrawn, 1=resistant, 2=unprotected, 3=dike protected, 4=above dike.
+Zone types: ZONE_WITHDRAWN, ZONE_RESISTANT, ZONE_UNPROTECTED, ZONE_DIKE_PROTECTED, ZONE_ABOVE_DIKE.
 """
 struct Zone{T<:Real}
-    zone_type::Int  # 0-4, see constants above
-    z_low::T        # Lower boundary (absolute elevation)
-    z_high::T       # Upper boundary (absolute elevation)
-    value::T        # Economic value in this zone
+    zone_type::ZoneType  # See ZoneType enum
+    z_low::T             # Lower boundary (absolute elevation)
+    z_high::T            # Upper boundary (absolute elevation)
+    value::T             # Economic value in this zone
 end
 
 """

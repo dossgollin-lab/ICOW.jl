@@ -109,7 +109,7 @@ function main()
         println("  ✓ Resistance cost: Julia=$julia_rc, C++=$cpp_rc")
 
         # Test dike cost - SKIPPED (Julia uses corrected geometric formula)
-        julia_dc = calculate_dike_cost(city, D, B)
+        julia_dc = calculate_dike_cost(city, D)
         cpp_dc = cpp_costs[test_name]["dike_cost"]
         # @test julia_dc ≈ cpp_dc rtol=rtol  # Skipped - see header comment
         println("  ⊘ Dike cost (skipped): Julia=$julia_dc, C++=$cpp_dc")

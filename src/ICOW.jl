@@ -58,7 +58,7 @@ export calculate_dike_cost, calculate_investment_cost
 export calculate_effective_surge, calculate_dike_failure_probability
 
 # Export Phase 5: Zones & Event Damage
-export Zone, CityZones, calculate_city_zones
+export Zone, CityZones, ZoneType, calculate_city_zones
 export ZONE_WITHDRAWN, ZONE_RESISTANT, ZONE_UNPROTECTED, ZONE_DIKE_PROTECTED, ZONE_ABOVE_DIKE
 export calculate_zone_damage, calculate_event_damage, calculate_event_damage_stochastic
 

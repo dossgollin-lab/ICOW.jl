@@ -37,6 +37,60 @@ The city is partitioned into zones based on lever settings (see Figure 3, p. 11)
 Zone 2 only exists if $R < B$ (resistance doesn't reach dike base).
 $f_{dike} = f_{intact}$ if dike holds, $f_{failed}$ if dike fails (stochastic per Equation 8).
 
+### Physical Cross-Section Diagram
+
+```text
+                                         H_city
+                                            │
+  Sea Level (0) ─────────────────────────────┼─────────────────────────────
+       │                                     │
+       │   Zone 0: WITHDRAWN                 │
+       │   (evacuated, no value)             │
+       ├─────────────────────────────────────┤  ← W (withdrawal height)
+       │                                     │
+       │   Zone 1: RESISTANT                 │
+       │   (flood-proofed buildings)         │
+       │   Value ratio: r_unprot = 0.95      │
+       ├─────────────────────────────────────┤  ← W + min(R, B)
+       │                                     │
+       │   Zone 2: UNPROTECTED GAP           │    (only if R < B)
+       │   (exposed, no resistance)          │
+       │   Value ratio: r_unprot = 0.95      │
+       ├──────────┬──────────────────────────┤  ← W + B (dike base)
+       │   DIKE   │  Zone 3: DIKE PROTECTED  │
+       │    ▲     │  (behind dike)           │
+       │    │ D   │  Value ratio: r_prot=1.1 │
+       │    ▼     │                          │
+       ├──────────┴──────────────────────────┤  ← W + B + D (dike top)
+       │                                     │
+       │   Zone 4: ABOVE DIKE                │
+       │   (naturally protected by elevation)│
+       │   Value ratio: 1.0                  │
+       └─────────────────────────────────────┘  ← H_city
+```
+
+### Physical Interpretation of Dike Base (B)
+
+The lever $B$ represents the **elevation of the dike base above the withdrawal zone**.
+Physically, this creates a buffer zone between flood-proofed buildings and dike-protected areas.
+
+- If $R < B$: Zone 2 exists as an "unprotected gap" where buildings are neither flood-proofed NOR protected by the dike
+- If $R \geq B$: Zone 2 collapses to zero width (no gap)
+
+**Why this matters:** The model allows dike placement at any elevation, not just at the boundary of resistant buildings.
+This enables strategies where the dike protects higher-value areas while lower areas rely on flood-proofing.
+
+### Zone Value Ratios (Non-Conservation)
+
+The zone value ratios $r_{prot} = 1.1$ and $r_{unprot} = 0.95$ mean that **zone values do not sum to $V_w$**.
+This is intentional and represents:
+
+- **Protected areas appreciate**: Dike protection increases land/building values (capitalization of safety)
+- **Unprotected areas depreciate**: Residual flood risk reduces property values
+
+The total value $\sum Val_Z \approx V_w$ but typically differs by a few percent depending on zone allocation.
+This models the economic reality that flood protection affects property values, not just damages.
+
 ## Cost Equations
 
 ### Equation 1: Withdrawal Cost (p. 14)
@@ -215,6 +269,16 @@ d_{total} = \begin{cases}
 \sum d_Z + \left( f_{thresh} \cdot (\sum d_Z - d_{thresh}) \right)^{\gamma_{thresh}} & \text{if } \sum d_Z > d_{thresh}
 \end{cases}
 $$
+
+**Physical Interpretation:** The threshold penalty represents **catastrophic damage amplification** - when damages exceed a critical level ($d_{thresh} = V_{city}/375 \approx \$4$ billion by default), additional cascading effects occur:
+
+- **Social disruption**: Essential services fail, supply chains break, businesses close permanently
+- **Political costs**: Government instability, delayed recovery, reduced investor confidence
+- **Insurance market failures**: Reinsurance capacity exhausted, coverage gaps emerge
+- **Compound vulnerabilities**: Damaged infrastructure increases vulnerability to subsequent events
+
+With default parameters ($\gamma_{thresh} = 1.01$), this is nearly linear in excess damage.
+Higher $\gamma_{thresh}$ values would model superlinear catastrophic effects.
 
 ### Expected Annual Damage (EAD) Integration
 

@@ -76,9 +76,10 @@ using Test
         zones32 = calculate_city_zones(city32, levers32)
 
         # All zones should be Zone{Float32}
+        expected_types = [ZONE_WITHDRAWN, ZONE_RESISTANT, ZONE_UNPROTECTED, ZONE_DIKE_PROTECTED, ZONE_ABOVE_DIKE]
         for (i, zone) in enumerate(zones32)
             @test zone isa Zone{Float32}
-            @test zone.zone_type == i - 1  # 0-indexed zone types
+            @test zone.zone_type == expected_types[i]
         end
     end
 end

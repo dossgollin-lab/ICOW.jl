@@ -20,7 +20,7 @@ Event damage deferred to Phase 6 where zones are available.
 - `calculate_value_after_withdrawal(city, W)` - Equation 2
 - `calculate_resistance_cost_fraction(city, P)` - Equation 3
 - `calculate_resistance_cost(city, levers)` - Equations 4-5
-- `calculate_dike_cost(city, D, B)` - Equation 7
+- `calculate_dike_cost(city, D)` - Equation 7
 - `calculate_investment_cost(city, levers)` - Total cost
 - `calculate_effective_surge(h_raw, city)` - Surge preprocessing
 - `calculate_dike_failure_probability(h_surge, D, city)` - Equation 8
