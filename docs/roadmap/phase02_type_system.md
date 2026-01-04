@@ -18,12 +18,11 @@ It answers fundamental design questions about how forcing, state, and policies i
 
 ## Deliverables
 
-- [ ] `docs/simulation_modes.md` - Comprehensive documentation explaining:
-  - Conceptual overview of stochastic vs EAD modes
-  - When to use each mode (decision guide)
-  - Powell framework connection (state, decision, exogenous info, transition, objective)
-  - Expected convergence behavior
-  - Performance characteristics and limitations
+- [x] `docs/framework.md` - Theoretical framework documentation explaining:
+  - Powell's sequential decision framework
+  - XLRM/MORDM and subjective Bayesian frameworks
+  - Mapping to iCOW (state, decision, exogenous info, transition, levers)
+  - Stochastic vs EAD simulation modes
 
 - [ ] `src/types.jl` (additions) - Abstract type hierarchy:
   - `AbstractForcing{T<:Real}` interface specification

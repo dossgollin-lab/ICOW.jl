@@ -127,7 +127,7 @@ ICOW.jl/
 │   ├── roadmap/                 # This folder
 │   │   ├── README.md            # This file
 │   │   └── phase*.md            # Phase detail files
-│   ├── simulation_modes.md      # Dual-mode documentation
+│   ├── framework.md             # Theoretical framework
 │   ├── equations.md             # All equations from paper
 │   ├── parameters.md            # Parameter documentation
 │   ├── zones.md                 # Zone structure documentation
