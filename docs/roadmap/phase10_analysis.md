@@ -1,4 +1,4 @@
-# Phase 10: Analysis & Data
+# Phase 10: Analysis & Aggregation
 
 **Status:** Pending
 
@@ -6,13 +6,19 @@
 
 ## Goal
 
-Forward mode analysis with rich scenario outputs.
+Forward mode analysis with rich scenario outputs, flexible SOW aggregation, and clear terminology for outcomes vs metrics.
+
+## Terminology
+
+- **Outcomes**: Per-SOW results from `f(policy, SOW)` — the raw investment and damage values for a specific policy under a specific state of the world
+- **Metrics**: Aggregated outcomes across SOWs — e.g., expected NPV, 95th percentile damage, CVaR
 
 ## Open Questions
 
 1. **Array structure:** Should core outputs use (Time $\times$ Scenario $\times$ Variable) or different dimension ordering for better performance/usability?
 2. **Summary statistics:** Which percentiles and statistics are most useful (10/50/90, 5/25/75/95, other)?
 3. **Robustness metrics:** Which metrics best capture robustness for decision-making (regret, variance, CVaR, maximin)?
+4. **Aggregator interface:** Should aggregators be functions `Vector{T} -> T` or structs with additional metadata?
 
 ## Deliverables
 
@@ -31,11 +37,17 @@ Forward mode analysis with rich scenario outputs.
   - Visualization helpers (optional package extension)
   - Heavy dependencies decoupled from core model
 
+- [ ] Flexible SOW aggregation in `src/optimization.jl` or new `src/aggregation.jl`:
+  - Support custom aggregators: `mean`, `x -> quantile(x, 0.95)`, CVaR, etc.
+  - Support explicit SOW weights $w_j$ satisfying $\sum w_j = 1$
+  - Default: uniform weights with `mean` aggregator (current behavior)
+
 - [ ] Tests covering:
   - Surge generation (correct distributions, trends)
   - Forward mode array structure
   - Summary statistics
   - Robustness metrics calculation
+  - Custom aggregators and weighted SOW aggregation
 
 ## Key Design Decisions
 

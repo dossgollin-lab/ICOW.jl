@@ -112,7 +112,9 @@ The model supports two distinct evaluation modes:
 | 7 | Simulation Engine | Completed | [phase07_simulation.md](phase07_simulation.md) |
 | 8 | Policies | Completed | [phase08_policies.md](phase08_policies.md) |
 | 9 | Optimization | Completed | [phase09_optimization.md](phase09_optimization.md) |
-| 10 | Analysis & Data | Pending | [phase10_analysis.md](phase10_analysis.md) |
+| 10 | Analysis & Aggregation | Pending | [phase10_analysis.md](phase10_analysis.md) |
+| 11 | SOW Architecture | Pending | [phase11_sow.md](phase11_sow.md) |
+| 12 | Adaptive Policy Infrastructure | Pending | [phase12_adaptive.md](phase12_adaptive.md) |
 
 ## Package Structure
 
@@ -169,7 +171,9 @@ Summary of completion status:
 - [x] Phase 7: Simulation Engine
 - [x] Phase 8: Policies
 - [x] Phase 9: Optimization
-- [ ] Phase 10: Analysis & Data
+- [ ] Phase 10: Analysis & Aggregation
+- [ ] Phase 11: SOW Architecture
+- [ ] Phase 12: Adaptive Policy Infrastructure
 
 ### C++ Reference Validation
 

@@ -16,6 +16,7 @@ where $\pi$ is a policy (decision rule), $\mathbf{s}$ is a state of the world, a
 The underlying physics come from Ceres et al. (2019).
 iCOW models a coastal city as a triangular wedge rising from sea level to peak elevation $H_{\text{city}}$.
 Property value is distributed linearly with elevation.
+Zone values are adjusted by economic multipliers ($r_{\text{prot}}$, $r_{\text{unprot}}$) to model property value capitalization from protection status; see `equations.md`.
 Storm surge is the hazard: when water reaches elevation $h$, everything below $h$ floods.
 
 ### Decision Levers
@@ -24,7 +25,7 @@ The city has five protective levers—**withdrawal** ($W$), **resistance** ($R$,
 
 | Lever | What it does                                                        | Support                        |
 | ----- | ------------------------------------------------------------------- | ------------------------------ |
-| $W$   | Relocate all value below elevation $W$                              | $[0, H_{\text{city}}]$         |
+| $W$   | Relocate all value below elevation $W$                              | $[0, H_{\text{city}})$         |
 | $R$   | Floodproof buildings from $W$ to $W+R$; reduces damage by factor $P$| $[0, \infty)$                  |
 | $P$   | Fraction of damage prevented by floodproofing                       | $[0, 1)$                       |
 | $B$   | Place dike base at elevation $W+B$                                  | $[0, H_{\text{city}} - W]$     |
@@ -108,10 +109,12 @@ This means lever settings at $t+1$ must satisfy $\text{levers}_{t+1} \geq \text{
 
 Two approaches to computing $f(\pi, \mathbf{s})$:
 
-**EAD mode** integrates damage analytically over the surge distribution:
+**EAD mode** integrates damage over the surge distribution using two levels:
 
-$$\text{EAD}(t) = \int_0^\infty D(h, \text{levers}) \cdot p(h \mid \text{SLR}_t) \, dh$$
+$$\text{EAD}(t) = \int_{-\infty}^\infty \mathbb{E}[D(h, \text{levers}) \mid h] \cdot p(h \mid \text{SLR}_t) \, dh$$
 
+The inner expectation $\mathbb{E}[D \mid h]$ is computed analytically over dike failure uncertainty.
+The outer integral over $h$ is computed via numerical quadrature.
 This is fast and sufficient for **static policies** where lever settings don't depend on realized events.
 
 **Stochastic mode** draws surge realizations from each SOW and computes realized damage.
