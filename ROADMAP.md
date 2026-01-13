@@ -73,23 +73,23 @@ Check off items as they are completed using `[x]`.
 
 ### C1: Add SimOptDecisions.simulate for EADSOW (src/simulation.jl)
 
-- [ ] Create `SimOptDecisions.simulate(config::CityParameters, sow::EADSOW, policy, recorder, rng)`
-- [ ] Reuse `_simulate_core` logic with EAD damage function
-- [ ] Return NamedTuple: `(investment=..., damage=...)`
+- [x] Create `SimOptDecisions.simulate(config::CityParameters, sow::EADSOW, policy, recorder, rng)`
+- [x] Reuse `_simulate_core` logic with EAD damage function
+- [x] Return NamedTuple: `(investment=..., damage=...)`
 
 ### C2: Add get_action for EADSOW (src/policies.jl)
 
-- [ ] Create `SimOptDecisions.get_action(policy::StaticPolicy, state, sow::EADSOW, t::TimeStep)`
+- [x] Create `SimOptDecisions.get_action(policy::StaticPolicy, state, sow::EADSOW, t::TimeStep)`
 
 ### C3: Add backward-compatible wrapper (src/simulation.jl)
 
-- [ ] Keep `simulate(city, policy, forcing::DistributionalForcing; ...)` signature
-- [ ] Have it construct EADSOW and call SimOptDecisions.simulate
+- [x] Keep `simulate(city, policy, forcing::DistributionalForcing; ...)` signature
+- [x] Have it construct EADSOW and call SimOptDecisions.simulate
 
 ### C4: Verify
 
-- [ ] EAD simulation tests pass
-- [ ] `simulate(city, policy, dist_forcing)` still works
+- [x] EAD simulation tests pass
+- [x] `simulate(city, policy, dist_forcing)` still works
 
 ---
 
@@ -97,22 +97,22 @@ Check off items as they are completed using `[x]`.
 
 ### D1: Add SimOptDecisions.simulate for StochasticSOW (src/simulation.jl)
 
-- [ ] Create `SimOptDecisions.simulate(config::CityParameters, sow::StochasticSOW, policy, recorder, rng)`
-- [ ] Use stochastic damage calculation
+- [x] Create `SimOptDecisions.simulate(config::CityParameters, sow::StochasticSOW, policy, recorder, rng)`
+- [x] Use stochastic damage calculation
 
 ### D2: Add get_action for StochasticSOW (src/policies.jl)
 
-- [ ] Create `SimOptDecisions.get_action(policy::StaticPolicy, state, sow::StochasticSOW, t::TimeStep)`
+- [x] Create `SimOptDecisions.get_action(policy::StaticPolicy, state, sow::StochasticSOW, t::TimeStep)`
 
 ### D3: Add backward-compatible wrapper (src/simulation.jl)
 
-- [ ] Keep `simulate(city, policy, forcing::StochasticForcing; ...)` signature
-- [ ] Have it construct StochasticSOW and call SimOptDecisions.simulate
+- [x] Keep `simulate(city, policy, forcing::StochasticForcing; ...)` signature
+- [x] Have it construct StochasticSOW and call SimOptDecisions.simulate
 
 ### D4: Verify
 
-- [ ] Stochastic simulation tests pass
-- [ ] `simulate(city, policy, stoch_forcing)` still works
+- [x] Stochastic simulation tests pass
+- [x] `simulate(city, policy, stoch_forcing)` still works
 - [ ] Mode convergence: mean(stochastic) $\approx$ EAD
 
 ---
@@ -121,19 +121,19 @@ Check off items as they are completed using `[x]`.
 
 ### E1: Rewrite optimization.jl
 
-- [ ] Remove `using BlackBoxOptim`
-- [ ] Add `using SimOptDecisions: OptimizationProblem, MetaheuristicsBackend, ...`
-- [ ] Create helper `_create_sows(forcings, discount_rate)`
-- [ ] Create `metric_calculator` function
-- [ ] Create `FeasibilityConstraint` for lever feasibility
-- [ ] Implement new `optimize()` using `OptimizationProblem` and `MetaheuristicsBackend`
-- [ ] Implement new `pareto_policies()` using `pareto_front()`
+- [x] Remove `using BlackBoxOptim`
+- [x] Add `using SimOptDecisions: OptimizationProblem, MetaheuristicsBackend, ...`
+- [x] Create helper `_create_sows(forcings, discount_rate)`
+- [x] Create `metric_calculator` function
+- [x] Create `FeasibilityConstraint` for lever feasibility
+- [x] Implement new `optimize()` using `OptimizationProblem` and `MetaheuristicsBackend`
+- [x] Implement new `pareto_policies()` using `pareto_front()`
 
 ### E2: Verify
 
-- [ ] Optimization runs without error
-- [ ] Returns valid Pareto frontier
-- [ ] Feasibility constraint enforced
+- [x] Optimization runs without error
+- [x] Returns valid Pareto frontier
+- [x] Feasibility constraint enforced
 
 ---
 
@@ -146,9 +146,9 @@ Check off items as they are completed using `[x]`.
 
 ### F2: Final verification
 
-- [ ] Full test suite passes: `julia --project test/runtests.jl`
-- [ ] C++ validation passes: `julia --project test/cpp_reference/validate_cpp_outputs.jl`
-- [ ] No BlackBoxOptim references remain in codebase
+- [x] Full test suite passes: `julia --project test/runtests.jl`
+- [x] C++ validation passes: `julia --project test/cpp_reference/validate_cpp_outputs.jl`
+- [x] No BlackBoxOptim references remain in codebase
 
 ---
 

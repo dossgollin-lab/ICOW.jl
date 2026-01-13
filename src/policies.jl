@@ -35,6 +35,12 @@ function StaticPolicy(params::AbstractVector{T}) where {T<:Real}
     return StaticPolicy(Levers{T}(params[1], params[2], params[3], params[4], params[5]))
 end
 
+# Parameterized constructor for optimization (SimOptDecisions requires this signature)
+function StaticPolicy{T}(params::AbstractVector) where {T<:Real}
+    @assert length(params) == 5 "StaticPolicy requires 5 parameters [W, R, P, D, B]"
+    return StaticPolicy(Levers{T}(T(params[1]), T(params[2]), T(params[3]), T(params[4]), T(params[5])))
+end
+
 # Callable interface: returns fixed levers in year 1, zero levers otherwise
 function (policy::StaticPolicy{T})(state, forcing, year) where {T}
     if year == 1
@@ -57,6 +63,28 @@ end
 function SimOptDecisions.param_bounds(::Type{<:StaticPolicy})
     # Generic bounds - actual feasibility enforced via FeasibilityConstraint
     return [(0.0, 50.0), (0.0, 50.0), (0.0, 0.99), (0.0, 50.0), (0.0, 50.0)]
+end
+
+"""
+    SimOptDecisions.get_action(policy, state, sow::EADSOW, t::TimeStep)
+
+Fallback: delegates to callable interface `policy(state, forcing, year)`.
+"""
+function SimOptDecisions.get_action(
+    policy::SimOptDecisions.AbstractPolicy, state::State, sow::EADSOW, t::SimOptDecisions.TimeStep
+)
+    return policy(state, sow.forcing, t.val)
+end
+
+"""
+    SimOptDecisions.get_action(policy, state, sow::StochasticSOW, t::TimeStep)
+
+Fallback: delegates to callable interface `policy(state, forcing, year)`.
+"""
+function SimOptDecisions.get_action(
+    policy::SimOptDecisions.AbstractPolicy, state::State, sow::StochasticSOW, t::SimOptDecisions.TimeStep
+)
+    return policy(state, sow.forcing, t.val)
 end
 
 # =============================================================================

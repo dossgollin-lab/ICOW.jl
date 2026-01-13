@@ -5,6 +5,7 @@ using Statistics
 using Distributions
 using QuadGK
 using SimOptDecisions
+using Metaheuristics  # Activates SimOptDecisions optimization backend
 
 # Phase 1: Parameters & Validation
 include("parameters.jl")
