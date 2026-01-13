@@ -1,0 +1,139 @@
+---
+title: "EAD Mode: Policy Search"
+subtitle: "Multi-objective optimization"
+engine: julia
+execute:
+  exeflags: ["--project=.."]
+---
+
+## Overview
+
+This guide shows how to use multi-objective optimization to find Pareto-optimal protection strategies.
+Rather than manually comparing strategies, we let the optimizer search the full decision space.
+
+## Setup
+
+```{julia}
+#| output: false
+using ICOW
+using Distributions
+import Metaheuristics  # Required for optimization backend
+using DataFrames
+using CairoMakie
+```
+
+```{julia}
+city = CityParameters()
+surge_dist = GeneralizedExtremeValue(1.0, 0.5, 0.1)
+forcing = DistributionalForcing([surge_dist for _ in 1:50])
+```
+
+## The Optimization Problem
+
+We want to find strategies that trade off between two objectives:
+
+1. **Minimize investment cost** (upfront spending on protection)
+2. **Minimize expected damage** (long-term flood losses)
+
+These objectives are often in conflict: more investment typically reduces damage.
+The set of non-dominated solutions forms the **Pareto frontier**.
+
+## Running the Optimizer
+
+```{julia}
+#| output: false
+result = ICOW.optimize(
+    city,
+    [forcing],
+    0.0;  # discount rate
+    max_iterations=50,
+    population_size=30
+)
+```
+
+## Pareto-Optimal Policies
+
+The optimizer returns a set of Pareto-optimal solutions:
+
+```{julia}
+policies = pareto_policies(result, StaticPolicy{Float64})
+
+println("Found $(length(policies)) Pareto-optimal solutions:")
+```
+
+```{julia}
+# Convert to DataFrame for display
+pareto_df = DataFrame(map(policies) do (policy, obj)
+    l = policy.levers
+    (
+        W = round(l.W, digits=1),
+        R = round(l.R, digits=1),
+        P = round(l.P, digits=2),
+        D = round(l.D, digits=1),
+        B = round(l.B, digits=1),
+        investment = round(obj.mean_investment/1e9, digits=2),
+        damage = round(obj.mean_damage/1e9, digits=2),
+        total = round((obj.mean_investment + obj.mean_damage)/1e9, digits=2)
+    )
+end)
+
+pareto_df
+```
+
+## Best Total Cost Policy
+
+To find the single policy that minimizes total cost (investment + damage):
+
+```{julia}
+best, best_obj = best_total(result, StaticPolicy{Float64})
+l = best.levers
+
+println("Best total cost policy:")
+println("  Levers: W=$(round(l.W, digits=1)), R=$(round(l.R, digits=1)), " *
+        "P=$(round(l.P, digits=2)), D=$(round(l.D, digits=1)), B=$(round(l.B, digits=1))")
+println("  Investment: \$$(round(best_obj.mean_investment/1e9, digits=2)) billion")
+println("  Expected damage: \$$(round(best_obj.mean_damage/1e9, digits=2)) billion")
+println("  Total: \$$(round((best_obj.mean_investment + best_obj.mean_damage)/1e9, digits=2)) billion")
+```
+
+## Pareto Frontier Visualization
+
+```{julia}
+#| label: fig-pareto
+#| fig-cap: "Pareto frontier: investment vs expected damage"
+#| code-fold: true
+let
+    fig = Figure(size=(600, 500))
+    ax = Axis(fig[1, 1];
+        xlabel="Investment Cost (\$ billions)",
+        ylabel="Expected Damage (\$ billions)",
+        title="Pareto Frontier"
+    )
+
+    scatter!(ax, pareto_df.investment, pareto_df.damage;
+        marker=:circle, markersize=12, color=:steelblue)
+
+    # Highlight best total cost
+    best_inv = best_obj.mean_investment/1e9
+    best_dmg = best_obj.mean_damage/1e9
+    scatter!(ax, [best_inv], [best_dmg];
+        marker=:star5, markersize=20, color=:gold)
+
+    fig
+end
+```
+
+## Interpreting the Pareto Frontier
+
+The Pareto frontier shows the fundamental trade-off:
+
+- **Upper left**: Low investment, high damage (minimal protection)
+- **Lower right**: High investment, low damage (maximum protection)
+- **Best total**: The point closest to the origin (marked with star)
+
+All points on the frontier are "efficient" - you cannot improve one objective without worsening the other.
+
+## Next Steps
+
+- [Stochastic Optimization](stochastic_optimization.qmd) - Verify results with Monte Carlo
+- [Getting Started](getting_started.qmd) - Review model fundamentals

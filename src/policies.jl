@@ -105,3 +105,8 @@ function valid_bounds(::Type{StaticPolicy}, city::CityParameters{T}) where {T<:R
     upper = (city.H_city, city.H_city, T(0.99), city.H_city, city.H_city)
     return (lower, upper)
 end
+
+# Display method - delegates to Levers
+function Base.show(io::IO, p::StaticPolicy)
+    print(io, "StaticPolicy(", p.levers, ")")
+end

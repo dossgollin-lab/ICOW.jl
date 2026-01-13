@@ -33,6 +33,9 @@ include("objectives.jl")
 # Phase 9: Optimization
 include("optimization.jl")
 
+# Visualization
+include("visualization.jl")
+
 # Export Phase 1: Parameters & Validation
 export CityParameters, validate_parameters, city_slope
 export Levers, is_feasible
@@ -74,5 +77,8 @@ export apply_discount, calculate_npv, objective_total_cost
 # Export Phase 9: Optimization
 export valid_bounds
 export optimize, pareto_policies, best_total
+
+# Export Visualization
+export plot_zones
 
 end # module ICOW

@@ -47,6 +47,11 @@ function Levers(W, R, P, D, B)
     Levers{T}(promoted...)
 end
 
+# Keyword argument constructor with defaults (all zeros)
+function Levers(; W::Real=0.0, R::Real=0.0, P::Real=0.0, D::Real=0.0, B::Real=0.0)
+    Levers(W, R, P, D, B)
+end
+
 """
     is_feasible(levers::Levers, city::CityParameters) -> Bool
 
@@ -75,4 +80,19 @@ function Base.max(a::Levers{T}, b::Levers{T}) where {T}
         max(a.D, b.D),
         max(a.B, b.B)
     )
+end
+
+# Display methods - show only non-zero levers
+function Base.show(io::IO, l::Levers)
+    parts = String[]
+    l.W != 0 && push!(parts, "W=$(l.W)m")
+    l.R != 0 && push!(parts, "R=$(l.R)m")
+    l.P != 0 && push!(parts, "P=$(round(l.P*100, digits=1))%")
+    l.D != 0 && push!(parts, "D=$(l.D)m")
+    l.B != 0 && push!(parts, "B=$(l.B)m")
+    if isempty(parts)
+        print(io, "Levers(none)")
+    else
+        print(io, "Levers(", join(parts, ", "), ")")
+    end
 end

@@ -98,3 +98,16 @@ end
 Compute city elevation gradient (H_city / D_city).
 """
 city_slope(city::CityParameters) = city.H_city / city.D_city
+
+# Display methods
+function Base.show(io::IO, city::CityParameters)
+    print(io, "CityParameters(V=\$$(city.V_city/1e12)T, H=$(city.H_city)m)")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", city::CityParameters{T}) where {T}
+    println(io, "CityParameters{$T}")
+    println(io, "  City value: \$$(city.V_city/1e12) trillion")
+    println(io, "  Max elevation: $(city.H_city) m")
+    println(io, "  Coastline: $(city.W_city/1000) km")
+    print(io, "  Seawall height: $(city.H_seawall) m")
+end

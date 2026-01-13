@@ -208,3 +208,10 @@ This makes tests self-documenting and helps future developers understand the dom
 
 - Always include blank lines before and after lists.
 - Use consistent list markers (prefer `-` for unordered lists).
+
+### Citations
+
+- Use Quarto's author-year citation format with `@citekey` syntax (e.g., `@ceres_cityonawedge:2019`).
+- Never use inline markdown links for references (e.g., `[Author (Year)](url)`).
+- Add references to `docs/references.bib` and include `bibliography: references.bib` in the YAML front matter.
+- End documents with a `## References` section (Quarto auto-populates it).

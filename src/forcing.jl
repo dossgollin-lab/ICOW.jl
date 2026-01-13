@@ -24,6 +24,10 @@ end
 StochasticForcing(surges::Matrix{T}, start_year::Int) where {T<:Real} =
     StochasticForcing{T}(surges, start_year)
 
+# Convenience constructor with start_year=1 default
+StochasticForcing(surges::Matrix{T}) where {T<:Real} =
+    StochasticForcing(surges, 1)
+
 """
     DistributionalForcing{T<:Real, D<:Distribution}
 
@@ -45,6 +49,10 @@ function DistributionalForcing(distributions::Vector{D}, start_year::Int) where 
     T = Float64  # Default to Float64 for distribution-based forcing
     DistributionalForcing{T,D}(distributions, start_year)
 end
+
+# Convenience constructor with start_year=1 default
+DistributionalForcing(distributions::Vector{D}) where {D<:Distribution} =
+    DistributionalForcing(distributions, 1)
 
 # Access functions
 
@@ -110,3 +118,24 @@ n_years(sow::EADSOW) = n_years(sow.forcing)
 n_years(sow::StochasticSOW) = n_years(sow.forcing)
 get_surge(sow::StochasticSOW, year::Int) = get_surge(sow.forcing, sow.scenario, year)
 get_distribution(sow::EADSOW, year::Int) = get_distribution(sow.forcing, year)
+
+# =============================================================================
+# Display methods
+# =============================================================================
+
+function Base.show(io::IO, f::StochasticForcing)
+    print(io, "StochasticForcing($(n_scenarios(f)) scenarios, $(n_years(f)) years)")
+end
+
+function Base.show(io::IO, f::DistributionalForcing{T,D}) where {T,D}
+    dist_name = replace(string(D), r"\{.*\}" => "")  # Strip type params
+    print(io, "DistributionalForcing($(n_years(f)) years, $dist_name)")
+end
+
+function Base.show(io::IO, sow::EADSOW)
+    print(io, "EADSOW($(n_years(sow)) years, method=:$(sow.method))")
+end
+
+function Base.show(io::IO, sow::StochasticSOW)
+    print(io, "StochasticSOW(scenario $(sow.scenario)/$(n_scenarios(sow.forcing)), $(n_years(sow)) years)")
+end

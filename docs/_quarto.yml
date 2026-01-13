@@ -15,10 +15,20 @@ website:
     contents:
       - href: index.qmd
         text: Home
-      - section: "Examples"
+      - href: examples/getting_started.qmd
+        text: Getting Started
+      - section: "EAD Mode"
         contents:
-          - href: examples/getting_started.qmd
-            text: Getting Started
+          - href: examples/ead_analysis.qmd
+            text: Policy Analysis
+          - href: examples/ead_optimization.qmd
+            text: Policy Search
+      - section: "Stochastic Mode"
+        contents:
+          - href: examples/stochastic_analysis.qmd
+            text: Policy Analysis
+          - href: examples/stochastic_optimization.qmd
+            text: Policy Search
   page-footer:
     left: "ICOW.jl - Dossgollin Lab"
     right:

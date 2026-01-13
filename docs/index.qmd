@@ -1,7 +1,15 @@
 ---
 title: "ICOW.jl"
-subtitle: "Island City on a Wedge - Flood risk management decision analysis"
-author: "Doss-Gollin Lab @ Rice CEVE"
+subtitle: "Island City on a Wedge"
+author: "James Doss-Gollin"
+bibliography: references.bib
+engine: julia
+execute:
+  code-fold: true
+  exeflags: ["--project=."]
+format:
+  html:
+    fig-format: svg
 ---
 
 ::: {.callout-warning}
@@ -10,24 +18,173 @@ author: "Doss-Gollin Lab @ Rice CEVE"
 This package is under active development and the API may change.
 :::
 
-## What is ICOW.jl?
+## What is iCOW?
 
-ICOW.jl is a Julia implementation of the "Island City on a Wedge" (iCOW) model from [Ceres et al. (2019)](https://doi.org/10.1007/s11069-019-03622-1).
-It models flood risk management decisions for a stylized coastal city, including:
+ICOW.jl is a Julia implementation of the "Island City on a Wedge" (iCOW) model from @ceres_cityonawedge:2019.
+It is a **storm surge risk modeling framework of intermediate complexity** designed for analyzing flood risk management decisions.
 
-- **Withdrawal**: Relocating development from low-lying areas
-- **Resistance**: Flood-proofing buildings
-- **Protection**: Building dikes/seawalls
+### Why iCOW?
 
-The model uses [SimOptDecisions.jl](https://github.com/dossgollin-lab/SimOptDecisions) for simulation-based optimization under uncertainty.
+iCOW bridges the gap between two extremes in flood risk modeling:
 
-## Key Features
+| Model Type | Pros | Cons |
+|------------|------|------|
+| **Simple models** (van Dantzig style) | Fast, analytical | Single strategy (dikes only), binary damage |
+| **Regional models** (CLARA style) | Realistic, site-specific | Computationally expensive, requires extensive data |
+| **iCOW** | Fast enough for optimization | Captures multiple strategies and realistic damage |
 
-| Feature | Description |
-|---------|-------------|
-| **Dual simulation modes** | EAD (Expected Annual Damage) for fast deterministic analysis, or stochastic Monte Carlo |
-| **Multi-objective optimization** | Find Pareto-optimal trade-offs between investment and damage |
-| **SimOptDecisions integration** | Clean separation of physics, policies, and optimization |
+Simple models like @vandantzig_dike:1956 assume dikes either hold (zero damage) or fail (100% damage).
+This misses the reality that flooding causes **graduated damage** depending on depth and extent.
+Regional models capture this complexity but require extensive site-specific data and computational resources.
+
+iCOW provides a middle ground: it's computationally efficient enough to evaluate millions of strategy combinations while capturing the key physics that drive risk-cost tradeoffs.
+
+## Framework: Sequential Decision-Making
+
+ICOW.jl uses the [SimOptDecisions.jl](https://dossgollin-lab.github.io/SimOptDecisions/) framework for sequential decision-making under uncertainty.
+Understanding a few key concepts will help you use the package effectively:
+
+| Concept | In iCOW | Description |
+|---------|---------|-------------|
+| **State of the World (SOW)** | `EADSOW`, `StochasticSOW` | External conditions the decision-maker cannot control (storm surge distributions, climate scenarios) |
+| **Action** | `Levers` | A specific protection configuration (withdrawal height, dike height, etc.) |
+| **Policy** | `StaticPolicy` | A rule for choosing actions. A `StaticPolicy` applies fixed levers; future policies could adapt to observed conditions |
+| **State** | `State` | The system's current condition (cumulative levers applied, damages incurred) |
+
+This separation enables:
+
+- **Modularity**: Swap forcing scenarios without changing policy logic
+- **Optimization**: Tune policy parameters to minimize objectives
+- **Extensibility**: Add adaptive policies that respond to observed storms
+
+See the [SimOptDecisions documentation](https://dossgollin-lab.github.io/SimOptDecisions/) for more on the underlying framework.
+
+## The Decision Problem
+
+The goal is to **minimize total cost**, which consists of:
+
+$$
+\text{Total Cost} = \underbrace{C_W + C_R + C_D}_{\text{Investment}} + \underbrace{\sum_{t=1}^{T} \mathbb{E}[\text{Damage}_t]}_{\text{Expected Damages}}
+$$
+
+This creates non-trivial tradeoffs because:
+
+- **Dikes** have startup costs plus volume-based costs that grow superlinearly with height (you can't just build an infinitely high dike)
+- **Resistance** (flood-proofing) has a linear cost component plus an exponential component as effectiveness $P \to 1$ (diminishing returns)
+- **Withdrawal** reduces future damages but sacrifices existing value
+
+The optimal strategy balances upfront investment against long-term expected damages.
+
+## The Wedge Geometry
+
+The model represents a coastal city as an **island on a wedge-shaped terrain** that rises from sea level.
+This geometry, inspired by areas like Manhattan's South Street Seaport, captures a key physical reality:
+
+**Higher storm surges cause more damage in two ways:**
+
+1. **Larger flooded area** - water reaches further inland on the slope
+2. **Deeper flooding** - buildings at low elevations experience greater depth
+
+This creates nonlinear damage relationships that simple models miss.
+The wedge approximation applies to any coastal city where terrain rises from the waterfront.
+
+::: {.callout-note}
+## Key Assumption: Uniform Value Distribution
+
+iCOW assumes that **asset value and population density are uniformly distributed** across the wedge from water's edge to the highest elevation.
+This is a simplifying assumption -- real cities have high-value districts and low-value districts.
+The model does not natively represent spatial heterogeneity (e.g., a financial district at the water's edge vs. residential areas inland).
+:::
+
+## Protection Strategies
+
+Decision-makers can invest in three types of protection:
+
+### Withdrawal
+
+Relocate all development below a certain elevation to higher ground.
+The withdrawn area becomes a buffer zone (parks, wetlands) with no assets at risk.
+
+- **Lever $W$** (meters): The withdrawal height. All development below elevation $W$ is relocated.
+
+### Resistance (Flood-Proofing)
+
+Modify buildings to reduce flood damage through waterproofing, elevated utilities, flood barriers, etc.
+Resistant buildings still flood, but suffer less damage.
+
+- **Lever $R$** (meters): The resistance height. Buildings are flood-proofed from elevation $W$ up to $W + R$.
+- **Lever $P$** (fraction, 0-1): The resistance effectiveness. A value of 0.5 means 50% damage reduction.
+
+### Dikes (Levees)
+
+Build a physical barrier to prevent flooding entirely.
+Areas behind the dike are protected unless the dike fails or is overtopped by extreme surges.
+
+- **Lever $D$** (meters): The dike height, measured from the dike's base.
+- **Lever $B$** (meters): The dike base elevation (setback), measured from the withdrawal height $W$.
+
+Setting $B > 0$ creates a **setback**: the dike is placed inland rather than at the waterfront.
+This surrenders the land in front of the dike to the sea, but the dike sits at a higher elevation, potentially reducing the required height.
+The area between $W$ and $W + B$ may be flood-proofed (Zone 1) or left unprotected (Zone 2).
+
+## City Zones
+
+```{julia}
+#| label: fig-zones
+#| fig-cap: "Elevation profile showing how levers define five protection zones. Zone 2 (gap) only exists when $R < B$."
+#| code-fold: true
+using ICOW
+
+# Example levers (with R < B to show Zone 2)
+levers = Levers(W = 2.0, R = 1.5, D = 4.0, B = 3.0)
+plot_zones(levers)
+```
+
+These strategies divide the city into **five zones** based on elevation:
+
+| Zone | Name | Elevation Range | Damage Behavior |
+|------|------|-----------------|-----------------|
+| 0 | Withdrawn | $0$ to $W$ | No damage (all value relocated) |
+| 1 | Resistant | $W$ to $W + \min(R, B)$ | Damage reduced by fraction $P$ |
+| 2 | Unprotected gap | $W + R$ to $W + B$ | Full damage when flooded (only exists if $R < B$) |
+| 3 | Dike-protected | $W + B$ to $W + B + D$ | No damage unless dike fails or overtops |
+| 4 | Above-dike city | Above $W + B + D$ | Full damage when flooded |
+
+Zone 3 experiences **amplified damage** if the dike fails, modeling the "levee effect" where protection can increase consequences of failure.
+
+## Simulation Modes
+
+ICOW supports two simulation modes for evaluating policies:
+
+| Mode | How It Works | Best For |
+|------|--------------|----------|
+| **EAD** | Analytically integrates damage over the surge distribution | Rapid optimization, risk-neutral policy comparison |
+| **Stochastic** | Simulates $N$ realizations of future storm sequences | Tail risk (99th percentile loss), robustness analysis, risk-averse decision-making |
+
+::: {.callout-tip}
+## Choosing a Mode
+
+Use **EAD mode** when you want fast, deterministic expected values for optimization or screening many policies.
+
+Use **Stochastic mode** when you care about the distribution of outcomes or when you want to design realistic adaptive policies.
+:::
+
+Both modes converge to the same expected values by the Law of Large Numbers.
+The key difference is that stochastic mode reveals the **variance** and **tail behavior** of outcomes.
+
+## Climate Non-Stationarity
+
+iCOW is designed to evaluate policies against **changing climate risks**.
+The `DistributionalForcing` type accepts time-varying distributions to model sea level rise or increasing storm intensity:
+
+```julia
+# Sea level rise: 1 cm/year increase in surge location parameter
+forcing = DistributionalForcing([
+    GeneralizedExtremeValue(1.0 + 0.01*t, 0.5, 0.1) for t in 1:50
+])
+```
+
+The examples in this documentation use stationary forcing for simplicity, but real applications should incorporate projected climate changes.
 
 ## Installation
 
@@ -45,22 +202,34 @@ using ICOW
 using Distributions
 
 # Create a city with default parameters
-city = CityParameters{Float64}()
+city = CityParameters()
 
-# Define a protection strategy: 5m dike
-policy = StaticPolicy(Levers(0.0, 0.0, 0.0, 5.0, 0.0))
+# Define a protection strategy: 5m dike at the seawall
+# Use keyword arguments for clarity
+policy = StaticPolicy(Levers(D=5.0))
 
-# Create forcing (50 years of GEV-distributed surges)
-forcing = DistributionalForcing(
-    [GeneralizedExtremeValue(1.0, 0.5, 0.1) for _ in 1:50], 1
-)
+# Create forcing: 50 years of stationary GEV-distributed annual maximum surges
+forcing = DistributionalForcing([GeneralizedExtremeValue(1.0, 0.5, 0.1) for _ in 1:50])
 
-# Run simulation
+# Run EAD simulation
 investment, damage = simulate(city, policy, forcing)
-println("Investment: \$$(round(investment/1e9, digits=2))B")
-println("Expected damage: \$$(round(damage/1e9, digits=2))B")
 ```
+
+The `Levers` struct accepts keyword arguments with defaults of zero:
+
+```julia
+Levers(D=5.0)                    # 5m dike only
+Levers(W=2.0, R=3.0, P=0.5)      # Withdrawal + resistance, no dike
+Levers(W=1.0, D=4.0, B=2.0)      # Withdrawal + setback dike
+```
+
+A `StaticPolicy` wraps `Levers` to define a policy that applies these settings at the start of the simulation.
+Future policy types (e.g., adaptive policies) could adjust levers in response to observed conditions.
 
 ## Next Steps
 
-- [Getting Started](examples/getting_started.qmd) - Complete walkthrough with optimization
+- [Getting Started](examples/getting_started.qmd) - Detailed walkthrough of model components
+- [EAD Analysis](examples/ead_analysis.qmd) - Compare protection strategies
+- [EAD Optimization](examples/ead_optimization.qmd) - Find optimal policies
+
+## References

@@ -1,0 +1,141 @@
+---
+title: "EAD Mode: Policy Analysis"
+subtitle: "Comparing protection strategies"
+engine: julia
+execute:
+  exeflags: ["--project=.."]
+---
+
+## Overview
+
+This guide shows how to compare different protection strategies using EAD mode.
+We'll analyze the trade-offs between investment cost and expected damage for various dike heights.
+
+## Setup
+
+```{julia}
+#| output: false
+using ICOW
+using Distributions
+using DataFrames
+using CairoMakie
+```
+
+```{julia}
+# Create city and forcing
+city = CityParameters()
+surge_dist = GeneralizedExtremeValue(1.0, 0.5, 0.1)
+forcing = DistributionalForcing([surge_dist for _ in 1:50])
+```
+
+## Comparing Dike Heights
+
+Let's evaluate dike heights from 0 to 10 meters:
+
+```{julia}
+dike_heights = 0:1:10
+
+# Use map for clean functional style
+results = map(dike_heights) do D
+    policy = StaticPolicy(Levers(0.0, 0.0, 0.0, Float64(D), 0.0))
+    inv, dmg = simulate(city, policy, forcing)
+    (D=D, investment=inv/1e9, damage=dmg/1e9, total=(inv+dmg)/1e9)
+end
+
+# Convert to DataFrame for nice display
+df = DataFrame(results)
+df.annual_damage = df.damage ./ 50  # Average per year
+df
+```
+
+## Understanding the Results
+
+::: {.callout-important}
+## Why Investment Appears Small
+
+You might notice that investment costs are much smaller than damage costs.
+This is correct and reflects the economics of the model:
+
+- **Dike cost for D=10m**: ~$0.27 billion (one-time)
+- **Annual damage with D=0**: ~$1.3 billion/year, or ~$65 billion over 50 years
+- Building a 10m dike costs less than 1% of the damage it prevents
+:::
+
+## Visualization
+
+Because investment and damage operate on very different scales, we use separate subplots:
+
+```{julia}
+#| label: fig-costs
+#| fig-cap: "Investment cost and expected annual damage by dike height"
+#| code-fold: true
+let
+    fig = Figure(size=(700, 600))
+
+    # Top plot: Investment cost
+    ax1 = Axis(fig[1, 1];
+        ylabel="Investment Cost (\$ billions)",
+        title="One-Time Investment Cost"
+    )
+    scatterlines!(ax1, collect(dike_heights), df.investment;
+        marker=:circle, markersize=10, linewidth=2, color=:steelblue)
+
+    # Bottom plot: Annual damage
+    ax2 = Axis(fig[2, 1];
+        xlabel="Dike Height (m)",
+        ylabel="Expected Annual Damage (\$ billions)",
+        title="Expected Annual Damage"
+    )
+    scatterlines!(ax2, collect(dike_heights), df.annual_damage;
+        marker=:circle, markersize=10, linewidth=2, color=:coral)
+
+    fig
+end
+```
+
+## Key Observations
+
+1. **Investment increases linearly** with dike height (dike volume grows with height)
+
+2. **Damage decreases rapidly** as dike height increases, following a non-linear curve
+
+3. **Diminishing returns**: Going from 0m to 5m dike reduces damage more than going from 5m to 10m
+
+4. **Optimal exists**: There's a dike height that minimizes total cost (investment + damage)
+
+## Finding the Optimal Height
+
+```{julia}
+# Find the dike height that minimizes total cost
+optimal_idx = argmin(df.total)
+optimal = df[optimal_idx, :]
+
+println("Optimal dike height: $(optimal.D) m")
+println("Total cost: \$$(round(optimal.total, digits=2)) billion")
+```
+
+## Combined Strategies
+
+Dikes aren't the only option. Let's compare a few combined strategies:
+
+```{julia}
+strategies = [
+    ("Baseline", Levers(0.0, 0.0, 0.0, 0.0, 0.0)),
+    ("5m dike", Levers(0.0, 0.0, 0.0, 5.0, 0.0)),
+    ("2m withdrawal + 3m dike", Levers(2.0, 0.0, 0.0, 3.0, 0.0)),
+    ("50% resistance + 3m dike", Levers(0.0, 3.0, 0.5, 3.0, 0.0)),
+]
+
+strategy_results = map(strategies) do (name, levers)
+    policy = StaticPolicy(levers)
+    inv, dmg = simulate(city, policy, forcing)
+    (name=name, investment=inv/1e9, damage=dmg/1e9, total=(inv+dmg)/1e9)
+end
+
+DataFrame(strategy_results)
+```
+
+## Next Steps
+
+- [EAD Optimization](ead_optimization.qmd) - Use multi-objective optimization to find Pareto-optimal strategies
+- [Stochastic Analysis](stochastic_analysis.qmd) - Verify results with Monte Carlo simulation
