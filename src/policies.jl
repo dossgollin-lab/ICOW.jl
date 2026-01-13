@@ -1,69 +1,20 @@
 # Policy interface and implementations
-# AbstractPolicy is defined in types.jl
+# Policies inherit from SimOptDecisions.AbstractPolicy
 
 raw"""
 # Policy Interface
 
 Policies in iCOW follow the Powell framework for sequential decision-making under uncertainty.
+See docs/framework.md for details.
 
-A policy $\pi = (f, \theta)$ consists of:
-- $f \in \mathcal{F}$: The policy **type** (e.g., `StaticPolicy`, future: `ThresholdPolicy`)
-- $\theta \in \Theta^f$: Tunable **parameters** for that type
-
-## Implementation Pattern: Callable Structs
-
-Policies are implemented as **callable structs** that follow this interface:
-
-```julia
-struct MyPolicy{T<:Real} <: AbstractPolicy{T}
-    # Policy parameters go here
-end
-
-# Make policy callable: (state, forcing, year) -> Levers
-function (policy::MyPolicy)(state, forcing, year)
-    # Decision logic here
-    return Levers(...)
-end
-```
-
-The callable interface receives:
-- `state`: Current protection state (`StochasticState` or `EADState`)
-- `forcing`: Forcing data (`StochasticForcing` or `DistributionalForcing`)
-- `year`: Current simulation year (0-indexed from start year)
-
-And returns:
-- `Levers{T}`: **Target** lever settings (W, R, P, D, B)
-
-Note: The simulation engine enforces irreversibility. Policies return target levers;
-the engine ensures `next_levers = max.(current_levers, target_levers)`.
-
-## Parameter Extraction for Optimization
-
-Policies must implement:
-
-```julia
-parameters(policy::MyPolicy) -> AbstractVector{T}
-```
-
-This extracts the tunable parameters $\theta$ as a vector for optimization algorithms.
-
-## Round-Trip Capability
-
-For optimization, policies must support reconstruction from parameters:
-
-```julia
-policy_reconstructed = MyPolicy(parameters(policy))
-```
-
-This enables the optimization loop: optimize $\theta$ → reconstruct policy → evaluate.
-
-## References
-
-See docs/framework.md for details on the Powell framework and sequential decision structure.
+Policies inherit from `SimOptDecisions.AbstractPolicy` and must implement:
+- `SimOptDecisions.params(policy)` - Extract parameters as vector
+- `SimOptDecisions.param_bounds(::Type{PolicyType})` - Return parameter bounds
+- Vector constructor `PolicyType(params::AbstractVector)` - Reconstruct from parameters
 """
 
 """
-    StaticPolicy{T<:Real} <: AbstractPolicy{T}
+    StaticPolicy{T<:Real} <: SimOptDecisions.AbstractPolicy
 
 Policy that returns fixed lever settings regardless of state or time.
 
@@ -74,7 +25,7 @@ Policy that returns fixed lever settings regardless of state or time.
 
 Construct from either `Levers` or a parameter vector `[W, R, P, D, B]`.
 """
-struct StaticPolicy{T<:Real} <: AbstractPolicy{T}
+struct StaticPolicy{T<:Real} <: SimOptDecisions.AbstractPolicy
     levers::Levers{T}
 end
 
@@ -93,22 +44,33 @@ function (policy::StaticPolicy{T})(state, forcing, year) where {T}
     end
 end
 
-"""Extract policy parameters as a vector for optimization."""
-function parameters end
+# =============================================================================
+# SimOptDecisions interface
+# =============================================================================
 
-# StaticPolicy parameters: the 5 lever values
-parameters(policy::StaticPolicy{T}) where {T} = T[
-    policy.levers.W,
-    policy.levers.R,
-    policy.levers.P,
-    policy.levers.D,
-    policy.levers.B
-]
+"""Extract policy parameters as a vector for SimOptDecisions."""
+function SimOptDecisions.params(policy::StaticPolicy{T}) where {T}
+    return T[policy.levers.W, policy.levers.R, policy.levers.P, policy.levers.D, policy.levers.B]
+end
+
+"""Return parameter bounds for SimOptDecisions optimization."""
+function SimOptDecisions.param_bounds(::Type{<:StaticPolicy})
+    # Generic bounds - actual feasibility enforced via FeasibilityConstraint
+    return [(0.0, 50.0), (0.0, 50.0), (0.0, 0.99), (0.0, 50.0), (0.0, 50.0)]
+end
+
+# =============================================================================
+# Backward compatibility
+# =============================================================================
+
+"""Extract policy parameters as a vector for optimization (deprecated, use SimOptDecisions.params)."""
+parameters(policy::StaticPolicy) = SimOptDecisions.params(policy)
 
 """
     valid_bounds(::Type{StaticPolicy}, city)
 
 Return (lower, upper) bounds for StaticPolicy parameters [W, R, P, D, B].
+City-specific bounds (tighter than param_bounds).
 """
 function valid_bounds(::Type{StaticPolicy}, city::CityParameters{T}) where {T<:Real}
     lower = (zero(T), zero(T), zero(T), zero(T), zero(T))

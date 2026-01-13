@@ -2,12 +2,12 @@
 # All defaults from docs/equations.md (C++ values where paper differs)
 
 """
-    CityParameters{T<:Real}
+    CityParameters{T<:Real} <: SimOptDecisions.AbstractConfig
 
 Exogenous parameters for the iCOW coastal flood model.
 See docs/equations.md for full parameter documentation.
 """
-Base.@kwdef struct CityParameters{T<:Real}
+Base.@kwdef struct CityParameters{T<:Real} <: SimOptDecisions.AbstractConfig
     # Geometry (6)
     V_city::T = 1.5e12      # Initial city value ($)
     H_bldg::T = 30.0        # Building height (m)

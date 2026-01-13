@@ -1,17 +1,13 @@
 # Core types for the iCOW model
-
-# Abstract type hierarchy for dual-mode simulation
-abstract type AbstractForcing{T<:Real} end
-abstract type AbstractSimulationState{T<:Real} end
-abstract type AbstractPolicy{T<:Real} end
+# Types inherit from SimOptDecisions abstract types
 
 """
-    Levers{T<:Real}
+    Levers{T<:Real} <: SimOptDecisions.AbstractAction
 
 Decision levers (W, R, P, D, B) for flood protection strategy.
 W is absolute; R, P, D, B are relative to W. See docs/equations.md.
 """
-struct Levers{T<:Real}
+struct Levers{T<:Real} <: SimOptDecisions.AbstractAction
     W::T  # Withdrawal height (m) - absolute
     R::T  # Resistance height (m) - relative to W
     P::T  # Resistance percentage [0, 1)

@@ -1,5 +1,6 @@
 using Test
 using ICOW
+import SimOptDecisions
 
 @testset "State Types" begin
     levers = Levers(1.0, 2.0, 0.5, 3.0, 1.0)
@@ -8,7 +9,7 @@ using ICOW
         state = State(levers)
         @test state.current_levers === levers
         @test state.current_year == 1
-        @test state isa AbstractSimulationState{Float64}
+        @test state isa SimOptDecisions.AbstractState
 
         # Mutability
         state.current_year = 5

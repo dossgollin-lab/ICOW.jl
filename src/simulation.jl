@@ -14,7 +14,7 @@ Stochastic simulation mode. See docs/equations.md.
 """
 function simulate(
     city::CityParameters{T},
-    policy::AbstractPolicy{T},
+    policy::SimOptDecisions.AbstractPolicy,
     forcing::StochasticForcing{T};
     mode::Symbol=:scalar,
     scenario::Int=1,
@@ -38,7 +38,7 @@ Expected Annual Damage (EAD) simulation mode. See docs/equations.md.
 """
 function simulate(
     city::CityParameters{T},
-    policy::AbstractPolicy{T},
+    policy::SimOptDecisions.AbstractPolicy,
     forcing::DistributionalForcing{T,D};
     mode::Symbol=:scalar,
     method::Symbol=:quad,
@@ -64,9 +64,9 @@ damage_fn: (year, levers) -> damage value
 """
 function _simulate_core(
     city::CityParameters{T},
-    policy::AbstractPolicy{T},
-    forcing::AbstractForcing{T},
-    state::AbstractSimulationState{T},
+    policy::SimOptDecisions.AbstractPolicy,
+    forcing,
+    state::SimOptDecisions.AbstractState,
     mode::Symbol,
     discount_rate::T,
     damage_fn

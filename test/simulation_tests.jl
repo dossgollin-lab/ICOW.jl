@@ -1,5 +1,6 @@
 using Test
 using ICOW
+import SimOptDecisions
 using Random
 using Distributions
 using Statistics
@@ -22,9 +23,9 @@ using Statistics
 
     @testset "1. Irreversibility Enforcement" begin
         # Policy that tries to "decrease" dike height mid-simulation
-        struct DecreasingPolicy <: AbstractPolicy{Float64} end
+        struct DecreasingPolicy <: SimOptDecisions.AbstractPolicy end
 
-        function (p::DecreasingPolicy)(state::AbstractSimulationState, forcing::AbstractForcing, year::Int)
+        function (p::DecreasingPolicy)(state::SimOptDecisions.AbstractState, forcing, year::Int)
             if year <= 2
                 return Levers(0.0, 0.0, 0.0, 5.0, 0.0)  # High protection
             else
@@ -69,9 +70,9 @@ using Statistics
         @test total_cost ≈ trace.investment[1]
 
         # Test increasing policy (pay only for increments)
-        struct IncreasingPolicy <: AbstractPolicy{Float64} end
+        struct IncreasingPolicy <: SimOptDecisions.AbstractPolicy end
 
-        function (p::IncreasingPolicy)(state::AbstractSimulationState, forcing::AbstractForcing, year::Int)
+        function (p::IncreasingPolicy)(state::SimOptDecisions.AbstractState, forcing, year::Int)
             # Increase dike height each year
             return Levers(0.0, 0.0, 0.0, Float64(year), 0.0)
         end

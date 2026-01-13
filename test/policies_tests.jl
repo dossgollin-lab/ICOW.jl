@@ -1,12 +1,13 @@
 using Test
 using ICOW
+import SimOptDecisions
 
 @testset "StaticPolicy" begin
     levers = Levers(1.0, 2.0, 0.5, 3.0, 1.0)
     policy = StaticPolicy(levers)
 
     @test policy.levers === levers
-    @test policy isa AbstractPolicy{Float64}
+    @test policy isa SimOptDecisions.AbstractPolicy
 
     # Callable: returns fixed levers in year 1, zero levers otherwise
     state = State(Levers(0.0, 0.0, 0.0, 0.0, 0.0))

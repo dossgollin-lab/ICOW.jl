@@ -37,8 +37,8 @@ Objective function for optimization: total discounted cost (investment + damage)
 """
 function objective_total_cost(
     city::CityParameters,
-    policy::AbstractPolicy,
-    forcing::AbstractForcing,
+    policy::SimOptDecisions.AbstractPolicy,
+    forcing,
     discount_rate::Real;
     kwargs...
 )

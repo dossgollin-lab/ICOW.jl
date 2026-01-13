@@ -4,6 +4,7 @@ using Random
 using Statistics
 using Distributions
 using QuadGK
+using SimOptDecisions
 
 # Phase 1: Parameters & Validation
 include("parameters.jl")
@@ -35,11 +36,9 @@ include("optimization.jl")
 export CityParameters, validate_parameters, city_slope
 export Levers, is_feasible
 
-# Export Phase 2: Abstract types
-export AbstractForcing, AbstractSimulationState, AbstractPolicy
-
-# Export Phase 2: Forcing types
+# Export Phase 2: Forcing types and SOW wrappers
 export StochasticForcing, DistributionalForcing
+export EADSOW, StochasticSOW
 export n_scenarios, n_years, get_surge, get_distribution
 
 # Export Phase 2: State types

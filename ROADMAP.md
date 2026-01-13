@@ -14,11 +14,11 @@ Check off items as they are completed using `[x]`.
 
 ## Phase A: Add Dependencies
 
-- [ ] Add SimOptDecisions to Project.toml via HTTPS URL
+- [x] Add SimOptDecisions to Project.toml via HTTPS URL
   - URL: `https://github.com/dossgollin-lab/SimOptDecisions`
-- [ ] Add Metaheuristics to Project.toml
-- [ ] Remove BlackBoxOptim from Project.toml
-- [ ] Verify: `using ICOW` loads without errors
+- [x] Add Metaheuristics to Project.toml
+- [x] Remove BlackBoxOptim from Project.toml
+- [x] Verify: `using ICOW` loads without errors
 
 ---
 
@@ -26,46 +26,46 @@ Check off items as they are completed using `[x]`.
 
 ### B1: Module Setup
 
-- [ ] Add `using SimOptDecisions` to `src/ICOW.jl`
+- [x] Add `using SimOptDecisions` to `src/ICOW.jl`
 
 ### B2: Update Abstract Types (src/types.jl)
 
-- [ ] Remove `abstract type AbstractForcing{T<:Real} end`
-- [ ] Remove `abstract type AbstractSimulationState{T<:Real} end`
-- [ ] Remove `abstract type AbstractPolicy{T<:Real} end`
-- [ ] Make `Levers{T} <: SimOptDecisions.AbstractAction`
+- [x] Remove `abstract type AbstractForcing{T<:Real} end`
+- [x] Remove `abstract type AbstractSimulationState{T<:Real} end`
+- [x] Remove `abstract type AbstractPolicy{T<:Real} end`
+- [x] Make `Levers{T} <: SimOptDecisions.AbstractAction`
 
 ### B3: Update CityParameters (src/parameters.jl)
 
-- [ ] Make `CityParameters{T} <: SimOptDecisions.AbstractConfig`
+- [x] Make `CityParameters{T} <: SimOptDecisions.AbstractConfig`
 
 ### B4: Update State (src/states.jl)
 
-- [ ] Make `State{T} <: SimOptDecisions.AbstractState`
+- [x] Make `State{T} <: SimOptDecisions.AbstractState`
 
 ### B5: Create SOW Wrappers (src/forcing.jl)
 
-- [ ] Create `EADSOW{T,D} <: SimOptDecisions.AbstractSOW`
+- [x] Create `EADSOW{T,D} <: SimOptDecisions.AbstractSOW`
   - Fields: forcing, discount_rate, method
-- [ ] Create `StochasticSOW{T} <: SimOptDecisions.AbstractSOW`
+- [x] Create `StochasticSOW{T} <: SimOptDecisions.AbstractSOW`
   - Fields: forcing, scenario, discount_rate
-- [ ] Add helper functions: `n_years(sow)`, `get_surge(sow, year)`
+- [x] Add helper functions: `n_years(sow)`, `get_surge(sow, year)`
 
 ### B6: Update Policy (src/policies.jl)
 
-- [ ] Make `StaticPolicy{T} <: SimOptDecisions.AbstractPolicy`
-- [ ] Rename `parameters()` to `SimOptDecisions.params()`
-- [ ] Add `SimOptDecisions.param_bounds(::Type{StaticPolicy{T}})`
-- [ ] Keep `valid_bounds()` for backward compatibility
+- [x] Make `StaticPolicy{T} <: SimOptDecisions.AbstractPolicy`
+- [x] Rename `parameters()` to `SimOptDecisions.params()`
+- [x] Add `SimOptDecisions.param_bounds(::Type{StaticPolicy{T}})`
+- [x] Keep `valid_bounds()` for backward compatibility
 
 ### B7: Update Exports (src/ICOW.jl)
 
-- [ ] Export `EADSOW`, `StochasticSOW`
-- [ ] Remove exports of deleted abstract types
+- [x] Export `EADSOW`, `StochasticSOW`
+- [x] Remove exports of deleted abstract types
 
 ### B8: Verify
 
-- [ ] All existing tests pass
+- [x] All existing tests pass
 
 ---
 
