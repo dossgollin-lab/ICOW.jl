@@ -1,0 +1,190 @@
+---
+title: "Getting Started with ICOW.jl"
+subtitle: "A minimal working example"
+author: "Doss-Gollin Lab @ Rice CEVE"
+engine: julia
+execute:
+  exeflags: ["--project=.."]
+---
+
+## Overview
+
+This tutorial demonstrates how to use ICOW.jl to analyze flood risk management decisions.
+We'll simulate a coastal city under storm surge risk and find optimal protection strategies.
+
+## Setup
+
+```{julia}
+#| output: false
+using ICOW
+using Distributions
+using Random
+using CairoMakie
+```
+
+## The City Model
+
+ICOW models a stylized coastal city as a wedge-shaped terrain rising from sea level.
+The city has $1.5 trillion in assets and extends 17 meters in elevation.
+
+```{julia}
+city = CityParameters{Float64}()
+println("City value: \$$(city.V_city/1e12) trillion")
+println("Max elevation: $(city.H_city) m")
+```
+
+## Decision Levers
+
+The model has five decision levers for flood risk management:
+
+| Lever | Symbol | Description |
+|-------|--------|-------------|
+| Withdrawal | W | Height below which city is relocated |
+| Resistance | R | Height of flood-proofing above W |
+| Resistance % | P | Fraction of buildings made resistant |
+| Dike Height | D | Height of protective dike |
+| Dike Base | B | Elevation of dike base above W |
+
+```{julia}
+# Example: 5m dike with no withdrawal or resistance
+levers = Levers(0.0, 0.0, 0.0, 5.0, 0.0)
+println("Protection strategy: $(levers.D)m dike")
+```
+
+## Storm Surge Forcing
+
+Storm surges follow a GEV distribution each year.
+We create 50 years of forcing data:
+
+```{julia}
+#| output: false
+n_years = 50
+surge_dist = GeneralizedExtremeValue(1.0, 0.5, 0.1)  # location, scale, shape
+forcing = DistributionalForcing([surge_dist for _ in 1:n_years], 1)  # start_year=1
+```
+
+## Simulation
+
+ICOW supports two simulation modes:
+
+- **EAD mode**: Fast, deterministic (integrates over surge distribution analytically)
+- **Stochastic mode**: Monte Carlo sampling
+
+### EAD Simulation
+
+```{julia}
+policy = StaticPolicy(levers)
+investment, damage = simulate(city, policy, forcing)
+
+println("Investment cost: \$$(round(investment/1e9, digits=2)) billion")
+println("Expected damage: \$$(round(damage/1e9, digits=2)) billion")
+println("Total cost: \$$(round((investment + damage)/1e9, digits=2)) billion")
+```
+
+### Comparing Protection Levels
+
+Let's compare different dike heights:
+
+```{julia}
+dike_heights = 0:1:10
+results = []
+
+for D in dike_heights
+    policy = StaticPolicy(Levers(0.0, 0.0, 0.0, Float64(D), 0.0))
+    inv, dmg = simulate(city, policy, forcing)
+    push!(results, (D=D, investment=inv/1e9, damage=dmg/1e9, total=(inv+dmg)/1e9))
+end
+
+# Display results
+for r in results
+    println("D=$(r.D)m: Investment=\$$(round(r.investment, digits=1))B, " *
+            "Damage=\$$(round(r.damage, digits=1))B, Total=\$$(round(r.total, digits=1))B")
+end
+```
+
+### Visualization
+
+```{julia}
+#| label: fig-tradeoff
+#| fig-cap: "Trade-off between dike height, investment cost, and expected damage"
+#| code-fold: true
+let
+    fig = Figure(size=(700, 500))
+    ax = Axis(fig[1, 1];
+        xlabel="Dike Height (m)",
+        ylabel="Cost (\$ billions)",
+        title="Cost Components by Dike Height"
+    )
+
+    investments = [r.investment for r in results]
+    damages = [r.damage for r in results]
+    totals = [r.total for r in results]
+
+    lines!(ax, collect(dike_heights), investments; label="Investment", linewidth=2)
+    lines!(ax, collect(dike_heights), damages; label="Damage", linewidth=2)
+    lines!(ax, collect(dike_heights), totals; label="Total", linewidth=2, linestyle=:dash)
+
+    axislegend(ax; position=:rt)
+    fig
+end
+```
+
+## Multi-Objective Optimization
+
+ICOW uses SimOptDecisions for multi-objective optimization.
+We find policies that trade off investment cost against expected damage.
+
+```{julia}
+#| output: false
+import Metaheuristics  # Required for optimization backend
+
+# Run optimization
+result = ICOW.optimize(
+    city,
+    [forcing],
+    0.0;  # discount rate
+    max_iterations=50,
+    population_size=30
+)
+```
+
+### Pareto Front
+
+```{julia}
+# Extract Pareto-optimal policies
+policies = pareto_policies(result, StaticPolicy{Float64})
+
+println("Found $(length(policies)) Pareto-optimal solutions:")
+for (policy, obj) in policies
+    p = policy.levers
+    println("  W=$(round(p.W, digits=1)), R=$(round(p.R, digits=1)), " *
+            "P=$(round(p.P, digits=2)), D=$(round(p.D, digits=1)), B=$(round(p.B, digits=1)) → " *
+            "Inv=\$$(round(obj.mean_investment/1e9, digits=1))B, " *
+            "Dmg=\$$(round(obj.mean_damage/1e9, digits=1))B")
+end
+```
+
+### Best Total Cost Policy
+
+```{julia}
+best, best_obj = best_total(result, StaticPolicy{Float64})
+p = best.levers
+
+println("Best total cost policy:")
+println("  Levers: W=$(round(p.W, digits=1)), R=$(round(p.R, digits=1)), " *
+        "P=$(round(p.P, digits=2)), D=$(round(p.D, digits=1)), B=$(round(p.B, digits=1))")
+println("  Investment: \$$(round(best_obj.mean_investment/1e9, digits=2)) billion")
+println("  Expected damage: \$$(round(best_obj.mean_damage/1e9, digits=2)) billion")
+println("  Total: \$$(round((best_obj.mean_investment + best_obj.mean_damage)/1e9, digits=2)) billion")
+```
+
+## Summary
+
+This example demonstrated:
+
+1. **City setup**: Creating a city with default parameters
+2. **Lever definition**: Specifying protection strategies (withdrawal, resistance, dikes)
+3. **Simulation**: Running EAD mode to compute costs
+4. **Optimization**: Finding Pareto-optimal trade-offs using SimOptDecisions
+
+For more details on the underlying physics, see the mathematical reference in `_background/equations.md`.

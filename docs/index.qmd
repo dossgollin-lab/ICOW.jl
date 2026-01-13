@@ -1,0 +1,66 @@
+---
+title: "ICOW.jl"
+subtitle: "Island City on a Wedge - Flood risk management decision analysis"
+author: "Doss-Gollin Lab @ Rice CEVE"
+---
+
+::: {.callout-warning}
+## Work in Progress
+
+This package is under active development and the API may change.
+:::
+
+## What is ICOW.jl?
+
+ICOW.jl is a Julia implementation of the "Island City on a Wedge" (iCOW) model from [Ceres et al. (2019)](https://doi.org/10.1007/s11069-019-03622-1).
+It models flood risk management decisions for a stylized coastal city, including:
+
+- **Withdrawal**: Relocating development from low-lying areas
+- **Resistance**: Flood-proofing buildings
+- **Protection**: Building dikes/seawalls
+
+The model uses [SimOptDecisions.jl](https://github.com/dossgollin-lab/SimOptDecisions) for simulation-based optimization under uncertainty.
+
+## Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Dual simulation modes** | EAD (Expected Annual Damage) for fast deterministic analysis, or stochastic Monte Carlo |
+| **Multi-objective optimization** | Find Pareto-optimal trade-offs between investment and damage |
+| **SimOptDecisions integration** | Clean separation of physics, policies, and optimization |
+
+## Installation
+
+Requires Julia 1.10 or later.
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/dossgollin-lab/ICOW.jl")
+```
+
+## Quick Example
+
+```julia
+using ICOW
+using Distributions
+
+# Create a city with default parameters
+city = CityParameters{Float64}()
+
+# Define a protection strategy: 5m dike
+policy = StaticPolicy(Levers(0.0, 0.0, 0.0, 5.0, 0.0))
+
+# Create forcing (50 years of GEV-distributed surges)
+forcing = DistributionalForcing(
+    [GeneralizedExtremeValue(1.0, 0.5, 0.1) for _ in 1:50], 1
+)
+
+# Run simulation
+investment, damage = simulate(city, policy, forcing)
+println("Investment: \$$(round(investment/1e9, digits=2))B")
+println("Expected damage: \$$(round(damage/1e9, digits=2))B")
+```
+
+## Next Steps
+
+- [Getting Started](examples/getting_started.qmd) - Complete walkthrough with optimization

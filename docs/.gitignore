@@ -1,0 +1,11 @@
+# Quarto output
+_site/
+_freeze/
+.quarto/
+
+# Cache files
+.cache/
+.jupyter_cache/
+
+/.quarto/
+**/*.quarto_ipynb

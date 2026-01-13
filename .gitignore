@@ -1,12 +1,15 @@
 # do not have license to distribute original C++ reference
-docs/ceres_2019.pdf
-docs/*.cpp
-docs/iCOW_2018_06_11.cpp
+_background/ceres_2019.pdf
+_background/*.cpp
+_background/iCOW_2018_06_11.cpp
+
+# PDFs in background folder should not be distributed
+_background/*.pdf
 
 # C++ reference validation outputs (generated, not tracked)
-test/cpp_reference/outputs/*.txt
-test/cpp_reference/icow_test
-test/cpp_reference/*.o
+test/validation/cpp_reference/outputs/*.txt
+test/validation/cpp_reference/icow_test
+test/validation/cpp_reference/*.o
 
 # Claude Code local settings
 .claude/

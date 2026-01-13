@@ -1,0 +1,44 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  site-url: https://dossgollin-lab.github.io/ICOW.jl/
+  title: "ICOW.jl"
+  description: "Island City on a Wedge - A Julia implementation for flood risk management decision analysis"
+  navbar:
+    right:
+      - icon: github
+        href: https://github.com/dossgollin-lab/ICOW.jl
+  sidebar:
+    style: docked
+    contents:
+      - href: index.qmd
+        text: Home
+      - section: "Examples"
+        contents:
+          - href: examples/getting_started.qmd
+            text: Getting Started
+  page-footer:
+    left: "ICOW.jl - Dossgollin Lab"
+    right:
+      - icon: github
+        href: https://github.com/dossgollin-lab/ICOW.jl
+
+format:
+  html:
+    theme: sandstone
+    toc: true
+    anchor-sections: true
+    code-overflow: wrap
+    citations-hover: true
+    code-annotations: hover
+    html-math-method: mathjax
+    date-format: long
+
+# Julia engine configuration
+engine: julia
+execute:
+  exeflags: ["--project=..", "--threads=auto"]
+  freeze: auto
+  cache: true

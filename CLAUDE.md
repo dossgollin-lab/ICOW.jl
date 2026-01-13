@@ -12,14 +12,14 @@
 
 ### Source of Truth
 
-- **docs/equations.md**: The definitive mathematical reference.
+- **_background/equations.md**: The definitive mathematical reference.
   Contains all equations, parameters, zone definitions, and implementation guidance (paper vs C++ discrepancies).
   **All bugs found in the C++ reference are documented here** (7 total as of Jan 2026).
 - **ROADMAP.md**: The implementation plan with checklist items.
   Mark items complete with `[x]` as you finish them.
 - **C++ Reference**: The original implementation is at [rceres/ICOW](https://github.com/rceres/ICOW/blob/master/src/iCOW_2018_06_11.cpp).
-  Download locally to `docs/iCOW_2018_06_11.cpp` for reference (file is in .gitignore and cannot be redistributed).
-  **Contains 7 bugs** - see `docs/equations.md` for complete documentation.
+  Download locally to `_background/iCOW_2018_06_11.cpp` for reference (file is in .gitignore and cannot be redistributed).
+  **Contains 7 bugs** - see `_background/equations.md` for complete documentation.
 
 ### Mathematical Fidelity
 
@@ -29,12 +29,12 @@
 - No "simplified" formulas that approximate the correct behavior.
 - No shortcuts that change numerical results.
 - The code can be cleaner/more readable, but the math must match the paper.
-- All C++ bugs are documented in `docs/equations.md` with detailed explanations.
-- If you find new C++ bugs, document them in `docs/equations.md` immediately.
+- All C++ bugs are documented in `_background/equations.md` with detailed explanations.
+- If you find new C++ bugs, document them in `_background/equations.md` immediately.
 
 ### C++ Reference Validation
 
-**Location:** `test/cpp_reference/`
+**Location:** `test/validation/cpp_reference/`
 
 A debugged version of the C++ code is maintained for validation purposes:
 
@@ -52,11 +52,11 @@ A debugged version of the C++ code is maintained for validation purposes:
 **Usage:**
 
 ```bash
-cd test/cpp_reference
+cd test/validation/cpp_reference
 ./compile.sh              # Compile debugged C++
 ./icow_test               # Generate reference outputs
-cd ../..
-julia --project test/cpp_reference/validate_cpp_outputs.jl  # Validate Julia
+cd ../../..
+julia --project test/validation/cpp_reference/validate_cpp_outputs.jl  # Validate Julia
 ```
 
 **What's tested:**
@@ -67,7 +67,7 @@ julia --project test/cpp_reference/validate_cpp_outputs.jl  # Validate Julia
 - Validation tolerance: rtol=1e-10 (floating-point precision)
 
 **Note on Dike Volume:**
-Dike and total investment cost comparisons are **skipped** because Julia uses a corrected geometric formula for dike volume (see Equation 6 in `docs/equations.md`).
+Dike and total investment cost comparisons are **skipped** because Julia uses a corrected geometric formula for dike volume (see Equation 6 in `_background/equations.md`).
 The paper's original formula is numerically unstable for realistic city slopes (S $\approx$ 0.0085 causes negative values under the square root).
 The Julia formula computes the same geometric shape but via direct integration, avoiding the instability.
 
@@ -75,7 +75,7 @@ The Julia formula computes the same geometric shape but via direct integration, 
 
 - When adding new physics functions, add corresponding test cases to the C++ harness
 - Re-run validation after any changes to `src/costs.jl`, `src/geometry.jl`, or `src/zones.jl`
-- If validation fails, investigate whether Julia or C++ is correct by checking `docs/equations.md`
+- If validation fails, investigate whether Julia or C++ is correct by checking `_background/equations.md`
 
 ## Code Quality & Style
 
@@ -88,7 +88,7 @@ The Julia formula computes the same geometric shape but via direct integration, 
 
 ## Docstrings
 
-Keep docstrings minimal and reference `docs/equations.md` for formulas.
+Keep docstrings minimal and reference `_background/equations.md` for formulas.
 
 - **Format**: Signature + one-sentence description + equation reference
 - **No duplication**: Don't repeat equations from equations.md
@@ -101,7 +101,7 @@ Example:
 """
     calculate_dike_volume(city::CityParameters, D) -> volume
 
-Calculate dike material volume (Equation 6). See docs/equations.md.
+Calculate dike material volume (Equation 6). See _background/equations.md.
 """
 ```
 
