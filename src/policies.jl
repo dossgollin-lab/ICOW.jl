@@ -59,7 +59,7 @@ This enables the optimization loop: optimize $\theta$ → reconstruct policy →
 
 ## References
 
-See `docs/roadmap/README.md` for details on the Powell framework and sequential decision structure.
+See docs/framework.md for details on the Powell framework and sequential decision structure.
 """
 
 """

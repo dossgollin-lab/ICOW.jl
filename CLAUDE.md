@@ -2,27 +2,21 @@
 
 ## The "Golden Rules" (Project Specific)
 
-1. First think through the problem, read the codebase for relevant files, and write a plan to file (either `tasks/phase_X_plan.md` or generic `tasks/todo.md`).
-2. The plan should have a list of todo items that you can check off as you complete them.
-3. Before you begin working, check in with me and I will verify the plan.
-4. Then, begin working on the todo items, marking them as complete as you go.
-5. Please every step of the way just give me a high level explanation of what changes you made
-6. Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity. If you are writing code from scratch, simplicity is still king -- always look for the simpler approach over an over-engineered one.
-7. Finally, add a review section to the too.nd file with a summary of the changes you made and any other relevant information.
-8. DO NOT BE LAZY. NEVER BE LAZY. IF THERE IS A BUG FIND THE ROOT CAUSE AND FIX IT. NO TEMPORARY FIXES. YOU ARE A SENIOR DEVELOPER. NEVER BE LAZY.
-9. MAKE ALL FIXES AND CODE CHANGES AS SIMPLE AS HUMANLY POSSIBLE. THEY SHOULD ONLY IMPACT NECESSARY CODE RELEVANT TO THE TASK AND NOTHING ELSE. IT SHOULD IMPACT AS LITTLE CODE AS POSSIBLE. YOUR GOAL IS TO NOT INTRODUCE ANY BUGS. IT'S ALL ABOUT SIMPLICITY.
+1. First think through the problem, read the codebase for relevant files. Check `ROADMAP.md` for current progress.
+2. Before you begin working, check in with me and I will verify the approach.
+3. Then, begin working, marking items complete in `ROADMAP.md` as you go.
+4. Please every step of the way just give me a high level explanation of what changes you made.
+5. Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity. If you are writing code from scratch, simplicity is still king -- always look for the simpler approach over an over-engineered one.
+6. DO NOT BE LAZY. NEVER BE LAZY. IF THERE IS A BUG FIND THE ROOT CAUSE AND FIX IT. NO TEMPORARY FIXES. YOU ARE A SENIOR DEVELOPER. NEVER BE LAZY.
+7. MAKE ALL FIXES AND CODE CHANGES AS SIMPLE AS HUMANLY POSSIBLE. THEY SHOULD ONLY IMPACT NECESSARY CODE RELEVANT TO THE TASK AND NOTHING ELSE. IT SHOULD IMPACT AS LITTLE CODE AS POSSIBLE. YOUR GOAL IS TO NOT INTRODUCE ANY BUGS. IT'S ALL ABOUT SIMPLICITY.
 
 ### Source of Truth
 
 - **docs/equations.md**: The definitive mathematical reference.
   Contains all equations, parameters, zone definitions, and implementation guidance (paper vs C++ discrepancies).
   **All bugs found in the C++ reference are documented here** (7 total as of Jan 2026).
-- **docs/roadmap/**: The implementation plan.
-  The master overview is in `README.md`.
-  Each phase has its own detailed file (`phase01_*.md`, `phase02_*.md`, etc.).
-  **Keep it high-level, conceptual, and strategic.**
-  Note key considerations and dependencies, but do not include code snippets or work out implementation details.
-  Details belong in the source files and their tests.
+- **ROADMAP.md**: The implementation plan with checklist items.
+  Mark items complete with `[x]` as you finish them.
 - **C++ Reference**: The original implementation is at [rceres/ICOW](https://github.com/rceres/ICOW/blob/master/src/iCOW_2018_06_11.cpp).
   Download locally to `docs/iCOW_2018_06_11.cpp` for reference (file is in .gitignore and cannot be redistributed).
   **Contains 7 bugs** - see `docs/equations.md` for complete documentation.
@@ -124,7 +118,7 @@ Use `@assert` aggressively in constructors to enforce physical bounds (e.g., $W 
 
 ### Dependencies
 
-- Approved: Distributions, DataFrames, YAXArrays, NetCDF, Metaheuristics, StaticArrays, Statistics, Random, Test.
+- Approved: Distributions, DataFrames, YAXArrays, NetCDF, Metaheuristics, StaticArrays, Statistics, Random, Test, SimOptDecisions, CairoMakie.
 - **Strict Rule**: If you need to add any other package, you must ASK PERMISSION from the user first. Do not add it to Project.toml without explicit approval.
 
 ### Package Management
@@ -135,23 +129,15 @@ Use `@assert` aggressively in constructors to enforce physical bounds (e.g., $W 
 
 ## Workflow (Strict)
 
-### Phase Planning Workflow
+### Task Workflow
 
-Before implementing any phase:
-
-1. Read the phase detail file in `docs/roadmap/phaseNN_*.md`
+1. Check `ROADMAP.md` for current progress and next tasks
 2. Resolve all open questions with the user
 3. Get user approval on the approach
-4. Mark the phase as "In Progress" in `docs/roadmap/README.md`
-
-### Phase Completion Workflow
-
-After completing each phase:
-
-1. **STOP** and run the tests: `julia --project test/runtests.jl`
-2. **REPORT** what was implemented and any discrepancies with the paper.
-3. Update the phase status to "Completed" in `docs/roadmap/README.md`
-4. **WAIT** for human feedback before proceeding to the next phase.
+4. Implement, marking items complete in `ROADMAP.md` as you go
+5. **STOP** and run the tests: `julia --project test/runtests.jl`
+6. **REPORT** what was implemented
+7. **WAIT** for human feedback before proceeding
 
 ### Git Commits
 

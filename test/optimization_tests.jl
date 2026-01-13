@@ -1,7 +1,6 @@
 using Test
 using ICOW
 using Distributions
-using BlackBoxOptim
 
 @testset "Optimization" begin
     city = CityParameters()
@@ -21,26 +20,9 @@ using BlackBoxOptim
         @test upper == (city.H_city, city.H_city, 0.99, city.H_city, city.H_city)
     end
 
+    # TODO: Re-enable after Phase E implementation with SimOptDecisions
     @testset "optimize runs without error" begin
-        # Use distributional forcing for faster optimization
-        forcing = DistributionalForcing([Normal(1.5, 0.5) for _ in 1:5], 2020)
-
-        # Suppress BlackBoxOptim epsilon-box warnings (harmless, from third-party package)
-        result = Base.CoreLogging.with_logger(Base.CoreLogging.NullLogger()) do
-            optimize(city, [forcing], 0.03; max_steps=10, population_size=10)
-        end
-
-        # Pareto frontier should have at least one solution
-        @test !isempty(pareto_frontier(result))
-
-        # Should be able to extract policies
-        policies = pareto_policies(result, StaticPolicy)
-        @test length(policies) >= 1
-        @test all(p -> p isa StaticPolicy, policies)
-
-        # best_total should return a valid policy
-        best = best_total(result, StaticPolicy)
-        @test best isa StaticPolicy
+        @test_skip "Pending Phase E: SimOptDecisions integration"
     end
 
     @testset "discount_rate in simulate" begin

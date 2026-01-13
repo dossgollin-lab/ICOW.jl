@@ -1,8 +1,8 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.12.3"
+julia_version = "1.12.4"
 manifest_format = "2.0"
-project_hash = "81e926d1b1866c74286a967567e35c10c026105f"
+project_hash = "73c1ef92811e6e03a2175b23d0a72f98dadfa9fd"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -214,16 +214,6 @@ git-tree-sha1 = "0691e34b3bb8be9307330f88d1a3c3f25466c24d"
 uuid = "d1d4a3ce-64b1-5f1a-9ba4-7e7e69966f35"
 version = "0.1.9"
 
-[[deps.BlackBoxOptim]]
-deps = ["CPUTime", "Compat", "Distributed", "Distributions", "JSON", "LinearAlgebra", "Printf", "Random", "Requires", "SpatialIndexing", "StatsBase"]
-git-tree-sha1 = "9c203a2515b5eeab8f2987614d2b1db83ef03542"
-uuid = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
-version = "0.6.3"
-weakdeps = ["HTTP", "Sockets"]
-
-    [deps.BlackBoxOptim.extensions]
-    BlackBoxOptimRealtimePlotServerExt = ["HTTP", "Sockets"]
-
 [[deps.Blosc]]
 deps = ["Blosc_jll"]
 git-tree-sha1 = "310b77648d38c223d947ff3f50f511d08690b8d5"
@@ -252,11 +242,6 @@ deps = ["Dates", "Printf"]
 git-tree-sha1 = "0836c647014903bedccf23ba72b5ebb8c89a7db8"
 uuid = "179af706-886a-5703-950a-314cd64e0468"
 version = "0.2.5"
-
-[[deps.CPUTime]]
-git-tree-sha1 = "2dcc50ea6a0a1ef6440d6eecd0fe3813e5671f45"
-uuid = "a9c8d775-2e2e-55fc-8582-045d282d599e"
-version = "1.0.0"
 
 [[deps.CRC32c]]
 uuid = "8bf52ea8-c179-5cab-976a-9e18b702a9bc"
@@ -374,6 +359,11 @@ deps = ["ColorTypes", "FixedPointNumbers", "Reexport"]
 git-tree-sha1 = "37ea44092930b1811e666c3bc38065d7d87fcc74"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.13.1"
+
+[[deps.Combinatorics]]
+git-tree-sha1 = "c761b00e7755700f9cdf5b02039939d1359330e1"
+uuid = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
+version = "1.1.0"
 
 [[deps.CommonSolve]]
 git-tree-sha1 = "78ea4ddbcf9c241827e7035c3a03e2e456711470"
@@ -642,6 +632,17 @@ deps = ["ConstructionBase", "LRUCache", "Mmap", "OffsetArrays"]
 git-tree-sha1 = "e8c9406f3164633756a0db93334ef23102933eef"
 uuid = "3c3547ce-8d99-4f5e-a174-61eb10b00ae3"
 version = "0.4.18"
+
+[[deps.Distances]]
+deps = ["LinearAlgebra", "Statistics", "StatsAPI"]
+git-tree-sha1 = "c7e3a542b999843086e2f29dac96a618c105be1d"
+uuid = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+version = "0.10.12"
+weakdeps = ["ChainRulesCore", "SparseArrays"]
+
+    [deps.Distances.extensions]
+    DistancesChainRulesCoreExt = "ChainRulesCore"
+    DistancesSparseArraysExt = "SparseArrays"
 
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
@@ -1003,7 +1004,7 @@ uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 version = "0.3.28"
 
 [[deps.ICOW]]
-deps = ["BlackBoxOptim", "CairoMakie", "DataFrames", "Distributions", "NetCDF", "QuadGK", "Random", "Revise", "StaticArrays", "Statistics", "Test", "YAXArrays"]
+deps = ["DataFrames", "Distributions", "Metaheuristics", "NetCDF", "QuadGK", "Random", "Revise", "SimOptDecisions", "StaticArrays", "Statistics", "Test", "YAXArrays"]
 path = "."
 uuid = "3f0c05cb-d2a1-4c03-b976-c0e1c11e0dd4"
 version = "0.1.0"
@@ -1194,11 +1195,29 @@ git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
 version = "1.0.0"
 
+[[deps.JLD2]]
+deps = ["ChunkCodecLibZlib", "ChunkCodecLibZstd", "FileIO", "MacroTools", "Mmap", "OrderedCollections", "PrecompileTools", "ScopedValues"]
+git-tree-sha1 = "8f8ff711442d1f4cfc0d86133e7ee03d62ec9b98"
+uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+version = "0.6.3"
+
+    [deps.JLD2.extensions]
+    UnPackExt = "UnPack"
+
+    [deps.JLD2.weakdeps]
+    UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+
 [[deps.JLLWrappers]]
 deps = ["Artifacts", "Preferences"]
 git-tree-sha1 = "0533e564aae234aff59ab625543145446d8b6ec2"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
 version = "1.7.1"
+
+[[deps.JMcDM]]
+deps = ["Requires"]
+git-tree-sha1 = "e26d5db41aa1b96d4ed23b46eeeca34116214661"
+uuid = "358108f5-d052-4d0a-8344-d5384e00c0e5"
+version = "0.7.24"
 
 [[deps.JSON]]
 deps = ["Dates", "Mmap", "Parsers", "Unicode"]
@@ -1524,6 +1543,12 @@ git-tree-sha1 = "d636ee41e97c1e0236682330847753bfee759906"
 uuid = "f9f48841-c794-520a-933b-121f7ba6ed94"
 version = "0.4.13"
 
+[[deps.Metaheuristics]]
+deps = ["Distances", "JMcDM", "LinearAlgebra", "Printf", "Random", "Reexport", "Requires", "SearchSpaces", "SnoopPrecompile", "Statistics"]
+git-tree-sha1 = "cb77d8a00a13d298aef0dd62b328745e4b72c7e4"
+uuid = "bcdb8e00-2c21-11e9-3065-2b553b22f898"
+version = "3.4.2"
+
 [[deps.MicrosoftMPI_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "bc95bf4149bf535c09602e3acdf950d9b4376227"
@@ -1560,7 +1585,7 @@ version = "0.3.7"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2025.5.20"
+version = "2025.11.4"
 
 [[deps.NLSolversBase]]
 deps = ["ADTypes", "DifferentiationInterface", "Distributed", "FiniteDiff", "ForwardDiff"]
@@ -1739,9 +1764,9 @@ version = "0.4.5"
 
 [[deps.Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "c392fc5dd032381919e3b22dd32d6443760ce7ea"
+git-tree-sha1 = "39a11854f0cba27aa41efaedf43c77c5daa6be51"
 uuid = "91d4177d-7536-5919-b921-800302f37372"
-version = "1.5.2+0"
+version = "1.6.0+0"
 
 [[deps.OrderedCollections]]
 git-tree-sha1 = "05868e21324cede2207c6f0f466b4bfef6d5e7ee"
@@ -2147,6 +2172,12 @@ git-tree-sha1 = "9b81b8393e50b7d4e6d0a9f14e192294d3b7c109"
 uuid = "6c6a2e73-6563-6170-7368-637461726353"
 version = "1.3.0"
 
+[[deps.SearchSpaces]]
+deps = ["Combinatorics", "Random"]
+git-tree-sha1 = "2662fd537048fb12ff34fabb5249bf50e06f445b"
+uuid = "eb7571c6-2196-4f03-99b8-52a5a35b3163"
+version = "0.2.0"
+
 [[deps.SentinelArrays]]
 deps = ["Dates", "Random"]
 git-tree-sha1 = "ebe7e59b37c400f694f52b58c93d26201387da70"
@@ -2186,6 +2217,23 @@ git-tree-sha1 = "3949ad92e1c9d2ff0cd4a1317d5ecbba682f4b92"
 uuid = "73760f76-fbc4-59ce-8f25-708e95d2df96"
 version = "0.4.1"
 
+[[deps.SimOptDecisions]]
+deps = ["Dates", "JLD2", "Random", "TOML", "Tables"]
+git-tree-sha1 = "f7b95c0aa9e81c74b3e3622cc6a5c9b706f4799d"
+repo-rev = "main"
+repo-url = "https://github.com/dossgollin-lab/SimOptDecisions"
+uuid = "8764eb7a-9599-4112-a7c7-9b4115e89f97"
+version = "0.1.0"
+
+    [deps.SimOptDecisions.extensions]
+    SimOptMakieExt = "Makie"
+    SimOptMetaheuristicsExt = "Metaheuristics"
+
+    [deps.SimOptDecisions.weakdeps]
+    GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+    Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+    Metaheuristics = "bcdb8e00-2c21-11e9-3065-2b553b22f898"
+
 [[deps.SimpleBufferStream]]
 git-tree-sha1 = "f305871d2f381d21527c770d4788c06c097c9bc1"
 uuid = "777ac1f9-54b0-4bf8-805c-2214025038e7"
@@ -2202,6 +2250,12 @@ deps = ["Dates", "FileIO", "ImageCore", "IndirectArrays", "OffsetArrays", "REPL"
 git-tree-sha1 = "0494aed9501e7fb65daba895fb7fd57cc38bc743"
 uuid = "45858cf5-a6b0-47a3-bbea-62219f50df47"
 version = "0.1.5"
+
+[[deps.SnoopPrecompile]]
+deps = ["Preferences"]
+git-tree-sha1 = "e760a70afdcd461cf01a575947738d359234665c"
+uuid = "66db9d55-30c0-4569-8b51-7e840670fc0c"
+version = "1.0.3"
 
 [[deps.Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
@@ -2262,11 +2316,6 @@ version = "0.4.23"
     Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
     JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
     MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
-
-[[deps.SpatialIndexing]]
-git-tree-sha1 = "84efe17c77e1f2156a7a0d8a7c163c1e1c7bdaed"
-uuid = "d4ead438-fe20-5cc5-a293-4fd39a41b74c"
-version = "0.1.6"
 
 [[deps.SpecialFunctions]]
 deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]

@@ -10,7 +10,7 @@ using Random
 """
     simulate(city, policy, forcing::StochasticForcing; kwargs...)
 
-Stochastic simulation mode. See docs/roadmap/phase07_simulation.md.
+Stochastic simulation mode. See docs/equations.md.
 """
 function simulate(
     city::CityParameters{T},
@@ -34,7 +34,7 @@ end
 """
     simulate(city, policy, forcing::DistributionalForcing; kwargs...)
 
-Expected Annual Damage (EAD) simulation mode. See docs/roadmap/phase07_simulation.md.
+Expected Annual Damage (EAD) simulation mode. See docs/equations.md.
 """
 function simulate(
     city::CityParameters{T},
