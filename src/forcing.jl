@@ -77,47 +77,65 @@ function get_distribution(f::DistributionalForcing, year::Int)
 end
 
 # =============================================================================
-# SOW Wrappers for SimOptDecisions
+# Scenario Types for SimOptDecisions
 # =============================================================================
 
 """
-    EADSOW{T<:Real, D<:Distribution} <: SimOptDecisions.AbstractSOW
+    EADScenario{T<:Real, D<:Distribution} <: SimOptDecisions.AbstractScenario
 
-SOW wrapper for Expected Annual Damage mode using distributional forcing.
+Scenario for Expected Annual Damage mode using distributional forcing.
+Contains surge distributions, discount rate, and sea level trajectory.
 """
-struct EADSOW{T<:Real, D<:Distribution} <: SimOptDecisions.AbstractSOW
+struct EADScenario{T<:Real, D<:Distribution} <: SimOptDecisions.AbstractScenario
     forcing::DistributionalForcing{T, D}
     discount_rate::T
     method::Symbol  # :quad or :mc
+    sea_level::T    # Constant sea level (SLR support: will become TimeSeriesParameter)
 end
 
 # Convenience constructor with defaults
-function EADSOW(forcing::DistributionalForcing{T, D}; discount_rate::T=zero(T), method::Symbol=:quad) where {T, D}
-    EADSOW{T, D}(forcing, discount_rate, method)
+function EADScenario(
+    forcing::DistributionalForcing{T, D};
+    discount_rate::T=zero(T),
+    method::Symbol=:quad,
+    sea_level::T=zero(T)
+) where {T, D}
+    EADScenario{T, D}(forcing, discount_rate, method, sea_level)
 end
 
 """
-    StochasticSOW{T<:Real} <: SimOptDecisions.AbstractSOW
+    StochasticScenario{T<:Real} <: SimOptDecisions.AbstractScenario
 
-SOW wrapper for stochastic mode using pre-generated surge scenarios.
+Scenario for stochastic mode using pre-generated surge realizations.
+Contains surge matrix, scenario index, discount rate, and sea level trajectory.
 """
-struct StochasticSOW{T<:Real} <: SimOptDecisions.AbstractSOW
+struct StochasticScenario{T<:Real} <: SimOptDecisions.AbstractScenario
     forcing::StochasticForcing{T}
     scenario::Int
     discount_rate::T
+    sea_level::T  # Constant sea level (SLR support: will become TimeSeriesParameter)
 end
 
 # Convenience constructor with defaults
-function StochasticSOW(forcing::StochasticForcing{T}, scenario::Int; discount_rate::T=zero(T)) where {T}
+function StochasticScenario(
+    forcing::StochasticForcing{T},
+    scenario::Int;
+    discount_rate::T=zero(T),
+    sea_level::T=zero(T)
+) where {T}
     @assert 1 <= scenario <= n_scenarios(forcing) "Scenario out of bounds"
-    StochasticSOW{T}(forcing, scenario, discount_rate)
+    StochasticScenario{T}(forcing, scenario, discount_rate, sea_level)
 end
 
-# SOW accessors
-n_years(sow::EADSOW) = n_years(sow.forcing)
-n_years(sow::StochasticSOW) = n_years(sow.forcing)
-get_surge(sow::StochasticSOW, year::Int) = get_surge(sow.forcing, sow.scenario, year)
-get_distribution(sow::EADSOW, year::Int) = get_distribution(sow.forcing, year)
+# Scenario accessors
+n_years(s::EADScenario) = n_years(s.forcing)
+n_years(s::StochasticScenario) = n_years(s.forcing)
+get_surge(s::StochasticScenario, year::Int) = get_surge(s.forcing, s.scenario, year)
+get_distribution(s::EADScenario, year::Int) = get_distribution(s.forcing, year)
+
+"""Get sea level for a given year (constant for now, SLR-ready interface)."""
+get_sea_level(s::EADScenario{T}, year::Int) where {T} = s.sea_level
+get_sea_level(s::StochasticScenario{T}, year::Int) where {T} = s.sea_level
 
 # =============================================================================
 # Display methods
@@ -132,10 +150,10 @@ function Base.show(io::IO, f::DistributionalForcing{T,D}) where {T,D}
     print(io, "DistributionalForcing($(n_years(f)) years, $dist_name)")
 end
 
-function Base.show(io::IO, sow::EADSOW)
-    print(io, "EADSOW($(n_years(sow)) years, method=:$(sow.method))")
+function Base.show(io::IO, s::EADScenario)
+    print(io, "EADScenario($(n_years(s)) years, method=:$(s.method))")
 end
 
-function Base.show(io::IO, sow::StochasticSOW)
-    print(io, "StochasticSOW(scenario $(sow.scenario)/$(n_scenarios(sow.forcing)), $(n_years(sow)) years)")
+function Base.show(io::IO, s::StochasticScenario)
+    print(io, "StochasticScenario(scenario $(s.scenario)/$(n_scenarios(s.forcing)), $(n_years(s)) years)")
 end

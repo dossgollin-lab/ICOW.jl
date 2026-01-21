@@ -40,10 +40,10 @@ include("visualization.jl")
 export CityParameters, validate_parameters, city_slope
 export Levers, is_feasible
 
-# Export Phase 2: Forcing types and SOW wrappers
+# Export Phase 2: Forcing types and Scenario wrappers
 export StochasticForcing, DistributionalForcing
-export EADSOW, StochasticSOW
-export n_scenarios, n_years, get_surge, get_distribution
+export EADScenario, StochasticScenario
+export n_scenarios, n_years, get_surge, get_distribution, get_sea_level
 
 # Export Phase 2: State types
 export State

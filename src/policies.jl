@@ -66,25 +66,33 @@ function SimOptDecisions.param_bounds(::Type{<:StaticPolicy})
 end
 
 """
-    SimOptDecisions.get_action(policy, state, sow::EADSOW, t::TimeStep)
+    SimOptDecisions.get_action(policy, state, t::TimeStep, scenario::EADScenario)
 
-Fallback: delegates to callable interface `policy(state, forcing, year)`.
+Callback 3: Get action from policy for EAD mode.
+Delegates to callable interface `policy(state, forcing, year)`.
 """
 function SimOptDecisions.get_action(
-    policy::SimOptDecisions.AbstractPolicy, state::State, sow::EADSOW, t::SimOptDecisions.TimeStep
+    policy::SimOptDecisions.AbstractPolicy,
+    state::State,
+    t::SimOptDecisions.TimeStep,
+    scenario::EADScenario
 )
-    return policy(state, sow.forcing, t.val)
+    return policy(state, scenario.forcing, t.val)
 end
 
 """
-    SimOptDecisions.get_action(policy, state, sow::StochasticSOW, t::TimeStep)
+    SimOptDecisions.get_action(policy, state, t::TimeStep, scenario::StochasticScenario)
 
-Fallback: delegates to callable interface `policy(state, forcing, year)`.
+Callback 3: Get action from policy for stochastic mode.
+Delegates to callable interface `policy(state, forcing, year)`.
 """
 function SimOptDecisions.get_action(
-    policy::SimOptDecisions.AbstractPolicy, state::State, sow::StochasticSOW, t::SimOptDecisions.TimeStep
+    policy::SimOptDecisions.AbstractPolicy,
+    state::State,
+    t::SimOptDecisions.TimeStep,
+    scenario::StochasticScenario
 )
-    return policy(state, sow.forcing, t.val)
+    return policy(state, scenario.forcing, t.val)
 end
 
 # =============================================================================

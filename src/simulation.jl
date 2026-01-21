@@ -1,141 +1,213 @@
 # Simulation engine for the iCOW model
-# Time-stepping loop with dual-mode support (stochastic and EAD)
+# Implements SimOptDecisions 5-callback interface
 
 using Random
 
 # ============================================================================
-# SimOptDecisions interface: simulate methods
+# Callback 1: initialize
+# Create initial state for simulation
 # ============================================================================
 
 """
-    SimOptDecisions.simulate(config, sow::EADSOW, policy, recorder, rng)
+    SimOptDecisions.initialize(config::CityParameters, scenario::EADScenario, rng)
 
-EAD (Expected Annual Damage) simulation using SimOptDecisions interface.
-Returns NamedTuple: `(investment=..., damage=...)` with discounted totals.
+Initialize simulation state for EAD mode.
+Returns State with zero levers and initial sea level from scenario.
 """
-function SimOptDecisions.simulate(
+function SimOptDecisions.initialize(
     config::CityParameters{T},
-    sow::EADSOW{T,D},
-    policy::SimOptDecisions.AbstractPolicy,
-    recorder::SimOptDecisions.AbstractRecorder,
-    rng::AbstractRNG,
+    scenario::EADScenario{T,D},
+    ::AbstractRNG
 ) where {T<:Real, D<:Distribution}
-    n = n_years(sow)
-    discount_rate = sow.discount_rate
-
-    # Initialize state
-    state = State(Levers{T}(zero(T), zero(T), zero(T), zero(T), zero(T)))
-    SimOptDecisions.record!(recorder, state, nothing, nothing, nothing)
-
-    # Accumulators
-    accumulated_cost = zero(T)
-    accumulated_damage = zero(T)
-
-    # Main time-stepping loop
-    for ts in SimOptDecisions.Utils.timeindex(1:n)
-        year = ts.val
-
-        # Get action from policy
-        target = SimOptDecisions.get_action(policy, state, sow, ts)
-
-        # Enforce irreversibility: can only increase protection
-        new_levers = max(state.current_levers, target)
-
-        # Validate feasibility (return Inf for infeasible levers during optimization)
-        if !is_feasible(new_levers, config)
-            return (investment=T(Inf), damage=T(Inf))
-        end
-
-        # Calculate marginal investment cost
-        cost = _marginal_cost(config, state.current_levers, new_levers)
-
-        # Calculate EAD damage
-        damage = calculate_expected_damage(config, new_levers, sow.forcing, year; method=sow.method)
-
-        # Apply discounting
-        discount_factor = one(T) / (one(T) + discount_rate)^year
-        accumulated_cost += cost * discount_factor
-        accumulated_damage += damage * discount_factor
-
-        # Update state
-        state.current_levers = new_levers
-        state.current_year = year + 1
-
-        # Record step
-        step_record = (
-            W=new_levers.W, R=new_levers.R, P=new_levers.P, D=new_levers.D, B=new_levers.B,
-            investment=cost, damage=damage
-        )
-        SimOptDecisions.record!(recorder, state, step_record, year, new_levers)
-    end
-
-    return (investment=accumulated_cost, damage=accumulated_damage)
+    initial_sea_level = get_sea_level(scenario, 1)
+    State(Levers{T}(zero(T), zero(T), zero(T), zero(T), zero(T)), initial_sea_level)
 end
 
 """
-    SimOptDecisions.simulate(config, sow::StochasticSOW, policy, recorder, rng)
+    SimOptDecisions.initialize(config::CityParameters, scenario::StochasticScenario, rng)
 
-Stochastic simulation using SimOptDecisions interface.
-Returns NamedTuple: `(investment=..., damage=...)` with discounted totals.
+Initialize simulation state for stochastic mode.
+Returns State with zero levers and initial sea level from scenario.
 """
-function SimOptDecisions.simulate(
+function SimOptDecisions.initialize(
     config::CityParameters{T},
-    sow::StochasticSOW{T},
-    policy::SimOptDecisions.AbstractPolicy,
-    recorder::SimOptDecisions.AbstractRecorder,
-    rng::AbstractRNG,
+    scenario::StochasticScenario{T},
+    ::AbstractRNG
 ) where {T<:Real}
-    n = n_years(sow)
-    discount_rate = sow.discount_rate
+    initial_sea_level = get_sea_level(scenario, 1)
+    State(Levers{T}(zero(T), zero(T), zero(T), zero(T), zero(T)), initial_sea_level)
+end
 
-    # Initialize state
-    state = State(Levers{T}(zero(T), zero(T), zero(T), zero(T), zero(T)))
-    SimOptDecisions.record!(recorder, state, nothing, nothing, nothing)
+# ============================================================================
+# Callback 2: time_axis
+# Define simulation time points
+# ============================================================================
 
-    # Accumulators
-    accumulated_cost = zero(T)
-    accumulated_damage = zero(T)
+"""
+    SimOptDecisions.time_axis(config::CityParameters, scenario::EADScenario)
 
-    # Main time-stepping loop
-    for ts in SimOptDecisions.Utils.timeindex(1:n)
-        year = ts.val
+Return time axis for EAD simulation (1:n_years).
+"""
+function SimOptDecisions.time_axis(
+    ::CityParameters,
+    scenario::EADScenario
+)
+    return 1:n_years(scenario)
+end
 
-        # Get action from policy
-        target = SimOptDecisions.get_action(policy, state, sow, ts)
+"""
+    SimOptDecisions.time_axis(config::CityParameters, scenario::StochasticScenario)
 
-        # Enforce irreversibility: can only increase protection
-        new_levers = max(state.current_levers, target)
+Return time axis for stochastic simulation (1:n_years).
+"""
+function SimOptDecisions.time_axis(
+    ::CityParameters,
+    scenario::StochasticScenario
+)
+    return 1:n_years(scenario)
+end
 
-        # Validate feasibility (return Inf for infeasible levers during optimization)
-        if !is_feasible(new_levers, config)
-            return (investment=T(Inf), damage=T(Inf))
-        end
+# ============================================================================
+# Callback 3: get_action (defined in policies.jl)
+# ============================================================================
 
-        # Calculate marginal investment cost
-        cost = _marginal_cost(config, state.current_levers, new_levers)
+# See policies.jl for get_action implementations
 
-        # Calculate stochastic damage
-        h_raw = get_surge(sow, year)
-        damage = calculate_event_damage_stochastic(h_raw, config, new_levers, rng)
+# ============================================================================
+# Callback 4: run_timestep
+# Execute one timestep of simulation
+# ============================================================================
 
-        # Apply discounting
-        discount_factor = one(T) / (one(T) + discount_rate)^year
-        accumulated_cost += cost * discount_factor
-        accumulated_damage += damage * discount_factor
+"""
+    SimOptDecisions.run_timestep(state, action, t, config, scenario::EADScenario, rng)
 
-        # Update state
-        state.current_levers = new_levers
-        state.current_year = year + 1
+Execute one timestep for EAD mode.
+Returns (new_state, step_record) where step_record contains undiscounted values.
+"""
+function SimOptDecisions.run_timestep(
+    state::State{T},
+    action::Levers{T},
+    t::SimOptDecisions.TimeStep,
+    config::CityParameters{T},
+    scenario::EADScenario{T,D},
+    ::AbstractRNG
+) where {T<:Real, D<:Distribution}
+    year = t.val
 
-        # Record step
-        step_record = (
-            W=new_levers.W, R=new_levers.R, P=new_levers.P, D=new_levers.D, B=new_levers.B,
-            investment=cost, damage=damage
-        )
-        SimOptDecisions.record!(recorder, state, step_record, year, new_levers)
+    # Enforce irreversibility: can only increase protection
+    new_levers = max(state.current_levers, action)
+
+    # Calculate marginal investment cost (undiscounted)
+    investment = _marginal_cost(config, state.current_levers, new_levers)
+
+    # Calculate EAD damage (undiscounted)
+    damage = calculate_expected_damage(config, new_levers, scenario.forcing, year; method=scenario.method)
+
+    # Update sea level from scenario
+    new_sea_level = get_sea_level(scenario, year)
+
+    # Create new state
+    new_state = State(new_levers, new_sea_level)
+
+    # Step record with undiscounted values (discounting happens in compute_outcome)
+    step_record = (investment=investment, damage=damage)
+
+    return (new_state, step_record)
+end
+
+"""
+    SimOptDecisions.run_timestep(state, action, t, config, scenario::StochasticScenario, rng)
+
+Execute one timestep for stochastic mode.
+Returns (new_state, step_record) where step_record contains undiscounted values.
+"""
+function SimOptDecisions.run_timestep(
+    state::State{T},
+    action::Levers{T},
+    t::SimOptDecisions.TimeStep,
+    config::CityParameters{T},
+    scenario::StochasticScenario{T},
+    rng::AbstractRNG
+) where {T<:Real}
+    year = t.val
+
+    # Enforce irreversibility: can only increase protection
+    new_levers = max(state.current_levers, action)
+
+    # Calculate marginal investment cost (undiscounted)
+    investment = _marginal_cost(config, state.current_levers, new_levers)
+
+    # Get surge and calculate stochastic damage (undiscounted)
+    h_raw = get_surge(scenario, year)
+    damage = calculate_event_damage_stochastic(h_raw, config, new_levers, rng)
+
+    # Update sea level from scenario
+    new_sea_level = get_sea_level(scenario, year)
+
+    # Create new state
+    new_state = State(new_levers, new_sea_level)
+
+    # Step record with undiscounted values
+    step_record = (investment=investment, damage=damage)
+
+    return (new_state, step_record)
+end
+
+# ============================================================================
+# Callback 5: compute_outcome
+# Aggregate step records into final outcome
+# ============================================================================
+
+"""
+    SimOptDecisions.compute_outcome(step_records, config, scenario::EADScenario)
+
+Aggregate step records into final outcome with NPV discounting.
+Returns (investment=..., damage=...) as discounted totals.
+"""
+function SimOptDecisions.compute_outcome(
+    step_records::Vector,
+    config::CityParameters{T},
+    scenario::EADScenario{T,D}
+) where {T<:Real, D<:Distribution}
+    discount_rate = scenario.discount_rate
+
+    # Sum discounted values
+    total_investment = zero(T)
+    total_damage = zero(T)
+
+    for (year, record) in enumerate(step_records)
+        df = SimOptDecisions.discount_factor(discount_rate, year)
+        total_investment += record.investment * df
+        total_damage += record.damage * df
     end
 
-    return (investment=accumulated_cost, damage=accumulated_damage)
+    return (investment=total_investment, damage=total_damage)
+end
+
+"""
+    SimOptDecisions.compute_outcome(step_records, config, scenario::StochasticScenario)
+
+Aggregate step records into final outcome with NPV discounting.
+Returns (investment=..., damage=...) as discounted totals.
+"""
+function SimOptDecisions.compute_outcome(
+    step_records::Vector,
+    config::CityParameters{T},
+    scenario::StochasticScenario{T}
+) where {T<:Real}
+    discount_rate = scenario.discount_rate
+
+    # Sum discounted values
+    total_investment = zero(T)
+    total_damage = zero(T)
+
+    for (year, record) in enumerate(step_records)
+        df = SimOptDecisions.discount_factor(discount_rate, year)
+        total_investment += record.investment * df
+        total_damage += record.damage * df
+    end
+
+    return (investment=total_investment, damage=total_damage)
 end
 
 # ============================================================================
@@ -145,7 +217,7 @@ end
 """
     simulate(city, policy, forcing::StochasticForcing; kwargs...)
 
-Stochastic simulation mode. See docs/equations.md.
+Stochastic simulation mode.
 Backward-compatible wrapper that calls SimOptDecisions.simulate internally.
 """
 function simulate(
@@ -157,27 +229,27 @@ function simulate(
     rng::AbstractRNG=Random.default_rng(),
     discount_rate::Real=0.0
 ) where {T<:Real}
-    # Construct SOW wrapper
-    sow = StochasticSOW(forcing, scenario; discount_rate=T(discount_rate))
+    # Construct Scenario wrapper
+    scen = StochasticScenario(forcing, scenario; discount_rate=T(discount_rate))
 
     if mode == :scalar
-        # Use NoRecorder for scalar mode
-        result = SimOptDecisions.simulate(city, sow, policy, SimOptDecisions.NoRecorder(), rng)
+        # Use default (no recorder) for scalar mode
+        result = SimOptDecisions.simulate(city, scen, policy, rng)
         return (result.investment, result.damage)
     else
         # Use TraceRecorderBuilder for trace mode
         builder = SimOptDecisions.TraceRecorderBuilder()
-        result = SimOptDecisions.simulate(city, sow, policy, builder, rng)
+        result = SimOptDecisions.simulate(city, scen, policy, builder, rng)
         trace = SimOptDecisions.build_trace(builder)
 
-        # Convert to expected format (year, W, R, P, D, B, investment, damage vectors)
+        # Convert to expected format
         return (
             year = trace.times,
-            W = T[r.W for r in trace.step_records],
-            R = T[r.R for r in trace.step_records],
-            P = T[r.P for r in trace.step_records],
-            D = T[r.D for r in trace.step_records],
-            B = T[r.B for r in trace.step_records],
+            W = T[s.current_levers.W for s in trace.states],
+            R = T[s.current_levers.R for s in trace.states],
+            P = T[s.current_levers.P for s in trace.states],
+            D = T[s.current_levers.D for s in trace.states],
+            B = T[s.current_levers.B for s in trace.states],
             investment = T[r.investment for r in trace.step_records],
             damage = T[r.damage for r in trace.step_records]
         )
@@ -187,7 +259,7 @@ end
 """
     simulate(city, policy, forcing::DistributionalForcing; kwargs...)
 
-Expected Annual Damage (EAD) simulation mode. See docs/equations.md.
+Expected Annual Damage (EAD) simulation mode.
 Backward-compatible wrapper that calls SimOptDecisions.simulate internally.
 """
 function simulate(
@@ -200,27 +272,27 @@ function simulate(
     rng::AbstractRNG=Random.default_rng(),
     kwargs...
 ) where {T<:Real, D<:Distribution}
-    # Construct SOW wrapper
-    sow = EADSOW(forcing; discount_rate=T(discount_rate), method=method)
+    # Construct Scenario wrapper
+    scen = EADScenario(forcing; discount_rate=T(discount_rate), method=method)
 
     if mode == :scalar
-        # Use NoRecorder for scalar mode
-        result = SimOptDecisions.simulate(city, sow, policy, SimOptDecisions.NoRecorder(), rng)
+        # Use default (no recorder) for scalar mode
+        result = SimOptDecisions.simulate(city, scen, policy, rng)
         return (result.investment, result.damage)
     else
         # Use TraceRecorderBuilder for trace mode
         builder = SimOptDecisions.TraceRecorderBuilder()
-        result = SimOptDecisions.simulate(city, sow, policy, builder, rng)
+        result = SimOptDecisions.simulate(city, scen, policy, builder, rng)
         trace = SimOptDecisions.build_trace(builder)
 
-        # Convert to expected format (year, W, R, P, D, B, investment, damage vectors)
+        # Convert to expected format
         return (
             year = trace.times,
-            W = T[r.W for r in trace.step_records],
-            R = T[r.R for r in trace.step_records],
-            P = T[r.P for r in trace.step_records],
-            D = T[r.D for r in trace.step_records],
-            B = T[r.B for r in trace.step_records],
+            W = T[s.current_levers.W for s in trace.states],
+            R = T[s.current_levers.R for s in trace.states],
+            P = T[s.current_levers.P for s in trace.states],
+            D = T[s.current_levers.D for s in trace.states],
+            B = T[s.current_levers.B for s in trace.states],
             investment = T[r.investment for r in trace.step_records],
             damage = T[r.damage for r in trace.step_records]
         )

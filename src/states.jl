@@ -4,12 +4,14 @@
 """
     State{T<:Real} <: SimOptDecisions.AbstractState
 
-Current state of the system: protection levels and time.
-Used by policies to make decisions.
+Current state of the system: protection levels and sea level.
+Year is tracked via TimeStep in the simulation loop.
 """
 mutable struct State{T<:Real} <: SimOptDecisions.AbstractState
     current_levers::Levers{T}
-    current_year::Int
+    current_sea_level::T
 end
 
-State(levers::Levers{T}) where {T} = State(levers, 1)
+# Convenience constructors
+State(levers::Levers{T}, sea_level::T) where {T} = State{T}(levers, sea_level)
+State(levers::Levers{T}) where {T} = State{T}(levers, zero(T))  # Default: sea level = 0

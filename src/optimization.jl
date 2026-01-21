@@ -4,24 +4,24 @@
 using Random
 
 """
-    _create_sows(forcings::AbstractVector, discount_rate::Real, T::Type)
+    _create_scenarios(forcings::AbstractVector, discount_rate::Real)
 
-Create SOW wrappers from forcing data. Supports both forcing types.
+Create Scenario wrappers from forcing data. Supports both forcing types.
 """
-function _create_sows(forcings::AbstractVector{<:StochasticForcing{T}}, discount_rate::Real) where {T}
-    # For stochastic forcing, create one SOW per scenario across all forcings
-    sows = StochasticSOW{T}[]
+function _create_scenarios(forcings::AbstractVector{<:StochasticForcing{T}}, discount_rate::Real) where {T}
+    # For stochastic forcing, create one Scenario per scenario across all forcings
+    scenarios = StochasticScenario{T}[]
     for forcing in forcings
-        for scenario in 1:n_scenarios(forcing)
-            push!(sows, StochasticSOW(forcing, scenario; discount_rate=T(discount_rate)))
+        for scenario_idx in 1:n_scenarios(forcing)
+            push!(scenarios, StochasticScenario(forcing, scenario_idx; discount_rate=T(discount_rate)))
         end
     end
-    return sows
+    return scenarios
 end
 
-function _create_sows(forcings::AbstractVector{<:DistributionalForcing{T}}, discount_rate::Real) where {T}
-    # For distributional forcing, create one SOW per forcing
-    return [EADSOW(f; discount_rate=T(discount_rate), method=:quad) for f in forcings]
+function _create_scenarios(forcings::AbstractVector{<:DistributionalForcing{T}}, discount_rate::Real) where {T}
+    # For distributional forcing, create one Scenario per forcing
+    return [EADScenario(f; discount_rate=T(discount_rate), method=:quad) for f in forcings]
 end
 
 """
@@ -79,8 +79,8 @@ function optimize(
     parallel::Bool=true,
     seed::Int=42,
 ) where {T<:Real}
-    # Create SOWs from forcings
-    sows = _create_sows(forcings, discount_rate)
+    # Create Scenarios from forcings
+    scenarios = _create_scenarios(forcings, discount_rate)
 
     # Create feasibility constraint
     constraint = _feasibility_constraint(city)
@@ -88,7 +88,7 @@ function optimize(
     # Create optimization problem
     prob = SimOptDecisions.OptimizationProblem(
         city,
-        sows,
+        scenarios,
         StaticPolicy{T},
         _metric_calculator,
         [SimOptDecisions.minimize(:mean_investment), SimOptDecisions.minimize(:mean_damage)];
