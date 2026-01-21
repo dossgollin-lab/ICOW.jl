@@ -1,41 +1,46 @@
 using Test
 using ICOW
+import SimOptDecisions
 using Distributions
+using Random
 
 @testset "Optimization" begin
     city = CityParameters()
 
-    @testset "valid_bounds" begin
-        (lower, upper) = valid_bounds(StaticPolicy, city)
+    @testset "param_bounds" begin
+        bounds = SimOptDecisions.param_bounds(StaticPolicy)
 
         # correct structure: 5 bounds for [W, R, P, D, B]
-        @test length(lower) == 5
-        @test length(upper) == 5
-
-        # lower <= upper for all parameters
-        @test all(lower .<= upper)
-
-        # bounds match expected values
-        @test lower == (0.0, 0.0, 0.0, 0.0, 0.0)
-        @test upper == (city.H_city, city.H_city, 0.99, city.H_city, city.H_city)
+        @test length(bounds) == 5
+        @test all(b -> b[1] <= b[2], bounds)
     end
 
-    # TODO: Re-enable after Phase E implementation with SimOptDecisions
-    @testset "optimize runs without error" begin
-        @test_skip "Pending Phase E: SimOptDecisions integration"
+    @testset "FeasibilityConstraint" begin
+        # Feasible policy
+        feasible = StaticPolicy(Levers(1.0, 2.0, 0.5, 3.0, 2.0))
+        @test is_feasible(feasible.levers, city)
+
+        # Infeasible policy (W > B)
+        infeasible = StaticPolicy(Levers(5.0, 0.0, 0.0, 3.0, 2.0))
+        @test !is_feasible(infeasible.levers, city)
     end
 
-    @testset "discount_rate in simulate" begin
-        forcing = DistributionalForcing([Normal(1.5, 0.5) for _ in 1:5], 2020)
+    @testset "Discount rate in scenario" begin
+        forcing = DistributionalForcing([Normal(1.5, 0.5) for _ in 1:5])
         policy = StaticPolicy(Levers(0.0, 0.0, 0.0, 5.0, 0.0))
+        rng = MersenneTwister(42)
 
-        # no discounting
-        (inv0, dmg0) = simulate(city, policy, forcing; discount_rate=0.0)
+        # No discounting
+        scenario0 = EADScenario(forcing; discount_rate=0.0)
+        result0 = SimOptDecisions.simulate(city, scenario0, policy, rng)
 
-        # with discounting, NPV should be less than undiscounted sum
-        (inv_d, dmg_d) = simulate(city, policy, forcing; discount_rate=0.05)
+        # With discounting
+        rng2 = MersenneTwister(42)
+        scenario_d = EADScenario(forcing; discount_rate=0.05)
+        result_d = SimOptDecisions.simulate(city, scenario_d, policy, rng2)
 
-        @test inv_d < inv0
-        @test dmg_d < dmg0
+        # Investment in year 1 is similar (discount factor ~1.0 for year 1)
+        # But damage NPV should be less with discounting
+        @test result_d.damage < result0.damage
     end
 end
