@@ -20,8 +20,8 @@ using Random
         feasible = StaticPolicy(Levers(1.0, 2.0, 0.5, 3.0, 2.0))
         @test is_feasible(feasible.levers, city)
 
-        # Infeasible policy (W > B)
-        infeasible = StaticPolicy(Levers(5.0, 0.0, 0.0, 3.0, 2.0))
+        # Infeasible policy (W + B + D > H_city)
+        infeasible = StaticPolicy(Levers(10.0, 0.0, 0.0, 5.0, 5.0))
         @test !is_feasible(infeasible.levers, city)
     end
 

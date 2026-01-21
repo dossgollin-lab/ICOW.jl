@@ -30,7 +30,7 @@ include("optimization.jl")
 include("visualization.jl")
 
 # Core types
-export CityParameters, city_slope
+export CityParameters, validate_parameters, city_slope
 export Levers, is_feasible
 export State
 export StaticPolicy

@@ -178,7 +178,7 @@ end
         # Main interface works with DistributionalForcing
         dist1 = Normal(5.0, 2.0)
         dist2 = Normal(6.0, 2.5)
-        forcing = DistributionalForcing([dist1, dist2], 2020)
+        forcing = DistributionalForcing([dist1, dist2])
 
         # Test MC method
         ead_mc = calculate_expected_damage(city, levers, forcing, 1; method=:mc, n_samples=1000)

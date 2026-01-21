@@ -1004,7 +1004,7 @@ uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 version = "0.3.28"
 
 [[deps.ICOW]]
-deps = ["DataFrames", "Distributions", "Metaheuristics", "NetCDF", "QuadGK", "Random", "Revise", "SimOptDecisions", "StaticArrays", "Statistics", "Test", "YAXArrays"]
+deps = ["CairoMakie", "DataFrames", "Distributions", "Metaheuristics", "NetCDF", "QuadGK", "Random", "Revise", "SimOptDecisions", "StaticArrays", "Statistics", "Test", "YAXArrays"]
 path = "."
 uuid = "3f0c05cb-d2a1-4c03-b976-c0e1c11e0dd4"
 version = "0.1.0"
@@ -2218,21 +2218,25 @@ uuid = "73760f76-fbc4-59ce-8f25-708e95d2df96"
 version = "0.4.1"
 
 [[deps.SimOptDecisions]]
-deps = ["Dates", "JLD2", "Random", "TOML", "Tables"]
-git-tree-sha1 = "f7b95c0aa9e81c74b3e3622cc6a5c9b706f4799d"
+deps = ["Dates", "JLD2", "OrderedCollections", "ProgressMeter", "Random", "Statistics", "TOML", "Tables"]
+git-tree-sha1 = "ae95d6fc7ce009967fffa66e86b081aa69f077a0"
 repo-rev = "main"
 repo-url = "https://github.com/dossgollin-lab/SimOptDecisions"
 uuid = "8764eb7a-9599-4112-a7c7-9b4115e89f97"
 version = "0.1.0"
 
     [deps.SimOptDecisions.extensions]
+    SimOptCSVExt = "CSV"
     SimOptMakieExt = "Makie"
     SimOptMetaheuristicsExt = "Metaheuristics"
+    SimOptNetCDFExt = "NCDatasets"
 
     [deps.SimOptDecisions.weakdeps]
+    CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
     GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
     Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
     Metaheuristics = "bcdb8e00-2c21-11e9-3065-2b553b22f898"
+    NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 
 [[deps.SimpleBufferStream]]
 git-tree-sha1 = "f305871d2f381d21527c770d4788c06c097c9bc1"
