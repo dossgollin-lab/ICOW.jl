@@ -64,7 +64,6 @@ function SimOptDecisions.run_timestep(
             investment=T(Inf), damage=T(Inf), feasible=false
         )
         state.current_levers = new_levers
-        state.current_year = year + 1
         return (state, step_record)
     end
 
@@ -76,7 +75,6 @@ function SimOptDecisions.run_timestep(
 
     # Update state
     state.current_levers = new_levers
-    state.current_year = year + 1
 
     step_record = (
         W=new_levers.W, R=new_levers.R, P=new_levers.P, D=new_levers.D, B=new_levers.B,
@@ -108,7 +106,6 @@ function SimOptDecisions.run_timestep(
             investment=T(Inf), damage=T(Inf), feasible=false
         )
         state.current_levers = new_levers
-        state.current_year = year + 1
         return (state, step_record)
     end
 
@@ -121,7 +118,6 @@ function SimOptDecisions.run_timestep(
 
     # Update state
     state.current_levers = new_levers
-    state.current_year = year + 1
 
     step_record = (
         W=new_levers.W, R=new_levers.R, P=new_levers.P, D=new_levers.D, B=new_levers.B,
