@@ -7,7 +7,7 @@
 Calculate dike material volume using simplified geometric formula.
 Replaces paper's Equation 6 which is numerically unstable. See docs/equations.md.
 """
-function calculate_dike_volume(city::CityParameters{T}, D::Real) where {T}
+function calculate_dike_volume(city::Core.CityParameters{T}, D::Real) where {T}
     # Effective height includes startup costs
     h_d = D + city.D_startup
 

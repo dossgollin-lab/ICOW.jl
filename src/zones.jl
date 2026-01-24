@@ -60,7 +60,7 @@ Base.iterate(cz::CityZones, state=1) = state > 5 ? nothing : (cz.zones[state], s
 Partition city into 5 zones based on lever settings. See docs/equations.md.
 Always returns exactly 5 zones; empty zones have width=0 and value=0.
 """
-function calculate_city_zones(city::CityParameters{T}, levers::Levers{T}) where {T<:Real}
+function calculate_city_zones(city::Core.CityParameters{T}, levers::Core.Levers{T}) where {T<:Real}
     # Get value after withdrawal (Equation 2)
     V_w = calculate_value_after_withdrawal(city, levers.W)
     remaining_height = city.H_city - levers.W

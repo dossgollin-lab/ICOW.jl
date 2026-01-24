@@ -6,7 +6,7 @@
 
 Calculate damage for a single zone based on zone type.
 """
-function calculate_zone_damage(zone::Zone{T}, h_surge::Real, city::CityParameters{T}, levers::Levers{T}; dike_failed::Bool=false) where {T<:Real}
+function calculate_zone_damage(zone::Zone{T}, h_surge::Real, city::Core.CityParameters{T}, levers::Core.Levers{T}; dike_failed::Bool=false) where {T<:Real}
     # Zone 0 (withdrawn): no value remains
     if zone.zone_type == ZONE_WITHDRAWN
         return zero(T)
@@ -33,7 +33,7 @@ end
 
 Internal: C++ damage formula with basement depth.
 """
-function _calculate_base_zone_damage(zone::Zone{T}, h_surge::Real, city::CityParameters{T}) where {T<:Real}
+function _calculate_base_zone_damage(zone::Zone{T}, h_surge::Real, city::Core.CityParameters{T}) where {T<:Real}
     # WashOver = surge height above zone bottom
     washOver = max(zero(T), h_surge - zone.z_low)
 
@@ -62,12 +62,12 @@ function _calculate_base_zone_damage(zone::Zone{T}, h_surge::Real, city::CityPar
 end
 
 """
-    calculate_event_damage(h_surge, city::CityParameters, levers::Levers; dike_failed=false)
+    calculate_event_damage(h_surge, city::Core.CityParameters, levers::Levers; dike_failed=false)
 
 Calculate total damage for a single surge event (deterministic).
 Includes threshold penalty. See docs/equations.md.
 """
-function calculate_event_damage(h_surge::Real, city::CityParameters{T}, levers::Levers{T}; dike_failed::Bool=false) where {T<:Real}
+function calculate_event_damage(h_surge::Real, city::Core.CityParameters{T}, levers::Core.Levers{T}; dike_failed::Bool=false) where {T<:Real}
     # Get city zones
     zones = calculate_city_zones(city, levers)
 
@@ -88,12 +88,12 @@ function calculate_event_damage(h_surge::Real, city::CityParameters{T}, levers::
 end
 
 """
-    calculate_event_damage_stochastic(h_surge, city::CityParameters, levers::Levers, rng::AbstractRNG)
+    calculate_event_damage_stochastic(h_surge, city::Core.CityParameters, levers::Core.Levers, rng::AbstractRNG)
 
 Calculate damage with stochastic dike failure.
 Uses calculate_dike_failure_probability and samples Bernoulli.
 """
-function calculate_event_damage_stochastic(h_surge::Real, city::CityParameters{T}, levers::Levers{T}, rng::AbstractRNG) where {T<:Real}
+function calculate_event_damage_stochastic(h_surge::Real, city::Core.CityParameters{T}, levers::Core.Levers{T}, rng::AbstractRNG) where {T<:Real}
     # Calculate effective surge (if not already effective)
     h_eff = calculate_effective_surge(h_surge, city)
 
@@ -117,7 +117,7 @@ end
 Calculate expected damage for a single surge height, integrating over dike failure.
 Uses analytical expectation. See docs/equations.md.
 """
-function calculate_expected_damage_given_surge(h_raw::Real, city::CityParameters{T}, levers::Levers{T}) where {T<:Real}
+function calculate_expected_damage_given_surge(h_raw::Real, city::Core.CityParameters{T}, levers::Core.Levers{T}) where {T<:Real}
     # Convert raw surge to effective surge
     h_eff = calculate_effective_surge(h_raw, city)
 
@@ -142,7 +142,7 @@ end
 Monte Carlo integration over surge distribution (Equation 9 integrated).
 See docs/equations.md.
 """
-function calculate_expected_damage_mc(city::CityParameters{T}, levers::Levers{T}, dist::Distribution; n_samples::Int=1000, rng::AbstractRNG=Random.default_rng()) where {T<:Real}
+function calculate_expected_damage_mc(city::Core.CityParameters{T}, levers::Core.Levers{T}, dist::Distribution; n_samples::Int=1000, rng::AbstractRNG=Random.default_rng()) where {T<:Real}
     # Sample surges from distribution
     surges = rand(rng, dist, n_samples)
 
@@ -161,7 +161,7 @@ Numerical quadrature integration over surge distribution. See docs/equations.md.
 Special handling: Dirac distributions are evaluated directly (deterministic case).
 Uses infinite bounds to capture heavy tails in GEV distributions.
 """
-function calculate_expected_damage_quad(city::CityParameters{T}, levers::Levers{T}, dist::Distribution; rtol::Real=1e-6) where {T<:Real}
+function calculate_expected_damage_quad(city::Core.CityParameters{T}, levers::Core.Levers{T}, dist::Distribution; rtol::Real=1e-6) where {T<:Real}
     # Special case: Dirac distribution (deterministic)
     # Dirac has pdf=0 everywhere except at single point (infinite), so quadrature fails
     # Instead, directly evaluate at the deterministic value
@@ -185,7 +185,7 @@ end
 Calculate expected annual damage for a given year. Dispatches to MC or quadrature.
 See docs/equations.md.
 """
-function calculate_expected_damage(city::CityParameters, levers::Levers, forcing::DistributionalForcing, year::Int; method::Symbol=:quad, kwargs...)
+function calculate_expected_damage(city::Core.CityParameters, levers::Core.Levers, forcing::DistributionalForcing, year::Int; method::Symbol=:quad, kwargs...)
     # Extract distribution for this year
     dist = get_distribution(forcing, year)
 

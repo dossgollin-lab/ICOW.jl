@@ -2,11 +2,11 @@
 # Implements Equations 1-7 from docs/equations.md
 
 """
-    calculate_withdrawal_cost(city::CityParameters, W) -> cost
+    calculate_withdrawal_cost(city::Core.CityParameters, W) -> cost
 
 Calculate withdrawal cost (Equation 1). See docs/equations.md.
 """
-function calculate_withdrawal_cost(city::CityParameters{T}, W::Real) where {T}
+function calculate_withdrawal_cost(city::Core.CityParameters{T}, W::Real) where {T}
     # W < H_city; full withdrawal causes division by zero
     @assert W < city.H_city "W must be strictly less than H_city to avoid division by zero"
 
@@ -15,22 +15,22 @@ function calculate_withdrawal_cost(city::CityParameters{T}, W::Real) where {T}
 end
 
 """
-    calculate_value_after_withdrawal(city::CityParameters, W) -> value
+    calculate_value_after_withdrawal(city::Core.CityParameters, W) -> value
 
 Calculate city value remaining after withdrawal (Equation 2). See docs/equations.md.
 """
-function calculate_value_after_withdrawal(city::CityParameters{T}, W::Real) where {T}
+function calculate_value_after_withdrawal(city::Core.CityParameters{T}, W::Real) where {T}
     # Equation 2: V_w = V_city * (1 - f_l * W / H_city)
     loss_fraction = city.f_l * W / city.H_city
     return city.V_city * (one(T) - loss_fraction)
 end
 
 """
-    calculate_resistance_cost_fraction(city::CityParameters, P) -> fraction
+    calculate_resistance_cost_fraction(city::Core.CityParameters, P) -> fraction
 
 Calculate unitless resistance cost fraction (Equation 3). See docs/equations.md.
 """
-function calculate_resistance_cost_fraction(city::CityParameters{T}, P::Real) where {T}
+function calculate_resistance_cost_fraction(city::Core.CityParameters{T}, P::Real) where {T}
     # Linear component
     linear_term = city.f_lin * P
 
@@ -43,11 +43,11 @@ function calculate_resistance_cost_fraction(city::CityParameters{T}, P::Real) wh
 end
 
 """
-    calculate_resistance_cost(city::CityParameters, levers::Levers) -> cost
+    calculate_resistance_cost(city::Core.CityParameters, levers::Core.Levers) -> cost
 
 Calculate flood-proofing cost (Equations 4-5). See docs/equations.md.
 """
-function calculate_resistance_cost(city::CityParameters{T}, levers::Levers{T}) where {T}
+function calculate_resistance_cost(city::Core.CityParameters{T}, levers::Core.Levers{T}) where {T}
     # When no resistance is applied, cost is 0
     if levers.R == zero(T) && levers.P == zero(T)
         return zero(T)
@@ -77,11 +77,11 @@ function calculate_resistance_cost(city::CityParameters{T}, levers::Levers{T}) w
 end
 
 """
-    calculate_dike_cost(city::CityParameters, D) -> cost
+    calculate_dike_cost(city::Core.CityParameters, D) -> cost
 
 Calculate dike construction cost (Equation 7). See docs/equations.md.
 """
-function calculate_dike_cost(city::CityParameters{T}, D::Real) where {T}
+function calculate_dike_cost(city::Core.CityParameters{T}, D::Real) where {T}
     # If not building a dike, no cost
     if D == zero(T)
         return zero(T)
@@ -94,11 +94,11 @@ function calculate_dike_cost(city::CityParameters{T}, D::Real) where {T}
 end
 
 """
-    calculate_investment_cost(city::CityParameters, levers::Levers) -> cost
+    calculate_investment_cost(city::Core.CityParameters, levers::Core.Levers) -> cost
 
 Calculate total investment cost (sum of withdrawal, resistance, dike costs).
 """
-function calculate_investment_cost(city::CityParameters, levers::Levers)
+function calculate_investment_cost(city::Core.CityParameters, levers::Core.Levers)
     C_W = calculate_withdrawal_cost(city, levers.W)
     C_R = calculate_resistance_cost(city, levers)
     C_D = calculate_dike_cost(city, levers.D)
@@ -111,7 +111,7 @@ end
 
 Calculate effective surge after seawall and runup. See docs/equations.md.
 """
-function calculate_effective_surge(h_raw::Real, city::CityParameters{T}) where {T}
+function calculate_effective_surge(h_raw::Real, city::Core.CityParameters{T}) where {T}
     if h_raw <= city.H_seawall
         return zero(T)
     else
@@ -125,7 +125,7 @@ end
 Calculate dike failure probability (Equation 8). See docs/equations.md.
 h_surge should be surge height above dike base: h_at_dike = max(0, h_eff - (W+B)).
 """
-function calculate_dike_failure_probability(h_surge::Real, D::Real, city::CityParameters{T}) where {T}
+function calculate_dike_failure_probability(h_surge::Real, D::Real, city::Core.CityParameters{T}) where {T}
     # Special case: no dike means certain failure if surge > 0
     if D == zero(T)
         return h_surge > zero(T) ? one(T) : city.p_min

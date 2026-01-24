@@ -1,5 +1,5 @@
-# Forcing types for stochastic and EAD simulation modes
-# SOW wrappers for SimOptDecisions integration
+# Forcing types for ICOW simulations
+# Forcing data = external inputs (storm surge distributions or realizations)
 
 using Distributions
 
@@ -76,52 +76,7 @@ function get_distribution(f::DistributionalForcing, year::Int)
     f.distributions[year]
 end
 
-# =============================================================================
-# SOW Wrappers for SimOptDecisions
-# =============================================================================
-
-"""
-    EADSOW{T<:Real, D<:Distribution} <: SimOptDecisions.AbstractSOW
-
-SOW wrapper for Expected Annual Damage mode using distributional forcing.
-"""
-struct EADSOW{T<:Real, D<:Distribution} <: SimOptDecisions.AbstractSOW
-    forcing::DistributionalForcing{T, D}
-    discount_rate::T
-    method::Symbol  # :quad or :mc
-end
-
-# Convenience constructor with defaults
-function EADSOW(forcing::DistributionalForcing{T, D}; discount_rate::T=zero(T), method::Symbol=:quad) where {T, D}
-    EADSOW{T, D}(forcing, discount_rate, method)
-end
-
-"""
-    StochasticSOW{T<:Real} <: SimOptDecisions.AbstractSOW
-
-SOW wrapper for stochastic mode using pre-generated surge scenarios.
-"""
-struct StochasticSOW{T<:Real} <: SimOptDecisions.AbstractSOW
-    forcing::StochasticForcing{T}
-    scenario::Int
-    discount_rate::T
-end
-
-# Convenience constructor with defaults
-function StochasticSOW(forcing::StochasticForcing{T}, scenario::Int; discount_rate::T=zero(T)) where {T}
-    @assert 1 <= scenario <= n_scenarios(forcing) "Scenario out of bounds"
-    StochasticSOW{T}(forcing, scenario, discount_rate)
-end
-
-# SOW accessors
-n_years(sow::EADSOW) = n_years(sow.forcing)
-n_years(sow::StochasticSOW) = n_years(sow.forcing)
-get_surge(sow::StochasticSOW, year::Int) = get_surge(sow.forcing, sow.scenario, year)
-get_distribution(sow::EADSOW, year::Int) = get_distribution(sow.forcing, year)
-
-# =============================================================================
 # Display methods
-# =============================================================================
 
 function Base.show(io::IO, f::StochasticForcing)
     print(io, "StochasticForcing($(n_scenarios(f)) scenarios, $(n_years(f)) years)")
@@ -130,12 +85,4 @@ end
 function Base.show(io::IO, f::DistributionalForcing{T,D}) where {T,D}
     dist_name = replace(string(D), r"\{.*\}" => "")  # Strip type params
     print(io, "DistributionalForcing($(n_years(f)) years, $dist_name)")
-end
-
-function Base.show(io::IO, sow::EADSOW)
-    print(io, "EADSOW($(n_years(sow)) years, method=:$(sow.method))")
-end
-
-function Base.show(io::IO, sow::StochasticSOW)
-    print(io, "StochasticSOW(scenario $(sow.scenario)/$(n_scenarios(sow.forcing)), $(n_years(sow)) years)")
 end

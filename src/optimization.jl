@@ -4,24 +4,24 @@
 using Random
 
 """
-    _create_sows(forcings::AbstractVector, discount_rate::Real, T::Type)
+    _create_scenarios(forcings::AbstractVector, discount_rate::Real)
 
-Create SOW wrappers from forcing data. Supports both forcing types.
+Create Scenario objects from forcing data.
 """
-function _create_sows(forcings::AbstractVector{<:StochasticForcing{T}}, discount_rate::Real) where {T}
-    # For stochastic forcing, create one SOW per scenario across all forcings
-    sows = StochasticSOW{T}[]
+function _create_scenarios(forcings::AbstractVector{<:StochasticForcing{T}}, discount_rate::Real) where {T}
+    # For stochastic forcing, create one scenario per scenario index across all forcings
+    scenarios = StochasticScenario{T}[]
     for forcing in forcings
-        for scenario in 1:n_scenarios(forcing)
-            push!(sows, StochasticSOW(forcing, scenario; discount_rate=T(discount_rate)))
+        for idx in 1:n_scenarios(forcing)
+            push!(scenarios, StochasticScenario(forcing, idx; discount_rate=T(discount_rate)))
         end
     end
-    return sows
+    return scenarios
 end
 
-function _create_sows(forcings::AbstractVector{<:DistributionalForcing{T}}, discount_rate::Real) where {T}
-    # For distributional forcing, create one SOW per forcing
-    return [EADSOW(f; discount_rate=T(discount_rate), method=:quad) for f in forcings]
+function _create_scenarios(forcings::AbstractVector{<:DistributionalForcing{T}}, discount_rate::Real) where {T}
+    # For distributional forcing, create one scenario per forcing
+    return [EADScenario(f; discount_rate=T(discount_rate), method=:quad) for f in forcings]
 end
 
 """
@@ -38,24 +38,24 @@ function _metric_calculator(outcomes)
 end
 
 """
-    _feasibility_constraint(city::CityParameters)
+    _feasibility_constraint(city::Core.CityParameters)
 
 Create FeasibilityConstraint for lever validity.
 """
-function _feasibility_constraint(city::CityParameters)
+function _feasibility_constraint(city::Core.CityParameters)
     return SimOptDecisions.FeasibilityConstraint(:lever_feasibility, policy -> begin
         levers = policy.levers
-        return is_feasible(levers, city)
+        return Core.is_feasible(levers, city)
     end)
 end
 
 """
-    optimize(city, forcings, discount_rate; kwargs...)
+    optimize(config, forcings, discount_rate; kwargs...)
 
 Multi-objective optimization over StaticPolicy parameters.
 
 # Arguments
-- `city::CityParameters`: City configuration
+- `config::ICOWConfig`: Configuration wrapping CityParameters
 - `forcings`: Vector of forcing data (StochasticForcing or DistributionalForcing)
 - `discount_rate`: Discount rate for NPV calculations
 
@@ -70,7 +70,7 @@ Multi-objective optimization over StaticPolicy parameters.
 OptimizationResult with Pareto frontier (access via `pareto_front(result)`)
 """
 function optimize(
-    city::CityParameters{T},
+    config::ICOWConfig{T},
     forcings::AbstractVector,
     discount_rate::Real;
     algorithm::Symbol=:NSGA2,
@@ -79,16 +79,16 @@ function optimize(
     parallel::Bool=true,
     seed::Int=42,
 ) where {T<:Real}
-    # Create SOWs from forcings
-    sows = _create_sows(forcings, discount_rate)
+    # Create scenarios from forcings
+    scenarios = _create_scenarios(forcings, discount_rate)
 
     # Create feasibility constraint
-    constraint = _feasibility_constraint(city)
+    constraint = _feasibility_constraint(config.city)
 
     # Create optimization problem
     prob = SimOptDecisions.OptimizationProblem(
-        city,
-        sows,
+        config,
+        scenarios,
         StaticPolicy{T},
         _metric_calculator,
         [SimOptDecisions.minimize(:mean_investment), SimOptDecisions.minimize(:mean_damage)];
@@ -106,6 +106,16 @@ function optimize(
     # Run optimization
     Random.seed!(seed)
     return SimOptDecisions.optimize(prob, backend)
+end
+
+# Legacy wrapper for old API
+function optimize(
+    city::Core.CityParameters{T},
+    forcings::AbstractVector,
+    discount_rate::Real;
+    kwargs...
+) where {T<:Real}
+    return optimize(ICOWConfig(city), forcings, discount_rate; kwargs...)
 end
 
 """
@@ -144,4 +154,16 @@ function best_total(result, ::Type{StaticPolicy{T}}) where {T}
     end
 
     return (best_policy, best_objectives)
+end
+
+"""
+    valid_bounds(::Type{StaticPolicy}, city)
+
+Return (lower, upper) bounds for StaticPolicy parameters [W, R, P, D, B].
+City-specific bounds.
+"""
+function valid_bounds(::Type{StaticPolicy}, city::Core.CityParameters{T}) where {T<:Real}
+    lower = (zero(T), zero(T), zero(T), zero(T), zero(T))
+    upper = (city.H_city, city.H_city, T(0.99), city.H_city, city.H_city)
+    return (lower, upper)
 end
