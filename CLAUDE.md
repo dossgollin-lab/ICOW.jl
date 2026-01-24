@@ -21,6 +21,14 @@
   Download locally to `_background/iCOW_2018_06_11.cpp` for reference (file is in .gitignore and cannot be redistributed).
   **Contains 7 bugs** - see `_background/equations.md` for complete documentation.
 
+### Zero Backwards Compatibility
+
+**CRITICAL**: This is a first-draft package with zero users.
+Make breaking changes freely.
+Delete deprecated code immediately.
+No compatibility shims, no `@deprecate`, no `# removed` comments.
+If something is unused, delete it completely.
+
 ### Mathematical Fidelity
 
 **CRITICAL**: The Julia implementation MUST match the **paper formulas** exactly, not the buggy C++ code.
