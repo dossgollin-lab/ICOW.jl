@@ -10,16 +10,18 @@ Uses C++ damage formula with basement depth.
 function base_zone_damage(
     z_low::T, z_high::T, value::T, h_surge::T, b_basement::T, H_bldg::T, f_damage::T
 ) where {T<:AbstractFloat}
-    washOver = max(zero(T), h_surge - z_low)
+    wash_over = max(zero(T), h_surge - z_low)
     zone_height = z_high - z_low
 
-    if washOver <= zero(T) || value <= zero(T) || zone_height <= zero(T)
+    if wash_over <= zero(T) || value <= zero(T) || zone_height <= zero(T)
         return zero(T)
     end
 
-    if washOver < zone_height
-        flood_fraction = washOver * (washOver / 2 + b_basement) / (H_bldg * zone_height)
+    if wash_over < zone_height
+        # Partial flooding
+        flood_fraction = wash_over * (wash_over / 2 + b_basement) / (H_bldg * zone_height)
     else
+        # Full flooding
         flood_fraction = (b_basement + zone_height / 2) / H_bldg
     end
 
@@ -41,18 +43,18 @@ function zone_damage(
         return zero(T)
     end
 
-    base_damage = base_zone_damage(z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage)
+    base_dmg = base_zone_damage(z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage)
 
     if zone_idx == 1
         # Zone 1 (resistant): apply resistance factor (1-P)
-        return base_damage * (one(T) - P)
+        return base_dmg * (one(T) - P)
     elseif zone_idx == 3
         # Zone 3 (dike-protected): apply dike factor
         dike_factor = dike_failed ? f_failed : f_intact
-        return base_damage * dike_factor
+        return base_dmg * dike_factor
     else
         # Zones 2, 4: standard damage
-        return base_damage
+        return base_dmg
     end
 end
 
@@ -68,24 +70,24 @@ function total_event_damage(
     b_basement::T, H_bldg::T, f_damage::T, P::T, f_intact::T, f_failed::T,
     d_thresh::T, f_thresh::T, gamma_thresh::T, dike_failed::Bool
 ) where {T<:AbstractFloat}
-    total_damage = zero(T)
+    total_dmg = zero(T)
 
     # Sum damage across all 5 zones
     for i in 0:4
         z_low = bounds[2*i + 1]
         z_high = bounds[2*i + 2]
         value = values[i + 1]
-        total_damage += zone_damage(i, z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage, P, f_intact, f_failed, dike_failed)
+        total_dmg += zone_damage(i, z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage, P, f_intact, f_failed, dike_failed)
     end
 
     # Apply threshold penalty
-    if total_damage > d_thresh
-        excess = total_damage - d_thresh
+    if total_dmg > d_thresh
+        excess = total_dmg - d_thresh
         penalty = (f_thresh * excess)^gamma_thresh
-        total_damage += penalty
+        total_dmg += penalty
     end
 
-    return total_damage
+    return total_dmg
 end
 
 """

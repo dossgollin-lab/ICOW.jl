@@ -38,6 +38,8 @@ end
 
 Calculate flood-proofing cost (Equations 4-5). See _background/equations.md.
 V_w is value after withdrawal, f_cR is resistance cost fraction.
+
+Note: Caller should check for R==0 && P==0 case and return zero before calling.
 """
 function resistance_cost(
     V_w::T, f_cR::T, H_bldg::T, H_city::T, W::T, R::T, B::T, b_basement::T
@@ -45,8 +47,10 @@ function resistance_cost(
     denominator = H_bldg * (H_city - W)
 
     if R < B
+        # Eq 4: C_R = (V_w * f_cR * R * (R/2 + b)) / (H_bldg * (H_city - W))
         numerator = V_w * f_cR * R * (R / 2 + b_basement)
     else
+        # Eq 5: C_R = (V_w * f_cR * B * (R - B/2 + b)) / (H_bldg * (H_city - W))
         numerator = V_w * f_cR * B * (R - B / 2 + b_basement)
     end
 
