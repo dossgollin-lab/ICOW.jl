@@ -11,28 +11,14 @@ Physics functions take numeric arguments, not structs.
 
 ### Tasks
 
-- [ ] Create `src/Core/Core.jl` submodule structure
-- [ ] Move `Levers` to Core as plain struct (remove `<: AbstractAction`)
-- [ ] Refactor `geometry.jl` to pure numeric functions:
-  - `calculate_dike_volume(H_city, D_city, D_startup, s_dike, w_d, W_city, D)`
-- [ ] Refactor `costs.jl` to pure numeric functions:
-  - `calculate_withdrawal_cost(V_city, H_city, f_w, W)`
-  - `calculate_value_after_withdrawal(V_city, H_city, f_l, W)`
-  - `calculate_resistance_cost_fraction(f_adj, f_lin, f_exp, t_exp, P)`
-  - `calculate_resistance_cost(V_w, f_cR, H_bldg, H_city, W, R, B, b_basement)`
-  - `calculate_dike_cost(V_dike, c_d)`
-  - `calculate_effective_surge(h_raw, H_seawall, f_runup)`
-  - `calculate_dike_failure_probability(h_surge, D, t_fail, p_min)`
-- [ ] Refactor `zones.jl` to pure numeric functions:
-  - `calculate_zone_boundaries(H_city, W, R, B, D)` returns tuple of boundaries
-  - `calculate_zone_values(V_w, H_city, W, R, B, D, r_prot, r_unprot)` returns tuple of values
-- [ ] Refactor `damage.jl` to pure numeric functions:
-  - `calculate_base_zone_damage(z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage)`
-  - `calculate_event_damage(...)` takes all needed numerics
-- [ ] Create wrapper functions in Core that take `(city, levers)` and call pure functions
-- [ ] Move `CityParameters` to Core as plain struct (remove `<: AbstractConfig`)
-- [ ] Update C++ validation tests to use Core functions
-- [ ] Verify all physics tests pass
+- [x] Create `src/Core/Core.jl` submodule structure
+- [x] Move `Levers` to Core as plain struct (remove `<: AbstractAction`)
+- [x] Move `CityParameters` to Core as plain struct (remove `<: AbstractConfig`)
+- [x] Refactor `geometry.jl` to pure numeric function: `dike_volume(...)`
+- [x] Refactor `costs.jl` to pure numeric functions (all use parametric typing)
+- [x] Refactor `zones.jl` to pure numeric functions: `zone_boundaries`, `zone_values`
+- [x] Refactor `damage.jl` to pure numeric functions: `base_zone_damage`, `zone_damage`, `total_event_damage`, `expected_damage_given_surge`
+- [ ] Verify all existing tests still pass (old src/*.jl files remain for now)
 
 ### Validation Checkpoint
 
