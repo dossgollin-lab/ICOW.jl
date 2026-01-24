@@ -18,7 +18,8 @@ Physics functions take numeric arguments, not structs.
 - [x] Refactor `costs.jl` to pure numeric functions (all use parametric typing)
 - [x] Refactor `zones.jl` to pure numeric functions: `zone_boundaries`, `zone_values`
 - [x] Refactor `damage.jl` to pure numeric functions: `base_zone_damage`, `zone_damage`, `total_event_damage`, `expected_damage_given_surge`
-- [ ] Verify all existing tests still pass (old src/*.jl files remain for now)
+- [x] Rewrite C++ validation to test Core directly (removed obsolete debug scripts)
+- [ ] User validates Phase 1 locally
 
 ### Validation Checkpoint
 
