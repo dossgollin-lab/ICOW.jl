@@ -119,12 +119,8 @@ function main()
         V_w = Core.value_after_withdrawal(V_CITY, H_CITY, F_L, W)
 
         # Test resistance cost using Core pure numeric function
-        if R == 0.0 && P == 0.0
-            julia_rc = 0.0
-        else
-            f_cR = Core.resistance_cost_fraction(F_ADJ, F_LIN, F_EXP, T_EXP, P)
-            julia_rc = Core.resistance_cost(V_w, f_cR, H_BLDG, H_CITY, W, R, B, B_BASEMENT)
-        end
+        f_cR = Core.resistance_cost_fraction(F_ADJ, F_LIN, F_EXP, T_EXP, P)
+        julia_rc = Core.resistance_cost(V_w, f_cR, H_BLDG, H_CITY, W, R, B, B_BASEMENT)
         cpp_rc = cpp_costs[test_name]["resistance_cost"]
         @test julia_rc ≈ cpp_rc rtol=rtol
         println("  ✓ Resistance cost: Julia=$julia_rc, C++=$cpp_rc")
