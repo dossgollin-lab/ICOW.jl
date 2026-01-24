@@ -7,9 +7,9 @@
 Calculate base damage for a zone (before modifiers like resistance or dike factors).
 Uses C++ damage formula with basement depth.
 """
-function base_zone_damage(z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage)
-    T = typeof(value)
-
+function base_zone_damage(
+    z_low::T, z_high::T, value::T, h_surge::T, b_basement::T, H_bldg::T, f_damage::T
+) where {T<:AbstractFloat}
     washOver = max(zero(T), h_surge - z_low)
     zone_height = z_high - z_low
 
@@ -32,9 +32,10 @@ end
 Calculate damage for a single zone based on zone index (0-4).
 Zone 0: withdrawn, Zone 1: resistant, Zone 2: unprotected, Zone 3: dike-protected, Zone 4: above dike.
 """
-function zone_damage(zone_idx, z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage, P, f_intact, f_failed, dike_failed::Bool)
-    T = typeof(value)
-
+function zone_damage(
+    zone_idx::Int, z_low::T, z_high::T, value::T, h_surge::T,
+    b_basement::T, H_bldg::T, f_damage::T, P::T, f_intact::T, f_failed::T, dike_failed::Bool
+) where {T<:AbstractFloat}
     # Zone 0 (withdrawn): no damage
     if zone_idx == 0
         return zero(T)
@@ -62,8 +63,11 @@ Calculate total damage for a single surge event across all zones.
 bounds: tuple of 10 boundary values from zone_boundaries()
 values: tuple of 5 zone values from zone_values()
 """
-function total_event_damage(bounds, values, h_surge, b_basement, H_bldg, f_damage, P, f_intact, f_failed, d_thresh, f_thresh, gamma_thresh, dike_failed::Bool)
-    T = typeof(values[1])
+function total_event_damage(
+    bounds::NTuple{10,T}, values::NTuple{5,T}, h_surge::T,
+    b_basement::T, H_bldg::T, f_damage::T, P::T, f_intact::T, f_failed::T,
+    d_thresh::T, f_thresh::T, gamma_thresh::T, dike_failed::Bool
+) where {T<:AbstractFloat}
     total_damage = zero(T)
 
     # Sum damage across all 5 zones
@@ -90,9 +94,12 @@ end
 Calculate expected damage for a single surge height, integrating over dike failure.
 Returns: p_fail * d_failed + (1-p_fail) * d_intact
 """
-function expected_damage_given_surge(h_raw, bounds, values, H_seawall, f_runup, W, B, D, t_fail, p_min, b_basement, H_bldg, f_damage, P, f_intact, f_failed, d_thresh, f_thresh, gamma_thresh)
-    T = typeof(values[1])
-
+function expected_damage_given_surge(
+    h_raw::T, bounds::NTuple{10,T}, values::NTuple{5,T},
+    H_seawall::T, f_runup::T, W::T, B::T, D::T, t_fail::T, p_min::T,
+    b_basement::T, H_bldg::T, f_damage::T, P::T, f_intact::T, f_failed::T,
+    d_thresh::T, f_thresh::T, gamma_thresh::T
+) where {T<:AbstractFloat}
     h_eff = effective_surge(h_raw, H_seawall, f_runup)
     dike_base = W + B
     h_at_dike = max(zero(T), h_eff - dike_base)
