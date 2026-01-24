@@ -18,38 +18,34 @@ Physics functions take numeric arguments, not structs.
 - [x] Refactor `costs.jl` to pure numeric functions (all use parametric typing)
 - [x] Refactor `zones.jl` to pure numeric functions: `zone_boundaries`, `zone_values`
 - [x] Refactor `damage.jl` to pure numeric functions: `base_zone_damage`, `zone_damage`, `total_event_damage`, `expected_damage_given_surge`
-- [x] Rewrite C++ validation to test Core directly (removed obsolete debug scripts)
+- [x] Rewrite C++ validation to test Core directly
 - [x] User validates Phase 1 locally (219 pass, 1 broken)
-
-### Validation Checkpoint
-
-User validates Phase 1 locally before proceeding.
 
 ## Phase 2: Refactor Main Module for SimOptDecisions
 
-**Goal:** Use new SimOptDecisions macros and callbacks.
+**Goal:** Use SimOptDecisions five-callback model.
 
 ### Tasks
 
-- [ ] Update SimOptDecisions dependency to latest version
-- [ ] Delete old simulation.jl (custom `SimOptDecisions.simulate` methods)
-- [ ] Delete old forcing.jl (`AbstractSOW` types)
-- [ ] Create new scenarios using `@scenariodef`:
-  - `EADScenario` with `@generic forcing`, `@continuous discount_rate`
-  - `StochasticScenario` with `@generic forcing`, `@discrete scenario_idx`
-- [ ] Create new policies using `@policydef`:
-  - `StaticPolicy` with `@continuous` fields for W, R, P, D, B
-- [ ] Create `ICOWConfig` using `@configdef` that wraps `Core.CityParameters`
-- [ ] Implement five callbacks in `simulation.jl`:
+- [x] Create new scenario types:
+  - `EADScenario <: AbstractScenario`
+  - `StochasticScenario <: AbstractScenario`
+- [x] Update `StaticPolicy` to use `Core.Levers`
+- [x] Create `ICOWConfig` wrapping `Core.CityParameters`
+- [x] Create `ICOWState <: AbstractState`
+- [x] Create `ICOWOutcome <: AbstractOutcome`
+- [x] Implement five callbacks in `simulation.jl`:
   - `initialize(config, scenario, rng)`
   - `time_axis(config, scenario)`
   - `get_action(policy, state, t, scenario)`
   - `run_timestep(state, action, t, config, scenario, rng)`
   - `compute_outcome(step_records, config, scenario)`
-- [ ] Update `State` to use `SimOptDecisions.AbstractState`
-- [ ] Create `ICOWOutcome` using `@outcomedef`
-- [ ] Update optimization.jl to use new API
-- [ ] Update all tests for new API
+- [x] Update optimization.jl to use new Scenario types
+- [x] Delete redundant files:
+  - `types.jl`, `parameters.jl` (Core provides these)
+  - `geometry.jl`, `costs.jl`, `zones.jl`, `damage.jl` (simulation.jl uses Core directly)
+  - `objectives.jl`, `visualization.jl` (not needed)
+- [ ] Update tests for new API (user must run tests)
 
 ### Validation Checkpoint
 
@@ -64,12 +60,7 @@ User validates Phase 2 locally before proceeding.
 - [ ] Add `explore()` interface for policy/scenario exploration
 - [ ] Add streaming output support (Zarr/CSV sinks)
 - [ ] Add declarative metrics (expected value, quantiles, etc.)
-- [ ] Update documentation examples to use new features
 - [ ] Add executor support (sequential, threaded, distributed)
-
-### Validation Checkpoint
-
-User validates Phase 3 locally before proceeding.
 
 ## Phase 4: Documentation Update
 
@@ -78,52 +69,29 @@ User validates Phase 3 locally before proceeding.
 ### Tasks
 
 - [ ] Update `docs/index.qmd` with new API overview
-- [ ] Update `docs/examples/getting_started.qmd`
-- [ ] Update `docs/examples/ead_analysis.qmd`
-- [ ] Update `docs/examples/ead_optimization.qmd`
-- [ ] Update `docs/examples/stochastic_analysis.qmd`
-- [ ] Update `docs/examples/stochastic_optimization.qmd`
-- [ ] Update `_background/framework.md` for new architecture
-
-## Phase 5: Comprehensive Audit
-
-**Goal:** Remove all dead code, simplify, and clean up.
-
-### Tasks
-
-- [ ] Delete backward compatibility code:
-  - `parameters()` function in policies.jl
-  - `valid_bounds()` function
-  - `:scalar` vs `:trace` mode complexity
-  - All `kwargs...` passthrough
-- [ ] Audit exports: remove unused, add missing
-- [ ] Audit tests: remove redundant, consolidate
-- [ ] Delete debug scripts in `test/validation/`
-- [ ] Review and simplify objectives.jl
-- [ ] Review and simplify visualization.jl
-- [ ] Final test pass
-- [ ] Final documentation review
+- [ ] Update examples in `docs/examples/`
+- [ ] Update `_background/framework.md`
 
 ## Architecture After Refactor
 
 ```
 src/
-├── ICOW.jl              # Main module, re-exports Core + SimOptDecisions bridge
+├── ICOW.jl           # Main module
 ├── Core/
-│   ├── Core.jl          # Submodule: pure physics
-│   ├── types.jl         # Levers, CityParameters (plain structs)
-│   ├── geometry.jl      # Pure numeric functions
-│   ├── costs.jl         # Pure numeric functions
-│   ├── zones.jl         # Pure numeric functions
-│   └── damage.jl        # Pure numeric functions
-├── scenarios.jl         # @scenariodef types
-├── policies.jl          # @policydef types
-├── config.jl            # @configdef types
-├── outcomes.jl          # @outcomedef types
-├── simulation.jl        # Five SimOptDecisions callbacks
-├── optimization.jl      # optimize() wrapper
-├── objectives.jl        # NPV calculations
-└── visualization.jl     # Plotting utilities
+│   ├── Core.jl       # Submodule: pure physics
+│   ├── types.jl      # Levers, CityParameters (plain structs)
+│   ├── geometry.jl   # dike_volume
+│   ├── costs.jl      # withdrawal_cost, resistance_cost, dike_cost, etc.
+│   ├── zones.jl      # zone_boundaries, zone_values
+│   └── damage.jl     # base_zone_damage, zone_damage, total_event_damage, expected_damage_given_surge
+├── config.jl         # ICOWConfig wrapper
+├── forcing.jl        # StochasticForcing, DistributionalForcing
+├── scenarios.jl      # EADScenario, StochasticScenario
+├── states.jl         # ICOWState
+├── policies.jl       # StaticPolicy
+├── outcomes.jl       # ICOWOutcome
+├── simulation.jl     # Five SimOptDecisions callbacks
+└── optimization.jl   # optimize() wrapper
 ```
 
 ## Notes
