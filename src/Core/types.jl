@@ -173,13 +173,6 @@ function validate_parameters(city::CityParameters)
 end
 
 """
-    city_slope(city::CityParameters)
-
-Compute city elevation gradient (H_city / D_city).
-"""
-city_slope(city::CityParameters) = city.H_city / city.D_city
-
-"""
     is_feasible(levers::Levers, city::CityParameters) -> Bool
 
 Check if lever settings are feasible for the given city.

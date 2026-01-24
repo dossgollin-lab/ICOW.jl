@@ -6,8 +6,6 @@
 
 Calculate dike material volume using simplified geometric formula.
 Replaces paper's Equation 6 which is numerically unstable. See _background/equations.md.
-
-Pure numeric function - takes individual parameters, not structs.
 """
 function dike_volume(H_city, D_city, D_startup, s_dike, w_d, W_city, D)
     # Effective height includes startup costs
@@ -31,17 +29,4 @@ function dike_volume(H_city, D_city, D_startup, s_dike, w_d, W_city, D)
     V_wings = (h_d * h_d / S) * (w_d + (T(2) / T(3)) * slope_width)
 
     return V_main + V_wings
-end
-
-# Convenience wrapper that takes CityParameters
-"""
-    dike_volume(city::CityParameters, D) -> volume
-
-Calculate dike material volume. Wrapper for pure numeric function.
-"""
-function dike_volume(city::CityParameters, D)
-    return dike_volume(
-        city.H_city, city.D_city, city.D_startup,
-        city.s_dike, city.w_d, city.W_city, D
-    )
 end
