@@ -5,13 +5,13 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 1. Core Pure Functions | Complete | Types moved to src/types.jl, Core exports only functions |
-| 2. Shared Types Module | Not Started | |
+| 2. Convenience Wrappers | Complete | Types done; wrappers deferred as unnecessary |
 | 3. Stochastic Submodule | Not Started | |
 | 4. EAD Submodule | Not Started | |
 | 5. Cleanup | Not Started | Old test files need cleanup (pre-existing) |
 | 6. Documentation | Not Started | |
 
-**Current Phase:** 2 (Shared Types Module)
+**Current Phase:** 3 (Stochastic Submodule)
 
 **Blocking Issues:** None
 
@@ -238,95 +238,37 @@ test/
 
 ---
 
-## Phase 2: Create Shared Types Module
+## Phase 2: Convenience Wrappers (Optional)
 
-**Goal:** User-facing structs and convenience wrappers in main module.
+**Goal:** Add convenience wrappers if needed for user-facing API.
 
-**Status:** Not Started
+**Status:** Mostly Complete (types done, wrappers deferred)
 
 **Depends on:** Phase 1 complete
 
-**Reference files:**
+### Completed Tasks
 
-- Current types: `src/types.jl` (moved from Core in Phase 1)
-- Zone definitions: `_background/equations.md` (Zone Definitions section)
-- Wrapper targets: `src/Core/*.jl` functions
+Types are already in `src/types.jl`:
 
-### Tasks
+- [x] `FloodDefenses{T}` struct with constraint validation and `Base.max`
+- [x] `CityParameters{T}` struct with `@kwdef` and defaults
+- [x] `is_feasible(levers::FloodDefenses, city::CityParameters)` → Bool
+- [x] `validate_parameters(city::CityParameters)` → throws on invalid
+- [x] Tests in `test/types_tests.jl`
 
-#### Types (`src/types.jl`)
+### Deferred Tasks
 
-- [ ] `FloodDefenses{T}` struct (moved from Phase 1):
-  - Fields: `W`, `R`, `P`, `D`, `B`
-  - Constructor with constraint validation
-  - `Base.max(a::FloodDefenses, b::FloodDefenses)` for irreversibility
-- [ ] `CityParameters{T}` struct (moved from Phase 1):
-  - All fields from `_background/equations.md` Parameters table
-  - Default values matching C++ reference
-  - `@kwdef` for keyword construction
-- [ ] `is_feasible(levers::FloodDefenses, city::CityParameters)` → Bool
-- [ ] `validate_parameters(city::CityParameters)` → throws on invalid
-- [ ] `Zone{T}` struct:
-  - Fields: `z_low::T`, `z_high::T`, `value::T`, `zone_type::Symbol`
-- [ ] Zone type constants:
-  - `const ZONE_WITHDRAWN = :withdrawn`
-  - `const ZONE_RESISTANT = :resistant`
-  - `const ZONE_UNPROTECTED = :unprotected`
-  - `const ZONE_DIKE_PROTECTED = :dike_protected`
-  - `const ZONE_ABOVE_DIKE = :above_dike`
+The following were deemed unnecessary complexity. The simulation code in `src/simulation.jl` calls Core functions directly with field extraction, which is simple and clear.
 
-#### Wrappers (`src/wrappers.jl`)
-
-Each wrapper extracts parameters from structs and calls corresponding Core function.
-
-- [ ] `calculate_dike_volume(city::CityParameters, D)`:
-  - Calls `Core.dike_volume(city.H_city, city.D_city, city.D_startup, city.s_dike, city.w_d, city.W_city, D)`
-- [ ] `calculate_withdrawal_cost(city::CityParameters, W)`:
-  - Calls `Core.withdrawal_cost(city.V_city, city.H_city, city.f_w, W)`
-- [ ] `calculate_value_after_withdrawal(city::CityParameters, W)`:
-  - Calls `Core.value_after_withdrawal(city.V_city, city.H_city, city.f_l, W)`
-- [ ] `calculate_resistance_cost_fraction(city::CityParameters, P)`:
-  - Calls `Core.resistance_cost_fraction(city.f_adj, city.f_lin, city.f_exp, city.t_exp, P)`
-- [ ] `calculate_resistance_cost(city::CityParameters, levers::FloodDefenses)`:
-  - Computes `V_w` and `f_cR` first
-  - Calls `Core.resistance_cost(...)`
-  - Warns if `R > B` (dominated strategy)
-- [ ] `calculate_dike_cost(city::CityParameters, D)`:
-  - Computes `V_dike` first via `calculate_dike_volume`
-  - Calls `Core.dike_cost(V_dike, city.c_d)`
-- [ ] `calculate_investment_cost(city::CityParameters, levers::FloodDefenses)`:
-  - Returns `C_W + C_R + C_D`
-- [ ] `calculate_effective_surge(h_raw, city::CityParameters)`:
-  - Calls `Core.effective_surge(h_raw, city.H_seawall, city.f_runup)`
-- [ ] `calculate_dike_failure_probability(h_at_dike, D, city::CityParameters)`:
-  - Calls `Core.dike_failure_probability(h_at_dike, D, city.t_fail, city.p_min)`
-- [ ] `calculate_city_zones(city::CityParameters, levers::FloodDefenses)` → `Vector{Zone}`:
-  - Computes `V_w` via `calculate_value_after_withdrawal`
-  - Calls `Core.zone_boundaries(...)` and `Core.zone_values(...)`
-  - Constructs 5 `Zone` structs with appropriate `zone_type`
-
-#### Module Updates
-
-- [ ] Update `src/ICOW.jl`:
-  - `include("types.jl")`
-  - `include("wrappers.jl")`
-  - Export all types and wrapper functions
-- [ ] Create `test/shared/types_tests.jl`:
-  - Test `FloodDefenses` construction and constraints
-  - Test `CityParameters` defaults match C++ values
-  - Test `Zone` struct
-  - Test `is_feasible` and `validate_parameters`
-- [ ] Create `test/shared/wrappers_tests.jl`:
-  - Test each wrapper function
-  - Verify wrapper results match direct Core calls
-  - Test `calculate_city_zones` returns correct zone structure
+- [~] `Zone{T}` struct — Core returns tuples, no need for struct wrapper
+- [~] Wrappers (`src/wrappers.jl`) — Direct Core calls in simulation.jl are cleaner
+- [~] `test/shared/wrappers_tests.jl` — Not needed without wrappers
 
 ### Validation Criteria
 
-- [ ] All wrapper functions work with struct inputs
-- [ ] `calculate_city_zones` returns 5 zones with correct boundaries
-- [ ] `test/shared/` tests pass
-- [ ] Package loads and exports all new symbols
+- [x] Types work with SimOptDecisions integration
+- [x] `test/types_tests.jl` passes
+- [x] Package loads and exports types
 
 ---
 

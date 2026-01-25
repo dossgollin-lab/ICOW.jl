@@ -43,6 +43,23 @@ end
     @test result.D == 4.0 && result.B == 2.0
 end
 
+@testset "validate_parameters" begin
+    # Valid parameters pass without error
+    city = CityParameters()
+    @test validate_parameters(city) === nothing
+
+    # V_city > 0; city value must be positive
+    @test_throws AssertionError validate_parameters(CityParameters(V_city=-1.0))
+    @test_throws AssertionError validate_parameters(CityParameters(V_city=0.0))
+
+    # Fractions in [0, 1]
+    @test_throws AssertionError validate_parameters(CityParameters(f_damage=1.5))
+    @test_throws AssertionError validate_parameters(CityParameters(t_fail=-0.1))
+
+    # f_runup >= 1.0; runup should amplify
+    @test_throws AssertionError validate_parameters(CityParameters(f_runup=0.9))
+end
+
 @testset "Type Stability" begin
     city = CityParameters()
     defenses = FloodDefenses(1.0, 2.0, 0.5, 3.0, 1.0)
