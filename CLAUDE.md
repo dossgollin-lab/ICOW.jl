@@ -26,36 +26,46 @@
 
 ```
 src/
-├── ICOW.jl          # Main module: types subtyping SimOptDecisions abstracts
-├── types.jl         # FloodDefenses, CityParameters (no SimOptDecisions dependency)
-├── simulation.jl    # SimOptDecisions integration (initialize, run_timestep, etc.)
-└── Core/            # Pure numeric functions (no structs, validated against C++)
-    ├── Core.jl
-    ├── geometry.jl  # dike_volume
-    ├── costs.jl     # withdrawal_cost, resistance_cost, dike_cost, etc.
-    ├── zones.jl     # zone_boundaries, zone_values
-    └── damage.jl    # base_zone_damage, zone_damage, total_event_damage, etc.
+├── ICOW.jl              # Main module: exports FloodDefenses, Core, Stochastic
+├── types.jl             # FloodDefenses only (shared across modes)
+├── Core/                # Pure numeric functions (validated against C++)
+│   ├── Core.jl
+│   ├── geometry.jl      # dike_volume
+│   ├── costs.jl         # withdrawal_cost, resistance_cost, dike_cost, etc.
+│   ├── zones.jl         # zone_boundaries, zone_values
+│   └── damage.jl        # base_zone_damage, zone_damage, total_event_damage, etc.
+└── Stochastic/          # SimOptDecisions integration for discrete event simulation
+    ├── Stochastic.jl    # Module definition
+    ├── types.jl         # StochasticConfig, StochasticScenario, StaticPolicy, etc.
+    └── simulation.jl    # 5 SimOptDecisions callbacks + helpers
 ```
 
-**SimOptDecisions Integration:**
+**Stochastic Submodule (ICOW.Stochastic):**
 
 Types subtype SimOptDecisions abstracts:
 
-- `Config <: AbstractConfig` - wraps CityParameters
-- `Scenario <: AbstractScenario` - surges + discount_rate
-- `State <: AbstractState` - holds `defenses::FloodDefenses{Float64}`
-- `StaticPolicy{T} <: AbstractPolicy` - holds 5 floats (W, R, P, D, B)
-- `Outcome <: AbstractOutcome` - investment + damage
+- `StochasticConfig <: AbstractConfig` - 28 city parameters (flattened, no nesting)
+- `StochasticScenario <: AbstractScenario` - `@timeseries surges` + `@continuous discount_rate`
+- `StochasticState <: AbstractState` - holds `defenses::FloodDefenses{T}`
+- `StaticPolicy <: AbstractPolicy` - reparameterized fractions (a_frac, w_frac, b_frac, r_frac, P)
+- `StochasticOutcome <: AbstractOutcome` - investment + damage
 
-SimOptDecisions methods in `simulation.jl`:
+Policy reparameterization ensures all constraint are satisfied:
 
-- `initialize(config, scenario, rng)` → State
-- `time_axis(config, scenario)` → 1:n_years
-- `get_action(policy, state, t, scenario)` → FloodDefenses
-- `run_timestep(state, action, t, config, scenario, rng)` → (State, StepRecord)
-- `compute_outcome(step_records, config, scenario)` → Outcome
+- `a_frac` = total height budget as fraction of H_city
+- `w_frac` = W's share of budget
+- `b_frac` = B's share of remaining (A - W)
+- `r_frac` = R as fraction of H_city
+- `P` = resistance fraction [0, 0.99]
 
-Usage: `simulate(config, scenario, policy)` (SimOptDecisions dispatches on our types)
+Usage:
+```julia
+using ICOW.Stochastic
+config = StochasticConfig()
+scenario = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.03)
+policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
+outcome = SimOptDecisions.simulate(config, scenario, policy, rng)
+```
 
 ### Zero Backwards Compatibility
 

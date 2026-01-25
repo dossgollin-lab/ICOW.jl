@@ -6,12 +6,12 @@
 |-------|--------|-------|
 | 1. Core Pure Functions | Complete | Types moved to src/types.jl, Core exports only functions |
 | 2. Convenience Wrappers | Complete | Types done; wrappers deferred as unnecessary |
-| 3. Stochastic Submodule | Not Started | |
+| 3. Stochastic Submodule | Complete | SimOptDecisions integration with reparameterized policy |
 | 4. EAD Submodule | Not Started | |
 | 5. Cleanup | Not Started | Old test files need cleanup (pre-existing) |
 | 6. Documentation | Not Started | |
 
-**Current Phase:** 3 (Stochastic Submodule)
+**Current Phase:** 4 (EAD Submodule)
 
 **Blocking Issues:** None
 
@@ -460,7 +460,7 @@ The following were deemed unnecessary complexity. The simulation code in `src/si
 **Goal:** SimOptDecisions integration for discrete event simulation.
 Replace existing simulation code with a clean Stochastic submodule.
 
-**Status:** Not Started
+**Status:** Complete
 
 **Depends on:** Phase 2 complete
 
@@ -513,203 +513,64 @@ src/
 
 #### Cleanup Old Code
 
-- [ ] Delete `CityParameters` from `src/types.jl` (keep `FloodDefenses`, `is_feasible`, `validate_parameters` adapted for config)
-- [ ] Delete from `src/ICOW.jl`: `Config`, `Scenario`, `State`, `StaticPolicy`, `StepRecord`, `Outcome` structs
-- [ ] Delete `src/simulation.jl`
-- [ ] Update exports in `src/ICOW.jl`
+- [x] Delete `CityParameters` from `src/types.jl` (keep `FloodDefenses`, `is_feasible`, `validate_parameters` adapted for config)
+- [x] Delete from `src/ICOW.jl`: `Config`, `Scenario`, `State`, `StaticPolicy`, `StepRecord`, `Outcome` structs
+- [x] Delete `src/simulation.jl`
+- [x] Update exports in `src/ICOW.jl`
 
 #### Submodule Structure
 
-- [ ] Create directory `src/Stochastic/`
-- [ ] Create `src/Stochastic/Stochastic.jl`:
-  ```julia
-  module Stochastic
-
-  using ..ICOW: FloodDefenses, is_feasible, Core
-  using SimOptDecisions
-  using Random
-
-  include("types.jl")
-  include("simulation.jl")
-
-  export StochasticConfig, StochasticScenario, StochasticState
-  export StaticPolicy, StochasticOutcome
-  export validate_config
-
-  end
-  ```
-- [ ] Update `src/ICOW.jl` to include and re-export Stochastic submodule
+- [x] Create directory `src/Stochastic/`
+- [x] Create `src/Stochastic/Stochastic.jl`
+- [x] Update `src/ICOW.jl` to include and re-export Stochastic submodule
 
 #### Types (`src/Stochastic/types.jl`)
 
-- [ ] `StochasticConfig` - plain struct with flattened city parameters:
-  ```julia
-  Base.@kwdef struct StochasticConfig{T<:Real} <: SimOptDecisions.AbstractConfig
-      # Geometry (6)
-      V_city::T = 1.5e12
-      H_bldg::T = 30.0
-      H_city::T = 17.0
-      D_city::T = 2000.0
-      W_city::T = 43000.0
-      H_seawall::T = 1.75
-      # Dike (4)
-      D_startup::T = 2.0
-      w_d::T = 3.0
-      s_dike::T = 0.5
-      c_d::T = 10.0
-      # Zones (2)
-      r_prot::T = 1.1
-      r_unprot::T = 0.95
-      # Withdrawal (2)
-      f_w::T = 1.0
-      f_l::T = 0.01
-      # Resistance (5)
-      f_adj::T = 1.25
-      f_lin::T = 0.35
-      f_exp::T = 0.115
-      t_exp::T = 0.4
-      b_basement::T = 3.0
-      # Damage (6)
-      f_damage::T = 0.39
-      f_intact::T = 0.03
-      f_failed::T = 1.5
-      t_fail::T = 0.95
-      p_min::T = 0.05
-      f_runup::T = 1.1
-      # Threshold (3)
-      d_thresh::T = 4.0e9
-      f_thresh::T = 1.0
-      gamma_thresh::T = 1.01
-  end
-  ```
-- [ ] `validate_config(config::StochasticConfig)` - validation function (adapt from old `validate_parameters`)
-- [ ] `is_feasible(fd::FloodDefenses, config::StochasticConfig)` - feasibility check
-
-- [ ] `StochasticScenario` using `@scenariodef`:
-  ```julia
-  SimOptDecisions.@scenariodef StochasticScenario begin
-      @timeseries surges
-      @continuous discount_rate 0.0 1.0
-  end
-  ```
-
-- [ ] `StochasticState` - mutable struct holding FloodDefenses:
-  ```julia
-  mutable struct StochasticState{T<:AbstractFloat} <: SimOptDecisions.AbstractState
-      defenses::FloodDefenses{T}
-  end
-  StochasticState{T}() where {T} = StochasticState(FloodDefenses{T}(zero(T), zero(T), zero(T), zero(T), zero(T)))
-  ```
-
-- [ ] `StaticPolicy` using `@policydef` with reparameterized fractions:
-  ```julia
-  SimOptDecisions.@policydef StaticPolicy begin
-      @continuous a_frac 0.0 1.0  # total height budget as fraction of H_city
-      @continuous w_frac 0.0 1.0  # W's share of budget
-      @continuous b_frac 0.0 1.0  # B's share of remaining (A - W)
-      @continuous r_frac 0.0 1.0  # R as fraction of H_city
-      @continuous P 0.0 0.99      # resistance fraction
-  end
-  ```
-
-- [ ] `FloodDefenses(policy::StaticPolicy, config::StochasticConfig)` constructor:
-  ```julia
-  function FloodDefenses(policy::StaticPolicy, config::StochasticConfig)
-      H = config.H_city
-      A = SimOptDecisions.value(policy.a_frac) * H
-      W = SimOptDecisions.value(policy.w_frac) * A
-      remaining = A - W
-      B = SimOptDecisions.value(policy.b_frac) * remaining
-      D = remaining - B
-      R = SimOptDecisions.value(policy.r_frac) * H
-      P = SimOptDecisions.value(policy.P)
-      return FloodDefenses(W, R, P, D, B)
-  end
-  ```
-
-- [ ] `StochasticOutcome` using `@outcomedef`:
-  ```julia
-  SimOptDecisions.@outcomedef StochasticOutcome begin
-      @continuous investment
-      @continuous damage
-  end
-  ```
+- [x] `StochasticConfig` - plain struct with flattened city parameters (28 fields)
+- [x] `validate_config(config::StochasticConfig)` - validation function
+- [x] `is_feasible(fd::FloodDefenses, config::StochasticConfig)` - feasibility check
+- [x] `StochasticScenario` using `@scenariodef` with `@timeseries surges` and `@continuous discount_rate`
+- [x] `StochasticState` - mutable struct holding `FloodDefenses{T}`
+- [x] `StaticPolicy` using `@policydef` with reparameterized fractions (a_frac, w_frac, b_frac, r_frac, P)
+- [x] `FloodDefenses(policy::StaticPolicy, config::StochasticConfig)` constructor
+- [x] `StochasticOutcome` using `@outcomedef` with `@continuous investment, damage`
+- [x] `total_cost(outcome)` helper function
 
 #### Simulation Callbacks (`src/Stochastic/simulation.jl`)
 
-- [ ] `SimOptDecisions.initialize(config::StochasticConfig, scenario::StochasticScenario, rng)`:
-  - Returns `StochasticState{T}()` with zero protection
-
-- [ ] `SimOptDecisions.time_axis(config::StochasticConfig, scenario::StochasticScenario)`:
-  - Returns `1:length(SimOptDecisions.value(scenario.surges))`
-
-- [ ] `SimOptDecisions.get_action(policy::StaticPolicy, state::StochasticState, t, scenario)`:
-  - Year 1: return `FloodDefenses(policy, ???)` - **Note: needs config, see issue below**
-  - Other years: return zero FloodDefenses
-
-- [ ] `SimOptDecisions.run_timestep(state, action, t, config, scenario, rng)`:
-  - Enforce irreversibility: `new_defenses = max(state.defenses, action)`
-  - Check feasibility with `is_feasible(new_defenses, config)`; return Inf if infeasible
-  - Calculate marginal investment cost
-  - Sample dike failure
-  - Calculate damage using Core functions
-  - Update state, return `(new_state, step_record)`
-
-- [ ] `SimOptDecisions.compute_outcome(records, config, scenario)`:
-  - Aggregate with discounting using `SimOptDecisions.value(scenario.discount_rate)`
-  - Return `StochasticOutcome`
+- [x] `SimOptDecisions.initialize` - returns zero-protection state
+- [x] `SimOptDecisions.time_axis` - returns `1:length(surges)`
+- [x] `SimOptDecisions.get_action` - returns policy in year 1, zero policy otherwise
+- [x] `SimOptDecisions.run_timestep` - converts policy to FloodDefenses, enforces irreversibility, computes costs/damage
+- [x] `SimOptDecisions.compute_outcome` - aggregates with discounting
 
 #### Helper Functions
 
-- [ ] `_investment_cost(config::StochasticConfig, fd::FloodDefenses)` - adapt from existing
-- [ ] `_stochastic_damage(config::StochasticConfig, fd::FloodDefenses, h_raw, rng)` - adapt from existing
+- [x] `_investment_cost(config::StochasticConfig, fd::FloodDefenses)` - adapted from existing
+- [x] `_stochastic_damage(config::StochasticConfig, fd::FloodDefenses, h_raw, rng)` - adapted from existing
 
 #### Tests
 
-- [ ] Update `test/types_tests.jl`: remove CityParameters tests, keep FloodDefenses tests
-- [ ] Create `test/stochastic/` directory
-- [ ] Create `test/stochastic/types_tests.jl`:
-  - Config creation with defaults
-  - Config validation
-  - Policy reparameterization produces valid FloodDefenses
-  - Edge cases (a_frac=0, a_frac=1, w_frac=1, etc.)
-- [ ] Create `test/stochastic/simulation_tests.jl`:
-  - Full simulation runs without error
-  - Irreversibility enforced
-  - Dike failure is stochastic (different seeds → different results)
-  - Discounting applied correctly
-- [ ] Update `test/runtests.jl` to use new test structure
-- [ ] Delete `test/simulation_integration_tests.jl` (replaced by stochastic tests)
+- [x] Update `test/types_tests.jl`: remove CityParameters tests, keep FloodDefenses tests
+- [x] Create `test/stochastic/` directory
+- [x] Create `test/stochastic/types_tests.jl` (config, validation, policy reparameterization, edge cases)
+- [x] Create `test/stochastic/simulation_tests.jl` (simulation runs, determinism, discounting)
+- [x] Update `test/runtests.jl` to use new test structure
+- [x] Delete `test/simulation_integration_tests.jl` (replaced by stochastic tests)
 
-### Open Issue: get_action Needs Config
+### Resolved Issue: get_action Needs Config
 
-The `get_action` callback has signature `get_action(policy, state, t, scenario)` - it doesn't receive `config`.
-But converting policy fractions to FloodDefenses requires `config.H_city`.
-
-**Options:**
-1. Store `H_city` in the policy itself (passed at construction)
-2. Store `H_city` in the scenario
-3. Return policy object from `get_action`, convert to FloodDefenses in `run_timestep` (which has config)
-4. Store `H_city` in state
-
-**Recommendation:** Option 3 - return policy from `get_action`, convert in `run_timestep`.
-This matches the ROADMAP's original design. Action type becomes `StaticPolicy`, not `FloodDefenses`.
+**Solution implemented:** Option 3 - `get_action` returns `StaticPolicy`, conversion to `FloodDefenses` happens in `run_timestep` which has access to config.
 
 ### Validation Criteria
 
-- [ ] Package loads: `using ICOW; using ICOW.Stochastic`
-- [ ] Basic simulation runs:
-  ```julia
-  config = StochasticConfig()
-  scenario = StochasticScenario(surges=[1.0, 2.0, 1.5], discount_rate=0.03)
-  policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
-  outcome = SimOptDecisions.simulate(config, scenario, policy)
-  ```
-- [ ] Irreversibility enforced (defenses never decrease)
-- [ ] Dike failure is stochastic (different RNG seeds → different damages)
-- [ ] Discounting applied correctly
-- [ ] All tests pass
-- [ ] C++ validation still passes (Core unchanged)
+- [x] Package loads: `using ICOW; using ICOW.Stochastic`
+- [x] Basic simulation runs
+- [x] Irreversibility enforced (defenses never decrease)
+- [x] Dike failure is stochastic (different RNG seeds → different damages)
+- [x] Discounting applied correctly
+- [x] All tests pass (81 tests)
+- [x] C++ validation still passes (Core unchanged)
 
 ---
 
