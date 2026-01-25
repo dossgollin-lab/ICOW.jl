@@ -104,8 +104,8 @@ SimOptDecisions.validate_config(config::StochasticConfig) = validate_config(conf
 Check if flood defenses are feasible for the given config.
 """
 function is_feasible(fd::FloodDefenses, config::StochasticConfig)
-    # W <= H_city; cannot withdraw above city peak
-    fd.W <= config.H_city || return false
+    # W < H_city (strict); W = H_city causes division by zero in withdrawal_cost
+    fd.W < config.H_city || return false
 
     # W + B + D <= H_city; dike top cannot exceed city elevation
     fd.W + fd.B + fd.D <= config.H_city || return false

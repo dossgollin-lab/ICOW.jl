@@ -74,4 +74,23 @@ using Test
         outcome = SimOptDecisions.simulate(config, scenario, policy, MersenneTwister(42))
         @test outcome isa StochasticOutcome
     end
+
+    @testset "Stochastic dike failure produces variation" begin
+        config = StochasticConfig()
+        # Moderate surges near dike height to get intermediate failure probability
+        # With a_frac=0.5, b_frac=0.5: A=8.5, B=4.25, D=4.25, dike_top=8.5
+        # Surges of ~7m will sometimes overtop, sometimes not
+        scenario = StochasticScenario(surges=[7.0, 7.0, 7.0], discount_rate=0.0)
+        policy = StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
+
+        damages = [
+            SimOptDecisions.value(
+                SimOptDecisions.simulate(config, scenario, policy, MersenneTwister(seed)).damage
+            )
+            for seed in 1:50
+        ]
+
+        # With stochastic dike failure, different seeds should produce different damages
+        @test length(unique(damages)) > 1
+    end
 end

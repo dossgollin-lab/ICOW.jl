@@ -39,7 +39,10 @@ end
 
     # Feasible
     @test is_feasible(FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0), config)
-    @test is_feasible(FloodDefenses(17.0, 0.0, 0.0, 0.0, 0.0), config)  # W = H_city
+    @test is_feasible(FloodDefenses(16.9, 0.0, 0.0, 0.0, 0.0), config)  # W < H_city
+
+    # W = H_city is infeasible (strict inequality required to avoid division by zero)
+    @test !is_feasible(FloodDefenses(17.0, 0.0, 0.0, 0.0, 0.0), config)
 
     # Infeasible
     @test !is_feasible(FloodDefenses(18.0, 0.0, 0.0, 0.0, 0.0), config)  # W > H_city
@@ -54,11 +57,14 @@ end
     fd = FloodDefenses(policy, config)
     @test fd.W == 0.0 && fd.B == 0.0 && fd.D == 0.0 && fd.R == 0.0 && fd.P == 0.0
 
-    # Full budget (a_frac=1) with all to W (w_frac=1)
+    # Full budget (a_frac=1) with all to W (w_frac=1) produces W = H_city
+    # Note: This is infeasible for simulation (W must be < H_city), but the
+    # conversion itself works. Feasibility is checked separately.
     policy = StaticPolicy(a_frac=1.0, w_frac=1.0, b_frac=0.0, r_frac=0.0, P=0.0)
     fd = FloodDefenses(policy, config)
     @test fd.W == 17.0  # W = a_frac * w_frac * H_city
     @test fd.B == 0.0 && fd.D == 0.0
+    @test !is_feasible(fd, config)  # W = H_city is infeasible
 
     # Full budget, half to W, half remaining to B
     policy = StaticPolicy(a_frac=1.0, w_frac=0.5, b_frac=0.5, r_frac=0.0, P=0.0)
@@ -73,8 +79,8 @@ end
     @test fd.R ≈ 8.5  # r_frac * H_city
     @test fd.P == 0.5
 
-    # All reparameterized policies should be feasible
-    for a in [0.0, 0.5, 1.0], w in [0.0, 0.5, 1.0], b in [0.0, 0.5, 1.0]
+    # Reparameterized policies are feasible except when W = H_city (a=1, w=1)
+    for a in [0.0, 0.5, 0.99], w in [0.0, 0.5, 1.0], b in [0.0, 0.5, 1.0]
         policy = StaticPolicy(a_frac=a, w_frac=w, b_frac=b, r_frac=0.5, P=0.5)
         fd = FloodDefenses(policy, config)
         @test is_feasible(fd, config)

@@ -20,18 +20,18 @@ end
 
 """Get action from policy given current state."""
 function SimOptDecisions.get_action(
-    policy::StaticPolicy,
-    state::StochasticState{T},
+    policy::StaticPolicy{Tp},
+    state::StochasticState,
     t::SimOptDecisions.TimeStep,
     scenario::StochasticScenario
-) where {T}
+) where {Tp}
     # Static policy: return policy in year 1, zero policy otherwise
     # Conversion to FloodDefenses happens in run_timestep (which has config)
     if SimOptDecisions.index(t) == 1
         policy
     else
-        # Return a zero policy
-        StaticPolicy(a_frac=zero(T), w_frac=zero(T), b_frac=zero(T), r_frac=zero(T), P=zero(T))
+        # Return a zero policy (type from policy, not state, for type stability)
+        StaticPolicy(a_frac=zero(Tp), w_frac=zero(Tp), b_frac=zero(Tp), r_frac=zero(Tp), P=zero(Tp))
     end
 end
 
@@ -90,6 +90,7 @@ function SimOptDecisions.compute_outcome(
     total_damage = zero(T)
 
     for (year, record) in enumerate(step_records)
+        # End-of-year discounting: costs at year t are discounted by 1/(1+r)^t
         df = one(T) / (one(T) + r)^year
         total_investment += record.investment * df
         total_damage += record.damage * df
