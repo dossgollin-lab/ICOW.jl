@@ -26,7 +26,7 @@
 
 ```
 src/
-├── ICOW.jl              # Main module: exports FloodDefenses, Core, Stochastic
+├── ICOW.jl              # Main module: exports FloodDefenses, Core, Stochastic, EAD
 ├── types.jl             # FloodDefenses only (shared across modes)
 ├── Core/                # Pure numeric functions (validated against C++)
 │   ├── Core.jl
@@ -34,10 +34,14 @@ src/
 │   ├── costs.jl         # withdrawal_cost, resistance_cost, dike_cost, etc.
 │   ├── zones.jl         # zone_boundaries, zone_values
 │   └── damage.jl        # base_zone_damage, zone_damage, total_event_damage, etc.
-└── Stochastic/          # SimOptDecisions integration for discrete event simulation
-    ├── Stochastic.jl    # Module definition
-    ├── types.jl         # StochasticConfig, StochasticScenario, StaticPolicy, etc.
-    └── simulation.jl    # 5 SimOptDecisions callbacks + helpers
+├── Stochastic/          # SimOptDecisions integration for discrete event simulation
+│   ├── Stochastic.jl    # Module definition
+│   ├── types.jl         # StochasticConfig, StochasticScenario, StaticPolicy, etc.
+│   └── simulation.jl    # 5 SimOptDecisions callbacks + helpers
+└── EAD/                 # SimOptDecisions integration for expected annual damage
+    ├── EAD.jl           # Module definition
+    ├── types.jl         # EADConfig, EADScenario, IntegrationMethod, etc.
+    └── simulation.jl    # 5 SimOptDecisions callbacks + integration helpers
 ```
 
 **Stochastic Submodule (ICOW.Stochastic):**
@@ -63,6 +67,33 @@ Usage:
 using ICOW.Stochastic
 config = StochasticConfig()
 scenario = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.03)
+policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
+outcome = SimOptDecisions.simulate(config, scenario, policy, rng)
+```
+
+**EAD Submodule (ICOW.EAD):**
+
+Types subtype SimOptDecisions abstracts:
+
+- `EADConfig <: AbstractConfig` - 28 city parameters (same as StochasticConfig, duplicated)
+- `EADScenario{T,D,M} <: AbstractScenario` - distributions + discount_rate + integrator
+- `EADState <: AbstractState` - holds `defenses::FloodDefenses{T}`
+- `StaticPolicy <: AbstractPolicy` - same reparameterization as Stochastic
+- `EADOutcome <: AbstractOutcome` - investment + expected_damage
+
+Integration methods (type-safe):
+
+- `QuadratureIntegrator{T}(rtol=1e-6)` - adaptive quadrature via QuadGK
+- `MonteCarloIntegrator(n_samples=1000)` - Monte Carlo sampling
+
+Usage:
+```julia
+using ICOW.EAD
+using Distributions
+config = EADConfig()
+dists = [Normal(3.0, 1.0) for _ in 1:10]  # surge distributions per year
+scenario = EADScenario(dists, 0.03, QuadratureIntegrator())
+# or: scenario = EADScenario(dists, 0.03, MonteCarloIntegrator(n_samples=5000))
 policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
 outcome = SimOptDecisions.simulate(config, scenario, policy, rng)
 ```

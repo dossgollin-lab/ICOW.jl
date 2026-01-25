@@ -13,4 +13,9 @@ include("Stochastic/Stochastic.jl")
 using .Stochastic
 export Stochastic
 
+# EAD submodule (Expected Annual Damage integration)
+include("EAD/EAD.jl")
+using .EAD
+export EAD
+
 end # module ICOW

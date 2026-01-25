@@ -1,6 +1,7 @@
 using ICOW
 using Test
 using Random
+using Distributions
 
 @testset "ICOW.jl" begin
     # Core types (FloodDefenses)
@@ -10,5 +11,11 @@ using Random
     @testset "Stochastic" begin
         include("stochastic/types_tests.jl")
         include("stochastic/simulation_tests.jl")
+    end
+
+    # EAD submodule
+    @testset "EAD" begin
+        include("ead/types_tests.jl")
+        include("ead/simulation_tests.jl")
     end
 end
