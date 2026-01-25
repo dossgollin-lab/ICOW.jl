@@ -4,46 +4,56 @@ using Random
 using Distributions
 using QuadGK
 using SimOptDecisions
-using Metaheuristics  # Activates SimOptDecisions optimization backend
 
 # Core submodule (pure physics functions)
-include("config.jl")  # Also includes Core/Core.jl
+include("Core/Core.jl")
+using .Core
 
-# SimOptDecisions types
-include("forcing.jl")
-include("scenarios.jl")
-include("states.jl")
-include("policies.jl")
-include("outcomes.jl")
-
-# Five-callback simulation implementation
-include("simulation.jl")
-
-# Optimization
-include("optimization.jl")
-
-# ============================================================================
-# Exports
-# ============================================================================
-
-# Core types (re-exported)
+# Re-export Core types
 const Levers = Core.Levers
 const CityParameters = Core.CityParameters
-const validate_parameters = Core.validate_parameters
-const is_feasible = Core.is_feasible
-export Levers, CityParameters, validate_parameters, is_feasible
+export Levers, CityParameters
 
-# Config, Scenarios, State, Policy, Outcome
-export ICOWConfig
-export EADScenario, StochasticScenario
-export ICOWState, StaticPolicy
-export ICOWOutcome, total_cost
+# Simple scenario: just pre-sampled surges
+struct Scenario
+    surges::Vector{Float64}  # surge per year
+    discount_rate::Float64
+end
+Scenario(surges; discount_rate=0.0) = Scenario(surges, discount_rate)
+export Scenario
 
-# Forcing
-export StochasticForcing, DistributionalForcing
-export n_scenarios, n_years, get_surge, get_distribution
+# Config wraps CityParameters
+struct Config
+    city::CityParameters{Float64}
+end
+Config() = Config(CityParameters())
+Base.getproperty(c::Config, s::Symbol) = s === :city ? getfield(c, :city) : getproperty(getfield(c, :city), s)
+export Config
 
-# Optimization
-export optimize, pareto_policies, best_total, valid_bounds
+# State: current protection levels
+mutable struct State
+    levers::Levers{Float64}
+end
+State() = State(Levers(0.0, 0.0, 0.0, 0.0, 0.0))
+export State
+
+# Policy: what levers to apply
+struct Policy
+    levers::Levers{Float64}
+end
+Policy(W, R, P, D, B) = Policy(Levers(W, R, P, D, B))
+export Policy
+
+# Outcome: investment + damage
+struct Outcome
+    investment::Float64
+    damage::Float64
+end
+total_cost(o::Outcome) = o.investment + o.damage
+export Outcome, total_cost
+
+# Simple simulate function
+include("simulate.jl")
+export simulate
 
 end # module ICOW
