@@ -38,7 +38,8 @@ export Scenario
 mutable struct State{T<:Real} <: AbstractState
     defenses::FloodDefenses{T}
 end
-State() = State(FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0))
+State{T}() where {T<:Real} = State(FloodDefenses{T}(zero(T), zero(T), zero(T), zero(T), zero(T)))
+State() = State{Float64}()
 export State
 
 # StaticPolicy: apply fixed protection in year 1
