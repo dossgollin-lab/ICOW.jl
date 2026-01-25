@@ -8,10 +8,10 @@
 | 2. Convenience Wrappers | Complete | Types done; wrappers deferred as unnecessary |
 | 3. Stochastic Submodule | Complete | SimOptDecisions integration with reparameterized policy |
 | 4. EAD Submodule | Complete | Typed integrators (Quadrature/MC), independent from Stochastic |
-| 5. Cleanup | Not Started | Old test files need cleanup (pre-existing) |
+| 5. Cleanup | Complete | Deprecated tests deleted, C++ validation integrated into test suite |
 | 6. Documentation | Not Started | |
 
-**Current Phase:** 5 (Cleanup)
+**Current Phase:** 6 (Documentation)
 
 **Blocking Issues:** None
 
@@ -685,39 +685,37 @@ src/EAD/
 
 **Goal:** Remove old code, finalize structure.
 
-**Status:** Not Started
+**Status:** Complete
 
 **Depends on:** Phases 3 and 4 complete
 
 ### Tasks
 
-- [ ] Delete obsolete files:
-  - [ ] `src/forcing.jl`
-  - [ ] `src/scenarios.jl`
-  - [ ] `src/states.jl`
-  - [ ] `src/policies.jl`
-  - [ ] `src/outcomes.jl`
-  - [ ] `src/simulation.jl`
-  - [ ] `src/optimization.jl`
-  - [ ] `src/config.jl`
-- [ ] Update `src/ICOW.jl`:
-  - [ ] Remove includes for deleted files
-  - [ ] Add `include("Stochastic/Stochastic.jl")`
-  - [ ] Add `include("EAD/EAD.jl")`
-  - [ ] Update exports
-- [ ] Reorganize tests:
-  - [ ] Move/adapt existing tests to `test/core/`, `test/shared/`, etc.
-  - [ ] Delete tests for removed functionality
-  - [ ] Update `test/runtests.jl` to include new test structure
-- [ ] Verify package loads cleanly: `using ICOW`
-- [ ] Verify both submodules accessible: `using ICOW.Stochastic`, `using ICOW.EAD`
+#### Source cleanup
+
+Obsolete source files (`src/forcing.jl`, `src/scenarios.jl`, `src/states.jl`, `src/policies.jl`, `src/outcomes.jl`, `src/simulation.jl`, `src/optimization.jl`, `src/config.jl`) were already deleted during earlier phases.
+`src/ICOW.jl` already includes Stochastic and EAD submodules with correct exports.
+
+- [x] Verify no obsolete source files remain
+- [x] Verify `src/ICOW.jl` is clean (includes types, Core, Stochastic, EAD only)
+
+#### Test cleanup
+
+- [x] Delete `test/_deprecated/` folder (11 old test files)
+- [x] Delete superfluous validation scripts (`debug_zone_damage.jl`, `validate_mode_convergence.jl`, `benchmark_ead_methods.jl`)
+- [x] Convert C++ validation into proper tests:
+  - [x] Commit C++ reference output files (`test/validation/cpp_reference/outputs/`)
+  - [x] Create `test/core/cpp_validation_tests.jl` (parses committed outputs, validates Core functions)
+  - [x] Remove old standalone `validate_cpp_outputs.jl`
+- [x] Update `test/runtests.jl` to include Core validation tests
+- [x] All 199 tests pass
 
 ### Validation Criteria
 
-- [ ] No obsolete files remain
-- [ ] Package loads without warnings
-- [ ] All tests pass
-- [ ] Both simulation modes work end-to-end
+- [x] No obsolete files remain
+- [x] Package loads without warnings
+- [x] All tests pass (199 total)
+- [x] Both simulation modes work end-to-end
 
 ---
 

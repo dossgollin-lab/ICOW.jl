@@ -6,8 +6,7 @@ _background/iCOW_2018_06_11.cpp
 # PDFs in background folder should not be distributed
 _background/*.pdf
 
-# C++ reference validation outputs (generated, not tracked)
-test/validation/cpp_reference/outputs/*.txt
+# C++ reference validation binaries (generated, not tracked)
 test/validation/cpp_reference/icow_test
 test/validation/cpp_reference/*.o
 

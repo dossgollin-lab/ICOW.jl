@@ -1,0 +1,6 @@
+# ICOW C++ Reference Outputs (Debugged Version)
+# Generated from debugged C++ code with 3 bug fixes applied
+# Bug Fix 1: Line 147 - Changed pow(..., 1/2) to sqrt(...)
+# Bug Fix 2: Line 145 - Changed 2*dh*(ch+1/sd) to 2*ch*(ch+1/sd)
+# Bug Fix 3: Line 35 - Changed CitySlope from CityLength/CityWidth to CityWidth/CityLength
+

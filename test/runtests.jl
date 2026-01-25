@@ -7,6 +7,9 @@ using Distributions
     # Core types (FloodDefenses)
     include("types_tests.jl")
 
+    # Core physics functions (validated against debugged C++ reference)
+    include("core/cpp_validation_tests.jl")
+
     # Stochastic submodule
     @testset "Stochastic" begin
         include("stochastic/types_tests.jl")

@@ -1,0 +1,96 @@
+# Test Case: zero_case
+# Levers: W=0, R=0, P=0, D=0, B=0
+case_number: 9
+zone1_value: 0
+zone2_value: 0
+zone3_value: 0
+zone4_value: 1500000000000
+zone1_top: 0
+zone2_top: 0
+zone3_top: 0
+zone4_top: 17
+
+# Test Case: dike_only
+# Levers: W=0, R=0, P=0, D=5, B=0
+case_number: 4
+zone1_value: 0
+zone2_value: 0
+zone3_value: 485294117647.059
+zone4_value: 1058823529411.76
+zone1_top: 0
+zone2_top: 0
+zone3_top: 5
+zone4_top: 17
+
+# Test Case: full_protection
+# Levers: W=2, R=3, P=0.8, D=5, B=1
+case_number: 2
+zone1_value: 94888235294.1176
+zone2_value: 0
+zone3_value: 549352941176.471
+zone4_value: 898941176470.588
+zone1_top: 3
+zone2_top: 3
+zone3_top: 8
+zone4_top: 17
+
+# Test Case: resistance_only
+# Levers: W=0, R=4, P=0.5, D=0, B=0
+case_number: 9
+zone1_value: 0
+zone2_value: 0
+zone3_value: 0
+zone4_value: 1500000000000
+zone1_top: 0
+zone2_top: 0
+zone3_top: 0
+zone4_top: 17
+
+# Test Case: withdrawal_only
+# Levers: W=5, R=0, P=0, D=0, B=0
+case_number: 9
+zone1_value: 0
+zone2_value: 0
+zone3_value: 0
+zone4_value: 1495588235294.12
+zone1_top: 5
+zone2_top: 5
+zone3_top: 5
+zone4_top: 17
+
+# Test Case: edge_r_geq_b
+# Levers: W=0, R=6, P=0.5, D=3, B=5
+case_number: 2
+zone1_value: 419117647058.824
+zone2_value: 0
+zone3_value: 291176470588.235
+zone4_value: 794117647058.823
+zone1_top: 5
+zone2_top: 5
+zone3_top: 8
+zone4_top: 17
+
+# Test Case: high_surge
+# Levers: W=2, R=3, P=0.8, D=5, B=1
+case_number: 2
+zone1_value: 94888235294.1176
+zone2_value: 0
+zone3_value: 549352941176.471
+zone4_value: 898941176470.588
+zone1_top: 3
+zone2_top: 3
+zone3_top: 8
+zone4_top: 17
+
+# Test Case: below_seawall
+# Levers: W=0, R=0, P=0, D=0, B=0
+case_number: 9
+zone1_value: 0
+zone2_value: 0
+zone3_value: 0
+zone4_value: 1500000000000
+zone1_top: 0
+zone2_top: 0
+zone3_top: 0
+zone4_top: 17
+

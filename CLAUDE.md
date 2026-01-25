@@ -136,12 +136,15 @@ A debugged version of the C++ code is maintained for validation purposes:
 
 **Usage:**
 
+C++ validation runs as part of the normal test suite (`test/core/cpp_validation_tests.jl`).
+The reference output files in `test/validation/cpp_reference/outputs/` are committed to the repo.
+
+To regenerate C++ outputs (only needed when adding new test cases):
+
 ```bash
 cd test/validation/cpp_reference
 ./compile.sh              # Compile debugged C++
-./icow_test               # Generate reference outputs
-cd ../../..
-julia --project test/validation/cpp_reference/validate_cpp_outputs.jl  # Validate Julia
+./icow_test               # Regenerate reference outputs
 ```
 
 **What's tested:**
