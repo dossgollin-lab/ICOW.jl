@@ -244,22 +244,24 @@ Use SimOptDecisions definition macros throughout for full framework integration:
 
 **Problem:** FloodDefenses constraints depend on `H_city` (config-dependent), but `@policydef` requires static bounds.
 
-**Constraints to satisfy:**
+**Actual constraints** (from `FloodDefenses` constructor and `is_feasible`):
 
 1. `W ≥ 0`
-2. `B ≥ W` (can't withdraw above dike base)
+2. `B ≥ 0`
 3. `D ≥ 0`
-4. `W + B + D ≤ H_city`
-5. `R ≥ 0`
+4. `R ≥ 0`
+5. `W + B + D ≤ H_city`
 6. `0 ≤ P < 1`
 
-**Solution:** Reparameterize using fractions that guarantee all constraints:
+**Note:** There is NO constraint `B ≥ W`. B is a relative height (dike base above W), so `B ≥ 0` is sufficient.
+
+**Solution:** Stick-breaking reparameterization with fractions:
 
 ```julia
 @policydef StaticPolicy begin
     @continuous a_frac 0.0 1.0    # total height budget as fraction of H_city
-    @continuous w_frac 0.0 0.5    # W's share of budget (capped at 50% so B ≥ W possible)
-    @continuous b_frac 0.0 1.0    # how to split remaining (A-2W) between B-W and D
+    @continuous w_frac 0.0 1.0    # W's share of budget
+    @continuous b_frac 0.0 1.0    # B's share of remaining (A - W)
     @continuous r_frac 0.0 1.0    # R as fraction of H_city (independent)
     @continuous P 0.0 0.99        # resistance fraction
 end
@@ -269,12 +271,12 @@ end
 
 ```julia
 function to_defenses(policy::StaticPolicy, H_city)
-    A = value(policy.a_frac) * H_city           # total budget
-    W = value(policy.w_frac) * A                 # withdrawal
-    slack = A - 2W                               # remaining after guaranteeing B ≥ W
-    B = W + value(policy.b_frac) * slack         # dike base (≥ W)
-    D = (1 - value(policy.b_frac)) * slack       # dike height
-    R = value(policy.r_frac) * H_city            # resistance (independent)
+    A = value(policy.a_frac) * H_city    # total height budget
+    W = value(policy.w_frac) * A          # withdrawal
+    remaining = A - W                      # remaining for B + D
+    B = value(policy.b_frac) * remaining  # dike base
+    D = remaining - B                      # dike height = (1 - b_frac) * remaining
+    R = value(policy.r_frac) * H_city     # resistance (independent)
     P = value(policy.P)
     return FloodDefenses(W, R, P, D, B)
 end
@@ -285,20 +287,11 @@ end
 | Constraint | Guaranteed by |
 |------------|---------------|
 | `W ≥ 0` | `w_frac ≥ 0`, `a_frac ≥ 0` |
-| `B ≥ W` | `B = W + b_frac * slack` where `slack ≥ 0` |
-| `D ≥ 0` | `(1 - b_frac) ≥ 0` since `b_frac ≤ 1` |
-| `W + B + D ≤ H` | `W + B + D = 2W + slack = A = a_frac * H ≤ H` |
+| `B ≥ 0` | `b_frac ≥ 0`, `remaining ≥ 0` |
+| `D ≥ 0` | `D = (1-b_frac) * remaining`, both terms ≥ 0 |
+| `W + B + D ≤ H` | `W + B + D = W + remaining = A = a_frac * H ≤ H` |
 | `R ≥ 0` | `r_frac ≥ 0` |
 | `P < 1` | `P ≤ 0.99` |
-
-**Derivation:**
-
-- `A = a_frac * H_city` (total budget)
-- `W = w_frac * A` where `w_frac ≤ 0.5` ensures `W ≤ A/2`
-- `slack = A - 2W ≥ 0` (remaining height after reserving W for both W and minimum B=W)
-- `B = W + b_frac * slack` ∈ `[W, W + slack] = [W, A - W]`
-- `D = (1 - b_frac) * slack` ∈ `[0, slack]`
-- Verify: `W + B + D = W + (W + b_frac * slack) + (1 - b_frac) * slack = 2W + slack = A ≤ H` ✓
 
 **Edge cases:**
 
@@ -306,8 +299,10 @@ end
 |------------|--------|--------|
 | `a_frac=0` | W=B=D=0 (no protection) | ✓ |
 | `a_frac=1, w_frac=0` | W=0, B+D=H | ✓ |
-| `a_frac=1, w_frac=0.5` | W=H/2, slack=0, B=W=H/2, D=0 | ✓ |
-| `a_frac=1, w_frac=0.5, b_frac=any` | Same (slack=0 dominates) | ✓ |
+| `a_frac=1, w_frac=1` | W=H, B=D=0 | ✓ |
+| `a_frac=1, w_frac=0.5, b_frac=0.5` | W=H/2, B=H/4, D=H/4 | ✓ |
+
+**Optimization note:** `R > B` is allowed but economically wasteful (resistance is capped at `min(R, B)` for zone calculations). The optimizer will naturally discover this.
 
 ## Target Architecture
 
