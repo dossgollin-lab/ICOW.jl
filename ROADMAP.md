@@ -80,7 +80,7 @@ Document lessons here for later addition to `CLAUDE.md`:
 Reorganize ICOW into a clean architecture:
 
 1. **Core** = pure functions only (no structs), syntax matches equations.md
-2. **Main ICOW module** = shared user-facing types (Levers, CityParameters, Zone)
+2. **Main ICOW module** = shared user-facing types (FloodDefenses, CityParameters, Zone)
 3. **Stochastic submodule** = SimOptDecisions for discrete event simulation
 4. **EAD submodule** = SimOptDecisions for expected annual damage integration
 
@@ -136,7 +136,7 @@ src/
 │   ├── costs.jl         # withdrawal_cost, resistance_cost, dike_cost, ...
 │   ├── zones.jl         # zone_boundaries, zone_values
 │   └── damage.jl        # base_zone_damage, zone_damage, total_event_damage, ...
-├── types.jl             # Levers, CityParameters, Zone (user-facing structs)
+├── types.jl             # FloodDefenses, CityParameters, Zone (user-facing structs)
 ├── wrappers.jl          # Convenience functions calling Core with struct params
 ├── Stochastic/
 │   ├── Stochastic.jl    # Submodule for discrete event simulation
@@ -187,7 +187,7 @@ test/
 **Reference files:**
 
 - Core: `src/Core/Core.jl` (pure functions only)
-- Types: `src/types.jl` (Levers, CityParameters)
+- Types: `src/types.jl` (FloodDefenses, CityParameters)
 
 ### Completed Tasks
 
@@ -213,7 +213,7 @@ test/
 
 ### Remaining Tasks
 
-- [x] Move `Levers{T}` struct from `src/Core/types.jl` to `src/types.jl`
+- [x] Move `FloodDefenses{T}` struct from `src/Core/types.jl` to `src/types.jl`
   - Copy struct definition and constructor
   - Copy `is_feasible` function
   - Copy `Base.max` method for irreversibility
@@ -223,7 +223,7 @@ test/
 - [x] Delete `src/Core/types.jl`
 - [x] Update `src/Core/Core.jl`:
   - Remove `include("types.jl")`
-  - Remove type exports (`Levers`, `CityParameters`, `validate_parameters`, `is_feasible`)
+  - Remove type exports (`FloodDefenses`, `CityParameters`, `validate_parameters`, `is_feasible`)
   - Keep only function exports
 - [x] Update `src/ICOW.jl` to include new `src/types.jl`
 - [x] Verify Core functions still work (they take individual params, not structs)
@@ -232,7 +232,7 @@ test/
 ### Validation Criteria
 
 - [x] `Core` module exports ONLY functions, no types
-- [x] `src/types.jl` contains `Levers` and `CityParameters`
+- [x] `src/types.jl` contains `FloodDefenses` and `CityParameters`
 - [x] C++ validation passes
 - [x] Package loads without error: `using ICOW`
 
@@ -256,15 +256,15 @@ test/
 
 #### Types (`src/types.jl`)
 
-- [ ] `Levers{T}` struct (moved from Phase 1):
+- [ ] `FloodDefenses{T}` struct (moved from Phase 1):
   - Fields: `W`, `R`, `P`, `D`, `B`
   - Constructor with constraint validation
-  - `Base.max(a::Levers, b::Levers)` for irreversibility
+  - `Base.max(a::FloodDefenses, b::FloodDefenses)` for irreversibility
 - [ ] `CityParameters{T}` struct (moved from Phase 1):
   - All fields from `_background/equations.md` Parameters table
   - Default values matching C++ reference
   - `@kwdef` for keyword construction
-- [ ] `is_feasible(levers::Levers, city::CityParameters)` → Bool
+- [ ] `is_feasible(levers::FloodDefenses, city::CityParameters)` → Bool
 - [ ] `validate_parameters(city::CityParameters)` → throws on invalid
 - [ ] `Zone{T}` struct:
   - Fields: `z_low::T`, `z_high::T`, `value::T`, `zone_type::Symbol`
@@ -287,20 +287,20 @@ Each wrapper extracts parameters from structs and calls corresponding Core funct
   - Calls `Core.value_after_withdrawal(city.V_city, city.H_city, city.f_l, W)`
 - [ ] `calculate_resistance_cost_fraction(city::CityParameters, P)`:
   - Calls `Core.resistance_cost_fraction(city.f_adj, city.f_lin, city.f_exp, city.t_exp, P)`
-- [ ] `calculate_resistance_cost(city::CityParameters, levers::Levers)`:
+- [ ] `calculate_resistance_cost(city::CityParameters, levers::FloodDefenses)`:
   - Computes `V_w` and `f_cR` first
   - Calls `Core.resistance_cost(...)`
   - Warns if `R > B` (dominated strategy)
 - [ ] `calculate_dike_cost(city::CityParameters, D)`:
   - Computes `V_dike` first via `calculate_dike_volume`
   - Calls `Core.dike_cost(V_dike, city.c_d)`
-- [ ] `calculate_investment_cost(city::CityParameters, levers::Levers)`:
+- [ ] `calculate_investment_cost(city::CityParameters, levers::FloodDefenses)`:
   - Returns `C_W + C_R + C_D`
 - [ ] `calculate_effective_surge(h_raw, city::CityParameters)`:
   - Calls `Core.effective_surge(h_raw, city.H_seawall, city.f_runup)`
 - [ ] `calculate_dike_failure_probability(h_at_dike, D, city::CityParameters)`:
   - Calls `Core.dike_failure_probability(h_at_dike, D, city.t_fail, city.p_min)`
-- [ ] `calculate_city_zones(city::CityParameters, levers::Levers)` → `Vector{Zone}`:
+- [ ] `calculate_city_zones(city::CityParameters, levers::FloodDefenses)` → `Vector{Zone}`:
   - Computes `V_w` via `calculate_value_after_withdrawal`
   - Calls `Core.zone_boundaries(...)` and `Core.zone_values(...)`
   - Constructs 5 `Zone` structs with appropriate `zone_type`
@@ -312,7 +312,7 @@ Each wrapper extracts parameters from structs and calls corresponding Core funct
   - `include("wrappers.jl")`
   - Export all types and wrapper functions
 - [ ] Create `test/shared/types_tests.jl`:
-  - Test `Levers` construction and constraints
+  - Test `FloodDefenses` construction and constraints
   - Test `CityParameters` defaults match C++ values
   - Test `Zone` struct
   - Test `is_feasible` and `validate_parameters`
@@ -380,14 +380,14 @@ Each wrapper extracts parameters from structs and calls corresponding Core funct
 
 - [ ] `StochasticState{T} <: SimOptDecisions.AbstractState`:
   - `zones::Vector{Zone{T}}` — current 5 zones
-  - Or alternatively: `current_levers::Levers{T}` (simpler, derive zones when needed)
+  - Or alternatively: `current_levers::FloodDefenses{T}` (simpler, derive zones when needed)
   - **Decision needed:** zones vs levers in state? (Ask user if unclear after reviewing)
 - [ ] Constructor for zero-protection initial state
 
 #### Policy (`src/Stochastic/policy.jl`)
 
 - [ ] `StaticPolicy{T} <: SimOptDecisions.AbstractPolicy`:
-  - `target_levers::Levers{T}` — levers to apply in year 1
+  - `target_levers::FloodDefenses{T}` — levers to apply in year 1
 - [ ] `SimOptDecisions.params(p::StaticPolicy)` → vector of 5 parameters
 - [ ] `SimOptDecisions.param_bounds(::Type{StaticPolicy})` → bounds for optimization
 
@@ -498,14 +498,14 @@ Each wrapper extracts parameters from structs and calls corresponding Core funct
 #### State (`src/EAD/state.jl`)
 
 - [ ] `EADState{T} <: SimOptDecisions.AbstractState`:
-  - `current_levers::Levers{T}` (or zones — match decision from Phase 3)
+  - `current_levers::FloodDefenses{T}` (or zones — match decision from Phase 3)
 - [ ] Constructor for zero-protection initial state
 
 #### Policy (`src/EAD/policy.jl`)
 
 - [ ] `StaticPolicy{T} <: SimOptDecisions.AbstractPolicy`:
   - Same structure as Stochastic version
-  - `target_levers::Levers{T}`
+  - `target_levers::FloodDefenses{T}`
 - [ ] `SimOptDecisions.params` and `param_bounds`
 
 #### Outcome (`src/EAD/outcome.jl`)

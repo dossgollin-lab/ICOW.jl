@@ -27,7 +27,7 @@ using Distributions
 
     @testset "discount_rate in simulate" begin
         forcing = DistributionalForcing([Normal(1.5, 0.5) for _ in 1:5], 2020)
-        policy = StaticPolicy(Levers(0.0, 0.0, 0.0, 5.0, 0.0))
+        policy = StaticPolicy(FloodDefenses(0.0, 0.0, 0.0, 5.0, 0.0))
 
         # no discounting
         (inv0, dmg0) = simulate(city, policy, forcing; discount_rate=0.0)

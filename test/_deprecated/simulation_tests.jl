@@ -19,7 +19,7 @@ using Statistics
     dist_forcing = DistributionalForcing(dists, 1)
 
     # Simple static policy (build dike at t=0)
-    static_policy = StaticPolicy(Levers(0.0, 0.0, 0.0, 5.0, 0.0))
+    static_policy = StaticPolicy(FloodDefenses(0.0, 0.0, 0.0, 5.0, 0.0))
 
     @testset "1. Irreversibility Enforcement" begin
         # Policy that tries to "decrease" dike height mid-simulation
@@ -27,9 +27,9 @@ using Statistics
 
         function (p::DecreasingPolicy)(state::SimOptDecisions.AbstractState, forcing, year::Int)
             if year <= 2
-                return Levers(0.0, 0.0, 0.0, 5.0, 0.0)  # High protection
+                return FloodDefenses(0.0, 0.0, 0.0, 5.0, 0.0)  # High protection
             else
-                return Levers(0.0, 0.0, 0.0, 2.0, 0.0)  # Try to decrease
+                return FloodDefenses(0.0, 0.0, 0.0, 2.0, 0.0)  # Try to decrease
             end
         end
 
@@ -74,7 +74,7 @@ using Statistics
 
         function (p::IncreasingPolicy)(state::SimOptDecisions.AbstractState, forcing, year::Int)
             # Increase dike height each year
-            return Levers(0.0, 0.0, 0.0, Float64(year), 0.0)
+            return FloodDefenses(0.0, 0.0, 0.0, Float64(year), 0.0)
         end
 
         increasing_policy = IncreasingPolicy()
@@ -87,14 +87,14 @@ using Statistics
 
         # Year i cost should be less than building D=i from scratch
         for i in 2:length(trace2.year)
-            from_scratch_cost = calculate_investment_cost(city, Levers(0.0, 0.0, 0.0, Float64(i), 0.0))
+            from_scratch_cost = calculate_investment_cost(city, FloodDefenses(0.0, 0.0, 0.0, Float64(i), 0.0))
             @test trace2.investment[i] < from_scratch_cost
         end
     end
 
     @testset "3. Raw Flows (Undiscounted)" begin
         # Use policy with lower protection to ensure damage occurs
-        damage_policy = StaticPolicy(Levers(0.0, 0.0, 0.0, 2.0, 0.0))
+        damage_policy = StaticPolicy(FloodDefenses(0.0, 0.0, 0.0, 2.0, 0.0))
 
         # Create separate RNGs to ensure scalar and trace modes sample the same random events
         rng1 = Random.MersenneTwister(456)

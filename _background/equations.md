@@ -6,7 +6,7 @@ All equations are from Ceres et al. (2019), with corrections based on the C++ re
 **C++ Reference:** [rceres/ICOW](https://github.com/rceres/ICOW/blob/master/src/iCOW_2018_06_11.cpp)
 (Download locally to `docs/iCOW_2018_06_11.cpp` for reference; cannot be redistributed).
 
-## Decision Levers (`Levers` struct)
+## Decision FloodDefenses (`FloodDefenses` struct)
 
 The model has five decision levers (shown in **bold** throughout):
 

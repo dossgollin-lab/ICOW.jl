@@ -20,16 +20,16 @@ using Test
     end
 
     @testset "calculate_resistance_cost" begin
-        @test calculate_resistance_cost(city, Levers(0.0, 0.0, 0.0, 0.0, 0.0)) == 0.0
+        @test calculate_resistance_cost(city, FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0)) == 0.0
 
         # Monotonicity in R and P (keep R < B to avoid warnings)
-        @test calculate_resistance_cost(city, Levers(0.0, 1.0, 0.5, 0.0, 5.0)) <
-              calculate_resistance_cost(city, Levers(0.0, 3.0, 0.5, 0.0, 5.0))
-        @test calculate_resistance_cost(city, Levers(0.0, 2.0, 0.1, 0.0, 5.0)) <
-              calculate_resistance_cost(city, Levers(0.0, 2.0, 0.9, 0.0, 5.0))
+        @test calculate_resistance_cost(city, FloodDefenses(0.0, 1.0, 0.5, 0.0, 5.0)) <
+              calculate_resistance_cost(city, FloodDefenses(0.0, 3.0, 0.5, 0.0, 5.0))
+        @test calculate_resistance_cost(city, FloodDefenses(0.0, 2.0, 0.1, 0.0, 5.0)) <
+              calculate_resistance_cost(city, FloodDefenses(0.0, 2.0, 0.9, 0.0, 5.0))
 
         # R > B warns about dominated strategy
-        @test_warn "R > B is a dominated strategy" calculate_resistance_cost(city, Levers(0.0, 6.0, 0.5, 0.0, 5.0))
+        @test_warn "R > B is a dominated strategy" calculate_resistance_cost(city, FloodDefenses(0.0, 6.0, 0.5, 0.0, 5.0))
     end
 
     @testset "calculate_dike_cost" begin
@@ -40,10 +40,10 @@ using Test
 
     @testset "calculate_investment_cost" begin
         # Zero levers = zero cost
-        @test calculate_investment_cost(city, Levers(0.0, 0.0, 0.0, 0.0, 0.0)) == 0.0
+        @test calculate_investment_cost(city, FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0)) == 0.0
 
         # Component sum equals total
-        levers = Levers(2.0, 3.0, 0.5, 4.0, 1.0)
+        levers = FloodDefenses(2.0, 3.0, 0.5, 4.0, 1.0)
         C_W = calculate_withdrawal_cost(city, levers.W)
         C_R = calculate_resistance_cost(city, levers)
         C_D = calculate_dike_cost(city, levers.D)
@@ -52,9 +52,9 @@ using Test
 
     @testset "Type stability" begin
         city32 = CityParameters{Float32}()
-        levers32 = Levers(1.0f0, 2.0f0, 0.5f0, 3.0f0, 1.0f0)
+        levers32 = FloodDefenses(1.0f0, 2.0f0, 0.5f0, 3.0f0, 1.0f0)
         @test calculate_investment_cost(city32, levers32) isa Float32
-        @test calculate_investment_cost(city, Levers(1.0, 2.0, 0.5, 3.0, 1.0)) isa Float64
+        @test calculate_investment_cost(city, FloodDefenses(1.0, 2.0, 0.5, 3.0, 1.0)) isa Float64
     end
 end
 

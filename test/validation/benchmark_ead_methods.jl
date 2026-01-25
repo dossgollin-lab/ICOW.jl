@@ -16,7 +16,7 @@ using Statistics
 
 Benchmark QuadGK integration method.
 """
-function benchmark_quadgk(city::CityParameters, levers::Levers, dist::Distribution)
+function benchmark_quadgk(city::CityParameters, levers::FloodDefenses, dist::Distribution)
     t = @elapsed ead = calculate_expected_damage_quad(city, levers, dist)
     return (ead, t * 1000)
 end
@@ -26,7 +26,7 @@ end
 
 Benchmark Monte Carlo integration with multiple trials to measure variance.
 """
-function benchmark_mc(city::CityParameters, levers::Levers, dist::Distribution, n_samples::Int, n_trials::Int=10)
+function benchmark_mc(city::CityParameters, levers::FloodDefenses, dist::Distribution, n_samples::Int, n_trials::Int=10)
     results = Float64[]
     times = Float64[]
 
@@ -47,7 +47,7 @@ end
 
 Test determinism of QuadGK vs MC by running multiple times.
 """
-function test_determinism(city::CityParameters, levers::Levers, dist::Distribution, n_trials::Int=5)
+function test_determinism(city::CityParameters, levers::FloodDefenses, dist::Distribution, n_trials::Int=5)
     # QuadGK should be perfectly deterministic
     quad_results = [calculate_expected_damage_quad(city, levers, dist) for _ in 1:n_trials]
 
@@ -87,7 +87,7 @@ function print_header(title::String)
     println()
 end
 
-function print_test_config(city::CityParameters, levers::Levers, dist::Distribution)
+function print_test_config(city::CityParameters, levers::FloodDefenses, dist::Distribution)
     println("City: \$$(round(city.V_city / 1e9, digits=0))B value, $(city.H_city)m max elevation")
     println("Policy: $(levers.D)m dike, $(levers.W)m withdrawal, $(levers.P) resistance")
     println("Surge: GEV(μ=$(dist.μ), σ=$(dist.σ), ξ=$(dist.ξ))")
@@ -124,7 +124,7 @@ end
 # ============================================================================
 
 function run_benchmark(city_name::String, city::CityParameters, city_desc::String,
-                       levers::Levers, dist::Distribution)
+                       levers::FloodDefenses, dist::Distribution)
     print_header("BENCHMARK: $city_name")
     print_test_config(city, levers, dist)
 
@@ -162,7 +162,7 @@ end
 print_header("EAD INTEGRATION METHODS BENCHMARK")
 
 # Test configuration
-policy = StaticPolicy(Levers(0.0, 0.0, 0.0, 3.0, 0.0))
+policy = StaticPolicy(FloodDefenses(0.0, 0.0, 0.0, 3.0, 0.0))
 dist = GeneralizedExtremeValue(1.0, 0.5, 0.1)
 
 # City configurations

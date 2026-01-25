@@ -5,7 +5,7 @@ using Test
     city = CityParameters()
 
     @testset "No protection (all zeros)" begin
-        levers = Levers(0.0, 0.0, 0.0, 0.0, 0.0)
+        levers = FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0)
         zones = calculate_city_zones(city, levers)
 
         # Zone 0: withdrawn (no value)
@@ -20,7 +20,7 @@ using Test
     end
 
     @testset "Typical protection (W=5, R=3, B=5, D=4)" begin
-        levers = Levers(5.0, 3.0, 0.0, 4.0, 5.0)
+        levers = FloodDefenses(5.0, 3.0, 0.0, 4.0, 5.0)
         zones = calculate_city_zones(city, levers)
 
         # Zone boundaries
@@ -41,7 +41,7 @@ using Test
     end
 
     @testset "Zone 2 empty when R >= B" begin
-        levers = Levers(2.0, 6.0, 0.0, 3.0, 5.0)
+        levers = FloodDefenses(2.0, 6.0, 0.0, 3.0, 5.0)
         zones = calculate_city_zones(city, levers)
 
         # Zone 2 should have zero width and zero value when R >= B
@@ -50,7 +50,7 @@ using Test
     end
 
     @testset "Zone values use correct ratios" begin
-        levers = Levers(3.0, 2.0, 0.0, 4.0, 6.0)
+        levers = FloodDefenses(3.0, 2.0, 0.0, 4.0, 6.0)
         zones = calculate_city_zones(city, levers)
 
         V_w = calculate_value_after_withdrawal(city, levers.W)
@@ -72,7 +72,7 @@ using Test
 
     @testset "Type stability" begin
         city32 = CityParameters{Float32}()
-        levers32 = Levers(2.0f0, 3.0f0, 0.0f0, 4.0f0, 1.0f0)
+        levers32 = FloodDefenses(2.0f0, 3.0f0, 0.0f0, 4.0f0, 1.0f0)
         zones32 = calculate_city_zones(city32, levers32)
 
         # All zones should be Zone{Float32}

@@ -3,16 +3,16 @@ using ICOW
 import SimOptDecisions
 
 @testset "StaticPolicy" begin
-    levers = Levers(1.0, 2.0, 0.5, 3.0, 1.0)
+    levers = FloodDefenses(1.0, 2.0, 0.5, 3.0, 1.0)
     policy = StaticPolicy(levers)
 
     @test policy.levers === levers
     @test policy isa SimOptDecisions.AbstractPolicy
 
     # Callable: returns fixed levers in year 1, zero levers otherwise
-    state = State(Levers(0.0, 0.0, 0.0, 0.0, 0.0))
+    state = State(FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0))
     forcing = StochasticForcing(rand(10, 5), 2020)
-    zero_levers = Levers(0.0, 0.0, 0.0, 0.0, 0.0)
+    zero_levers = FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0)
     @test policy(state, forcing, 1) === levers
     @test policy(state, forcing, 2) == zero_levers
 
@@ -21,12 +21,12 @@ import SimOptDecisions
     @test params == [1.0, 2.0, 0.5, 3.0, 1.0]
 
     # Type stability
-    @test (@inferred policy(state, forcing, 1)) isa Levers{Float64}
+    @test (@inferred policy(state, forcing, 1)) isa FloodDefenses{Float64}
     @test (@inferred parameters(policy)) isa Vector{Float64}
 end
 
 @testset "Round-Trip: parameters ↔ StaticPolicy" begin
-    original_levers = Levers(2.0, 1.5, 0.3, 4.0, 2.5)
+    original_levers = FloodDefenses(2.0, 1.5, 0.3, 4.0, 2.5)
     original_policy = StaticPolicy(original_levers)
 
     params = parameters(original_policy)
@@ -43,7 +43,7 @@ end
 
 @testset "Both Simulation Modes" begin
     city = CityParameters()
-    policy = StaticPolicy(Levers(1.0, 0.0, 0.2, 2.0, 3.0))
+    policy = StaticPolicy(FloodDefenses(1.0, 0.0, 0.2, 2.0, 3.0))
 
     # Stochastic mode
     surges_stochastic = reshape([0.5, 1.0, 1.5, 2.0, 2.5], 1, 5)

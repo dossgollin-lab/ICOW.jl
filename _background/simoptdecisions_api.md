@@ -98,39 +98,37 @@ is_first(t::TimeStep)        # t.t == 1
 is_last(t::TimeStep, n)      # t.t == n
 ```
 
-## Example Implementation Pattern
+## ICOW Implementation
+
+See `src/ICOW.jl` and `src/simulation.jl` for the full implementation.
+
+**Types (subtype SimOptDecisions abstracts):**
 
 ```julia
-# Config wraps model parameters
-struct MyConfig <: AbstractConfig
-    city::CityParameters{Float64}
+struct Config <: AbstractConfig ... end
+struct Scenario <: AbstractScenario ... end
+mutable struct State <: AbstractState
+    defenses::FloodDefenses{Float64}
 end
-
-# Scenario holds forcing data
-struct MyScenario <: AbstractScenario
-    surges::Vector{Float64}
-    discount_rate::Float64
+struct StaticPolicy{T<:Real} <: AbstractPolicy
+    W::T; R::T; P::T; D::T; B::T
 end
+struct Outcome <: AbstractOutcome ... end
+```
 
-# State tracks current protection
-mutable struct MyState <: AbstractState
-    levers::Levers{Float64}
-end
+**SimOptDecisions methods (in simulation.jl):**
 
-# Policy defines decision rule
-struct MyPolicy <: AbstractPolicy
-    target::Levers{Float64}
-end
+```julia
+SimOptDecisions.initialize(config::Config, scenario::Scenario, rng) = State()
+SimOptDecisions.time_axis(config::Config, scenario::Scenario) = 1:length(scenario.surges)
+SimOptDecisions.get_action(policy::StaticPolicy, state::State, t::TimeStep, scenario::Scenario) = ...
+SimOptDecisions.run_timestep(state::State, action, t::TimeStep, config::Config, scenario::Scenario, rng) = ...
+SimOptDecisions.compute_outcome(step_records::Vector{StepRecord}, config::Config, scenario::Scenario) = ...
+```
 
-# Outcome holds results
-struct MyOutcome <: AbstractOutcome
-    investment::Float64
-    damage::Float64
-end
+**Usage:**
 
-# Implement callbacks
-SimOptDecisions.initialize(c::MyConfig, s::MyScenario, rng) = MyState(Levers())
-SimOptDecisions.time_axis(c::MyConfig, s::MyScenario) = 1:length(s.surges)
-SimOptDecisions.get_action(p::MyPolicy, state, t, scenario) = is_first(t) ? p.target : Levers()
-# ... etc
+```julia
+using ICOW
+outcome = simulate(config, scenario, policy)  # SimOptDecisions.simulate dispatches on ICOW types
 ```

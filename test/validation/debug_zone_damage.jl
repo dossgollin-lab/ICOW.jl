@@ -2,7 +2,7 @@ using ICOW
 
 function main()
     city = CityParameters{Float64}()
-    levers = Levers(0.0, 0.0, 0.0, 3.0, 0.0)
+    levers = FloodDefenses(0.0, 0.0, 0.0, 3.0, 0.0)
     h_eff = 0.45
 
     println("Testing zone damage calculation:")

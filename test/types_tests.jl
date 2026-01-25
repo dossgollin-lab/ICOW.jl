@@ -1,42 +1,42 @@
 using ICOW
 using Test
 
-@testset "Levers" begin
+@testset "FloodDefenses" begin
     # Valid construction
-    levers = Levers(5.0, 2.0, 0.5, 5.0, 2.0)
-    @test levers.W == 5.0 && levers.R == 2.0 && levers.P == 0.5
+    defenses = FloodDefenses(5.0, 2.0, 0.5, 5.0, 2.0)
+    @test defenses.W == 5.0 && defenses.R == 2.0 && defenses.P == 0.5
 
     # Type parameterization and promotion
-    @test Levers{Float32}(1.0f0, 2.0f0, 0.5f0, 3.0f0, 1.0f0).W isa Float32
-    @test Levers(1, 2, 0.5, 3, 1).W isa Float64  # Promotion
+    @test FloodDefenses{Float32}(1.0f0, 2.0f0, 0.5f0, 3.0f0, 1.0f0).W isa Float32
+    @test FloodDefenses(1, 2, 0.5, 3, 1).W isa Float64  # Promotion
 
     # Constraint validation
-    @test_throws AssertionError Levers(-1.0, 0.0, 0.0, 0.0, 0.0)  # W >= 0
-    @test_throws AssertionError Levers(0.0, -1.0, 0.0, 0.0, 0.0)  # R >= 0
-    @test_throws AssertionError Levers(0.0, 0.0, 1.0, 0.0, 0.0)   # P < 1.0
-    @test_throws AssertionError Levers(0.0, 0.0, -0.1, 0.0, 0.0)  # P >= 0
-    @test_throws AssertionError Levers(0.0, 0.0, 0.0, -1.0, 0.0)  # D >= 0
-    @test_throws AssertionError Levers(0.0, 0.0, 0.0, 0.0, -1.0)  # B >= 0
+    @test_throws AssertionError FloodDefenses(-1.0, 0.0, 0.0, 0.0, 0.0)  # W >= 0
+    @test_throws AssertionError FloodDefenses(0.0, -1.0, 0.0, 0.0, 0.0)  # R >= 0
+    @test_throws AssertionError FloodDefenses(0.0, 0.0, 1.0, 0.0, 0.0)   # P < 1.0
+    @test_throws AssertionError FloodDefenses(0.0, 0.0, -0.1, 0.0, 0.0)  # P >= 0
+    @test_throws AssertionError FloodDefenses(0.0, 0.0, 0.0, -1.0, 0.0)  # D >= 0
+    @test_throws AssertionError FloodDefenses(0.0, 0.0, 0.0, 0.0, -1.0)  # B >= 0
 
     # P boundary: 0.999 valid, 1.0 invalid
-    @test Levers(0.0, 0.0, 0.999, 0.0, 0.0).P == 0.999
+    @test FloodDefenses(0.0, 0.0, 0.999, 0.0, 0.0).P == 0.999
 end
 
 @testset "is_feasible" begin
     city = CityParameters()  # H_city = 17.0
 
     # Feasible
-    @test is_feasible(Levers(0.0, 0.0, 0.0, 0.0, 0.0), city)
-    @test is_feasible(Levers(17.0, 0.0, 0.0, 0.0, 0.0), city)  # W = H_city
+    @test is_feasible(FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0), city)
+    @test is_feasible(FloodDefenses(17.0, 0.0, 0.0, 0.0, 0.0), city)  # W = H_city
 
     # Infeasible
-    @test !is_feasible(Levers(18.0, 0.0, 0.0, 0.0, 0.0), city)  # W > H_city
-    @test !is_feasible(Levers(10.0, 0.0, 0.0, 5.0, 5.0), city)  # W+B+D > H_city
+    @test !is_feasible(FloodDefenses(18.0, 0.0, 0.0, 0.0, 0.0), city)  # W > H_city
+    @test !is_feasible(FloodDefenses(10.0, 0.0, 0.0, 5.0, 5.0), city)  # W+B+D > H_city
 end
 
-@testset "Levers max" begin
-    a = Levers(1.0, 2.0, 0.3, 4.0, 1.0)
-    b = Levers(2.0, 1.0, 0.5, 3.0, 2.0)
+@testset "FloodDefenses max" begin
+    a = FloodDefenses(1.0, 2.0, 0.3, 4.0, 1.0)
+    b = FloodDefenses(2.0, 1.0, 0.5, 3.0, 2.0)
     result = max(a, b)
 
     @test result.W == 2.0 && result.R == 2.0 && result.P == 0.5
@@ -45,7 +45,7 @@ end
 
 @testset "Type Stability" begin
     city = CityParameters()
-    levers = Levers(1.0, 2.0, 0.5, 3.0, 1.0)
-    @test (@inferred is_feasible(levers, city)) isa Bool
-    @test (@inferred max(levers, levers)) isa Levers{Float64}
+    defenses = FloodDefenses(1.0, 2.0, 0.5, 3.0, 1.0)
+    @test (@inferred is_feasible(defenses, city)) isa Bool
+    @test (@inferred max(defenses, defenses)) isa FloodDefenses{Float64}
 end

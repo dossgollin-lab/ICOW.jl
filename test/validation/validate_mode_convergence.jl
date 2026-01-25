@@ -22,10 +22,10 @@ println()
 
 # Test scenarios with different protection levels
 test_policies = [
-    ("No protection", StaticPolicy(Levers(0.0, 0.0, 0.0, 0.0, 0.0))),
-    ("Low dike (3m)", StaticPolicy(Levers(0.0, 0.0, 0.0, 3.0, 0.0))),
-    ("High dike (5m)", StaticPolicy(Levers(0.0, 0.0, 0.0, 5.0, 0.0))),
-    ("Mixed strategy", StaticPolicy(Levers(1.0, 2.0, 0.3, 4.0, 1.0))),
+    ("No protection", StaticPolicy(FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0))),
+    ("Low dike (3m)", StaticPolicy(FloodDefenses(0.0, 0.0, 0.0, 3.0, 0.0))),
+    ("High dike (5m)", StaticPolicy(FloodDefenses(0.0, 0.0, 0.0, 5.0, 0.0))),
+    ("Mixed strategy", StaticPolicy(FloodDefenses(1.0, 2.0, 0.3, 4.0, 1.0))),
 ]
 
 # Simulation parameters

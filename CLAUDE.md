@@ -26,9 +26,9 @@
 
 ```
 src/
-├── ICOW.jl          # Main module: exports, simple types (Scenario, Config, etc.)
-├── types.jl         # Shared types: Levers, CityParameters, validate_parameters, is_feasible
-├── simulate.jl      # Simulation function
+├── ICOW.jl          # Main module: types subtyping SimOptDecisions abstracts
+├── types.jl         # FloodDefenses, CityParameters (no SimOptDecisions dependency)
+├── simulation.jl    # SimOptDecisions integration (initialize, run_timestep, etc.)
 └── Core/            # Pure numeric functions (no structs, validated against C++)
     ├── Core.jl
     ├── geometry.jl  # dike_volume
@@ -36,6 +36,26 @@ src/
     ├── zones.jl     # zone_boundaries, zone_values
     └── damage.jl    # base_zone_damage, zone_damage, total_event_damage, etc.
 ```
+
+**SimOptDecisions Integration:**
+
+Types subtype SimOptDecisions abstracts:
+
+- `Config <: AbstractConfig` - wraps CityParameters
+- `Scenario <: AbstractScenario` - surges + discount_rate
+- `State <: AbstractState` - holds `defenses::FloodDefenses{Float64}`
+- `StaticPolicy{T} <: AbstractPolicy` - holds 5 floats (W, R, P, D, B)
+- `Outcome <: AbstractOutcome` - investment + damage
+
+SimOptDecisions methods in `simulation.jl`:
+
+- `initialize(config, scenario, rng)` → State
+- `time_axis(config, scenario)` → 1:n_years
+- `get_action(policy, state, t, scenario)` → FloodDefenses
+- `run_timestep(state, action, t, config, scenario, rng)` → (State, StepRecord)
+- `compute_outcome(step_records, config, scenario)` → Outcome
+
+Usage: `simulate(config, scenario, policy)` (SimOptDecisions dispatches on our types)
 
 ### Zero Backwards Compatibility
 
@@ -199,15 +219,15 @@ For constraint validation tests, use the format:
 @test_throws AssertionError validate_parameters(CityParameters(total_value = -1000.0))
 
 # W ≤ B; cannot withdraw from areas above the dike base (they're protected)
-@test_throws AssertionError Levers(5.0, 0, 0, 5.0, 2.0)
+@test_throws AssertionError FloodDefenses(5.0, 0, 0, 5.0, 2.0)
 ```
 
 Group related tests under a single comment when they test the same constraint:
 
 ```julia
 # 0 ≤ P ≤ 1; resistance percentage must be a valid fraction
-@test_throws AssertionError Levers(0, 0, 1.5, 0, 0)
-@test_throws AssertionError Levers(0, 0, -0.1, 0, 0)
+@test_throws AssertionError FloodDefenses(0, 0, 1.5, 0, 0)
+@test_throws AssertionError FloodDefenses(0, 0, -0.1, 0, 0)
 ```
 
 This makes tests self-documenting and helps future developers understand the domain logic.

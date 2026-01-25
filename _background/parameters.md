@@ -85,9 +85,9 @@ The city slope $S = H_{city} / D_{city}$ is computed via `city_slope(city)`.
 | $f_{thresh}$ | `f_thresh` | 1.0 | - | Excess damage multiplier |
 | $\gamma_{thresh}$ | `gamma_thresh` | 1.01 | - | Excess damage exponent |
 
-## Levers
+## FloodDefenses
 
-The `Levers{T}` struct contains 5 decision variables.
+The `FloodDefenses{T}` struct contains 5 decision variables.
 
 | Symbol | Field | Units | Constraints | Description |
 | ------ | ----- | ----- | ----------- | ----------- |

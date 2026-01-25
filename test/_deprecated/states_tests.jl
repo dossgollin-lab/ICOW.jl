@@ -3,7 +3,7 @@ using ICOW
 import SimOptDecisions
 
 @testset "State Types" begin
-    levers = Levers(1.0, 2.0, 0.5, 3.0, 1.0)
+    levers = FloodDefenses(1.0, 2.0, 0.5, 3.0, 1.0)
 
     @testset "State" begin
         state = State(levers)
@@ -17,7 +17,7 @@ import SimOptDecisions
     end
 
     @testset "Type Stability" begin
-        levers32 = Levers(1.0f0, 2.0f0, 0.5f0, 3.0f0, 1.0f0)
+        levers32 = FloodDefenses(1.0f0, 2.0f0, 0.5f0, 3.0f0, 1.0f0)
         @test State(levers32) isa State{Float32}
     end
 end
