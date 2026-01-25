@@ -126,7 +126,6 @@ A debugged version of the C++ code is maintained for validation purposes:
 - **icow_debugged.cpp**: C++ code with all 7 bugs fixed to match paper formulas
 - **compile.sh**: Build script (requires Homebrew g++-15 on macOS)
 - **outputs/**: Reference test outputs generated from debugged C++
-- **validate_cpp_outputs.jl**: Julia script to validate implementation matches C++
 
 **Purpose:**
 
@@ -184,7 +183,7 @@ Example:
 
 ```julia
 """
-    calculate_dike_volume(city::CityParameters, D) -> volume
+    dike_volume(H_city, D_city, D_startup, s_dike, w_d, W_city, D) -> volume
 
 Calculate dike material volume (Equation 6). See _background/equations.md.
 """
@@ -199,7 +198,7 @@ Prefer `immutable struct` over `mutable struct` unless state modification is str
 
 ### Assertions
 
-Use `@assert` aggressively in constructors to enforce physical bounds (e.g., $W \le B$).
+Use `@assert` aggressively in constructors to enforce physical bounds (e.g., $0 \leq P < 1$).
 
 ### Dependencies
 
@@ -259,11 +258,11 @@ For constraint validation tests, use the format:
 **Good examples:**
 
 ```julia
-# total_value > 0; negative values are physically meaningless
-@test_throws AssertionError validate_parameters(CityParameters(total_value = -1000.0))
+# W >= 0; defense heights must be non-negative
+@test_throws AssertionError FloodDefenses(-1.0, 0, 0, 0, 0)
 
-# W ≤ B; cannot withdraw from areas above the dike base (they're protected)
-@test_throws AssertionError FloodDefenses(5.0, 0, 0, 5.0, 2.0)
+# 0 <= P < 1; resistance percentage must be a valid fraction
+@test_throws AssertionError FloodDefenses(0, 0, 1.5, 0, 0)
 ```
 
 Group related tests under a single comment when they test the same constraint:

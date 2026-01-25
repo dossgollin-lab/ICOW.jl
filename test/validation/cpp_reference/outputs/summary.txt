@@ -1,6 +1,18 @@
 # ICOW C++ Reference Outputs (Debugged Version)
-# Generated from debugged C++ code with 3 bug fixes applied
+# Generated from debugged C++ code (icow_debugged.cpp)
+#
+# The original C++ has 7 documented bugs (see _background/equations.md).
+# This harness fixes the 3 bugs that affect the tested functions:
 # Bug Fix 1: Line 147 - Changed pow(..., 1/2) to sqrt(...)
 # Bug Fix 2: Line 145 - Changed 2*dh*(ch+1/sd) to 2*ch*(ch+1/sd)
 # Bug Fix 3: Line 35 - Changed CitySlope from CityLength/CityWidth to CityWidth/CityLength
-
+#
+# The remaining 4 bugs affect dike cost and damage calculations,
+# which are not validated here (Julia uses corrected formulas from the paper).
+# See _background/equations.md for full bug documentation.
+#
+# Provenance:
+#   Source: test/validation/cpp_reference/icow_debugged.cpp
+#   Build:  ./compile.sh
+#   Run:    ./icow_test
+#   Output: outputs/costs.txt, outputs/zones.txt

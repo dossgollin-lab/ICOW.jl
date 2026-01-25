@@ -310,59 +310,6 @@ FloodDefenses(policy::StaticPolicy, config::StochasticConfig) = FloodDefenses(po
 
 **Optimization note:** `R > B` is allowed but economically wasteful (resistance is capped at `min(R, B)` for zone calculations). The optimizer will naturally discover this.
 
-## Target Architecture
-
-```
-src/
-├── ICOW.jl              # Main module: re-exports, shared types
-├── Core/
-│   ├── Core.jl          # Pure functions only (no structs)
-│   ├── geometry.jl      # dike_volume(H_city, D_city, ...)
-│   ├── costs.jl         # withdrawal_cost, resistance_cost, dike_cost, ...
-│   ├── zones.jl         # zone_boundaries, zone_values
-│   └── damage.jl        # base_zone_damage, zone_damage, total_event_damage, ...
-├── types.jl             # FloodDefenses, CityParameters, Zone (user-facing structs)
-├── wrappers.jl          # Convenience functions calling Core with struct params
-├── Stochastic/
-│   ├── Stochastic.jl    # Submodule for discrete event simulation
-│   ├── scenario.jl      # StochasticScenario (surge time series + discount rate)
-│   ├── config.jl        # StochasticConfig wrapping CityParameters
-│   ├── state.jl         # StochasticState (current zones)
-│   ├── policy.jl        # StaticPolicy
-│   ├── outcome.jl       # StochasticOutcome
-│   ├── simulation.jl    # 5 SimOptDecisions callbacks (samples dike failure)
-│   └── optimization.jl  # optimize() for stochastic mode
-└── EAD/
-    ├── EAD.jl           # Submodule for expected annual damage
-    ├── scenario.jl      # EADScenario (GEV params per year + discount rate)
-    ├── config.jl        # EADConfig wrapping CityParameters
-    ├── state.jl         # EADState (current zones)
-    ├── policy.jl        # StaticPolicy
-    ├── outcome.jl       # EADOutcome
-    ├── simulation.jl    # 5 SimOptDecisions callbacks (integrates over distributions)
-    └── optimization.jl  # optimize() for EAD mode
-
-test/
-├── core/                # Pure function tests
-│   ├── geometry_tests.jl
-│   ├── costs_tests.jl
-│   ├── zones_tests.jl
-│   └── damage_tests.jl
-├── shared/              # Shared types and wrapper tests
-│   ├── types_tests.jl
-│   └── wrappers_tests.jl
-├── stochastic/          # Stochastic mode tests
-│   ├── scenario_tests.jl
-│   ├── simulation_tests.jl
-│   └── optimization_tests.jl
-└── ead/                 # EAD mode tests
-    ├── scenario_tests.jl
-    ├── simulation_tests.jl
-    └── optimization_tests.jl
-```
-
----
-
 ## Phase 1: Refactor Core to Pure Functions
 
 **Goal:** Core contains only pure numeric functions, no structs.
