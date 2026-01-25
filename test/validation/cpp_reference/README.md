@@ -15,11 +15,10 @@ This debugged version fixes all bugs to match the paper formulas exactly, provid
 
 - `icow_debugged.cpp` - C++ code with all 7 bugs fixed (tracked in git)
 - `compile.sh` - Build script (requires Homebrew g++-15 on macOS)
-- `outputs/` - Generated reference outputs (not tracked in git)
+- `outputs/` - Reference outputs (committed to git for regression testing)
   - `costs.txt` - Cost calculations for all test cases
   - `zones.txt` - Zone geometry for all test cases
-  - `summary.txt` - Metadata about the debugged version
-- `validate_cpp_outputs.jl` - Julia validation script (tests Core module directly)
+  - `summary.txt` - Metadata and provenance
 
 ## Bugs Fixed
 
@@ -55,28 +54,13 @@ ls outputs/
 
 ### Validation
 
+Validation runs as part of the normal test suite:
+
 ```bash
-# From project root
-julia test/validation/cpp_reference/validate_cpp_outputs.jl
+julia --project test/runtests.jl
 ```
 
-Expected output:
-
-```
-============================================================
-Validating Core physics against C++ reference
-============================================================
-
---- Testing: zero_case ---
-  ✓ Withdrawal cost: Julia=0.0, C++=0.0
-  ✓ Resistance cost: Julia=0.0, C++=0.0
-  ...
-
-============================================================
-✓ Core withdrawal and resistance costs match C++ reference
-⊘ Dike costs skipped (Julia uses corrected formula)
-============================================================
-```
+The C++ reference tests are in `test/core/cpp_validation_tests.jl`.
 
 ## Test Cases
 
@@ -118,7 +102,7 @@ To add a new test case:
    ./compile.sh && ./icow_test
    ```
 
-3. Update `validate_cpp_outputs.jl` if testing new functions
+3. Update `test/core/cpp_validation_tests.jl` if testing new functions
 
 ### If Validation Fails
 

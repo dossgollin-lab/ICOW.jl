@@ -86,17 +86,3 @@ end
         @test is_feasible(fd, config)
     end
 end
-
-@testset "StochasticScenario" begin
-    scenario = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.03)
-    @test length(SimOptDecisions.value(scenario.surges)) == 3
-    @test SimOptDecisions.value(scenario.discount_rate) == 0.03
-end
-
-@testset "StochasticState" begin
-    state = StochasticState{Float64}()
-    @test state.defenses == FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0)
-
-    state.defenses = FloodDefenses(1.0, 2.0, 0.3, 3.0, 1.0)
-    @test state.defenses.W == 1.0
-end

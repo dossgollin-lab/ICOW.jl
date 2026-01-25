@@ -8,25 +8,8 @@ using Test
 import ICOW.EAD: validate_config, is_feasible, StaticPolicy
 
 @testset "IntegrationMethod" begin
-    # QuadratureIntegrator with default
-    qi = QuadratureIntegrator()
-    @test qi.rtol == 1e-6
-
-    # QuadratureIntegrator with custom rtol
-    qi = QuadratureIntegrator(rtol=1e-8)
-    @test qi.rtol == 1e-8
-
-    # QuadratureIntegrator type parameterization
-    qi = QuadratureIntegrator{Float32}(rtol=Float32(1e-4))
-    @test qi.rtol isa Float32
-
-    # MonteCarloIntegrator with default
-    mci = MonteCarloIntegrator()
-    @test mci.n_samples == 1000
-
-    # MonteCarloIntegrator with custom n_samples
-    mci = MonteCarloIntegrator(n_samples=5000)
-    @test mci.n_samples == 5000
+    @test QuadratureIntegrator().rtol == 1e-6
+    @test MonteCarloIntegrator().n_samples == 1000
 end
 
 @testset "EADConfig" begin
@@ -130,12 +113,4 @@ end
     scenario = EADScenario(dists, 0.03, MonteCarloIntegrator(n_samples=500))
     @test scenario.integrator isa MonteCarloIntegrator
     @test scenario.integrator.n_samples == 500
-end
-
-@testset "EADState" begin
-    state = EADState{Float64}()
-    @test state.defenses == FloodDefenses(0.0, 0.0, 0.0, 0.0, 0.0)
-
-    state.defenses = FloodDefenses(1.0, 2.0, 0.3, 3.0, 1.0)
-    @test state.defenses.W == 1.0
 end

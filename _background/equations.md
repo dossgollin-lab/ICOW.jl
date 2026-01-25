@@ -190,7 +190,7 @@ The original C++ implementation (iCOW_2018_06_11.cpp) had 7 bugs:
 - Uses simplified geometric formula (numerically stable, physically correct)
 - Uses correct terrain slope $S = H_{city}/D_{city} = 0.0085$
 - Fixes bugs #6-7 in resistance cost and $V_w$ calculations
-- C++ validation (`test/cpp_reference/`) validates cost calculations only (dike volume uses different formula)
+- C++ validation (`test/validation/cpp_reference/`) validates cost and zone calculations (dike volume uses different formula)
 
 ### Equation 7: Dike Cost (p. 17)
 

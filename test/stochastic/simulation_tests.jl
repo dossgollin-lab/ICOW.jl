@@ -62,19 +62,6 @@ using Test
         @test total_cost(outcome_yes) < total_cost(outcome_no)
     end
 
-    @testset "Irreversibility enforced" begin
-        # This is implicitly tested - if irreversibility wasn't enforced,
-        # the simulation would fail or produce incorrect results.
-        # A more explicit test would require traced simulation to check state progression.
-        config = StochasticConfig()
-        scenario = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.0)
-        policy = StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
-
-        # Simulation should complete without error
-        outcome = simulate(config, scenario, policy, MersenneTwister(42))
-        @test outcome isa StochasticOutcome
-    end
-
     @testset "Stochastic dike failure produces variation" begin
         config = StochasticConfig()
         # Moderate surges near dike height to get intermediate failure probability

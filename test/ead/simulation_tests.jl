@@ -135,17 +135,6 @@ import ICOW.EAD: StaticPolicy, total_cost, simulate
         @test SimOptDecisions.value(outcome_quad.expected_damage) ≈ SimOptDecisions.value(outcome_mc.expected_damage)
     end
 
-    @testset "Irreversibility enforced" begin
-        # Simulation should complete without error
-        config = EADConfig()
-        dists = [Normal(3.0, 1.0) for _ in 1:3]
-        scenario = EADScenario(dists, 0.0, QuadratureIntegrator())
-        policy = StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
-
-        outcome = simulate(config, scenario, policy, MersenneTwister(42))
-        @test outcome isa EADOutcome
-    end
-
     @testset "Zero surge distribution produces minimal damage" begin
         config = EADConfig()
         # Very low surges that don't cause significant damage

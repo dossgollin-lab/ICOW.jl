@@ -113,6 +113,18 @@ function validate_config(config::EADConfig)
     @assert config.r_prot > 0 "r_prot must be positive"
     @assert config.r_unprot > 0 "r_unprot must be positive"
 
+    # Cost factors (non-negative)
+    @assert config.f_lin >= 0 "f_lin must be non-negative"
+    @assert config.f_exp >= 0 "f_exp must be non-negative"
+
+    # Damage multipliers
+    @assert 0 <= config.f_intact <= 1 "f_intact must be in [0, 1]"
+    @assert config.f_failed > 0 "f_failed must be positive"
+
+    # Threshold parameters
+    @assert config.gamma_thresh >= 1 "gamma_thresh must be >= 1"
+    @assert config.f_thresh > 0 "f_thresh must be positive"
+
     # f_runup should amplify, not attenuate
     @assert config.f_runup >= 1.0 "f_runup must be >= 1.0"
 

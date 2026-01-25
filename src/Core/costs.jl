@@ -42,6 +42,7 @@ V_w is value after withdrawal, f_cR is resistance cost fraction.
 function resistance_cost(
     V_w::T, f_cR::T, H_bldg::T, H_city::T, W::T, R::T, B::T, b_basement::T
 ) where {T<:AbstractFloat}
+    @assert W < H_city "W must be strictly less than H_city to avoid division by zero"
     denominator = H_bldg * (H_city - W)
 
     if R < B

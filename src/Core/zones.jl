@@ -36,6 +36,7 @@ V_w is value after withdrawal.
 function zone_values(
     V_w::T, H_city::T, W::T, R::T, B::T, D::T, r_prot::T, r_unprot::T
 ) where {T<:AbstractFloat}
+    @assert W < H_city "W must be strictly less than H_city to avoid division by zero"
     remaining_height = H_city - W
 
     val_z0 = zero(T)  # Withdrawn

@@ -105,9 +105,6 @@ end
 
 """Calculate total investment cost for given defenses."""
 function _investment_cost(config::StochasticConfig{T}, fd::FloodDefenses{T}) where {T}
-    # W < H_city required by Core.withdrawal_cost (division by H_city - W)
-    @assert fd.W < config.H_city "W must be strictly less than H_city"
-
     C_W = Core.withdrawal_cost(config.V_city, config.H_city, config.f_w, fd.W)
 
     V_w = Core.value_after_withdrawal(config.V_city, config.H_city, config.f_l, fd.W)
