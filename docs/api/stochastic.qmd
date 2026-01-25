@@ -1,0 +1,28 @@
+---
+title: "Stochastic API"
+subtitle: "Stochastic Simulation Types and Functions"
+engine: julia
+execute:
+  echo: false
+---
+
+The `ICOW.Stochastic` module provides SimOptDecisions integration for discrete event simulation with stochastic dike failure.
+See [Stochastic Model](../stochastic/model.qmd) for conceptual overview and [Stochastic Details](../stochastic/details.qmd) for usage examples.
+
+```{julia}
+#| echo: false
+#| output: asis
+using ICOW
+using ICOW.Stochastic
+
+for n in sort(collect(names(ICOW.Stochastic)))
+    n == :Stochastic && continue
+    n == :simulate && continue  # from SimOptDecisions re-export
+    n == :value && continue     # from SimOptDecisions re-export
+    obj = getfield(ICOW.Stochastic, n)
+    println("## `$n`\n")
+    d = Base.Docs.doc(obj)
+    println(d)
+    println()
+end
+```

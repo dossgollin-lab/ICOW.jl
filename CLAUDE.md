@@ -161,6 +161,13 @@ cd test/validation/cpp_reference
 - Re-run validation after any changes to `src/Core/` files
 - If validation fails, check `_background/equations.md` to determine which is correct
 
+## Documentation
+
+- Every `.qmd` file must specify `engine: julia` in its YAML frontmatter.
+- Never use the Jupyter engine for documentation.
+- Use `code-fold: true` for setup blocks; keep key examples visible.
+- Use Quarto callouts (`{.callout-tip}`, `{.callout-note}`, `{.callout-warning}`) for tips, notes, and warnings.
+
 ## Code Quality & Style
 
 - Physics functions (geometry.jl, costs.jl) must be pure (no side effects).

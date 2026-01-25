@@ -1,0 +1,61 @@
+---
+title: "Stochastic Model"
+subtitle: "Discrete Event Simulation Mode"
+bibliography: ../references.bib
+engine: julia
+---
+
+## Overview
+
+The Stochastic mode simulates **realized damage** from a specific sequence of storm surges.
+Each simulation run produces a different outcome because dike failure is sampled stochastically.
+
+## How It Works
+
+For each year in the simulation:
+
+1. **Sample surge**: Read the next surge height from the time series
+2. **Compute effective surge**: Apply wave runup and subtract seawall height
+3. **Sample dike failure**: Draw from Bernoulli($p_{fail}$) -- the dike either fails or holds
+4. **Compute damage**: Sum zone-level damages based on flood depth and dike status
+5. **Apply threshold**: Add catastrophic damage amplification if total exceeds $d_{thresh}$
+
+The total outcome is the discounted sum of investment costs and realized damages over all years.
+
+## Key Feature: Stochastic Dike Failure
+
+Unlike EAD mode (which analytically averages over dike failure), Stochastic mode **samples** whether the dike fails for each surge event.
+This means:
+
+- The same policy + same surge sequence can produce **different outcomes** depending on the RNG seed
+- Dike failure is a Bernoulli event with probability $p_{fail}(h_{surge}, D)$
+- When the dike fails, Zone 3 damage is amplified by $f_{failed} = 1.5$ instead of $f_{intact} = 0.03$
+
+This stochasticity is essential for understanding tail risk and the variance of outcomes.
+
+## When to Use Stochastic Mode
+
+Stochastic mode is the right choice when:
+
+- You care about **tail risk** (e.g., 95th or 99th percentile losses)
+- You want to analyze the **distribution** of outcomes, not just the mean
+- You are doing **robustness analysis** across many scenarios
+- You want to design **adaptive policies** that respond to observed storms
+
+## Comparison with EAD Mode
+
+| Property | Stochastic | EAD |
+|----------|------------|-----|
+| Dike failure | Sampled per event | Integrated analytically |
+| Output | Realized damage | Expected damage |
+| Deterministic? | No (varies with RNG) | Yes (with quadrature) |
+| Variance info | Yes | No |
+| Speed per evaluation | Fast | Fast (quadrature adds overhead) |
+| Ensemble needed? | Yes (many seeds) | No (one evaluation suffices) |
+
+::: {.callout-note}
+For static policies, the mean of many Stochastic runs converges to the EAD result by the Law of Large Numbers.
+The variance across runs reveals the risk that EAD mode hides.
+:::
+
+## References

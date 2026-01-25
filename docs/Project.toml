@@ -1,0 +1,6 @@
+[deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+ICOW = "3f0c05cb-d2a1-4c03-b976-c0e1c11e0dd4"
+JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"

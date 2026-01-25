@@ -9,9 +9,9 @@
 | 3. Stochastic Submodule | Complete | SimOptDecisions integration with reparameterized policy |
 | 4. EAD Submodule | Complete | Typed integrators (Quadrature/MC), independent from Stochastic |
 | 5. Cleanup | Complete | Deprecated tests deleted, C++ validation integrated into test suite |
-| 6. Documentation | Not Started | |
+| 6. Documentation | Complete | New sidebar structure with 10 .qmd pages |
 
-**Current Phase:** 6 (Documentation)
+**Current Phase:** 6 (Documentation) -- files written, pending quarto render verification
 
 **Blocking Issues:** None
 
@@ -668,35 +668,35 @@ Obsolete source files (`src/forcing.jl`, `src/scenarios.jl`, `src/states.jl`, `s
 
 ## Phase 6: Documentation
 
-**Goal:** Update docs to reflect new architecture.
+**Goal:** Rewrite docs with new sidebar structure, updated API references, and executable examples.
 
-**Status:** Not Started
+**Status:** Complete
 
 **Depends on:** Phase 5 complete
 
 ### Tasks
 
-- [ ] Update `docs/index.qmd`:
-  - [ ] New API overview
-  - [ ] Stochastic vs EAD mode explanation
-  - [ ] Quick start examples for both modes
-- [ ] Add usage examples:
-  - [ ] Stochastic simulation example
-  - [ ] EAD simulation example
-  - [ ] Optimization example
-- [ ] Update `_background/equations.md` if needed:
-  - [ ] Document any formula clarifications discovered
-  - [ ] Update implementation notes
-- [ ] Update `CLAUDE.md` with lessons learned from this refactor
-- [ ] Clean up this ROADMAP:
-  - [ ] Move completed phases to an "Archive" section
-  - [ ] Update status table
+- [x] Update `CLAUDE.md` with documentation engine rule
+- [x] Update `docs/_quarto.yml` sidebar structure
+- [x] Rewrite `docs/index.qmd` with current API
+- [x] Create `docs/core/equations.qmd` (public-facing equation reference)
+- [x] Create `docs/core/architecture.qmd` (module hierarchy, types, reparameterization)
+- [x] Create `docs/ead/model.qmd` (EAD conceptual overview)
+- [x] Create `docs/ead/details.qmd` (EAD usage with executable examples)
+- [x] Create `docs/stochastic/model.qmd` (Stochastic conceptual overview)
+- [x] Create `docs/stochastic/details.qmd` (Stochastic usage with executable examples)
+- [x] Create `docs/api/core.qmd` (Core API reference with docstrings)
+- [x] Create `docs/api/ead.qmd` (EAD API reference)
+- [x] Create `docs/api/stochastic.qmd` (Stochastic API reference)
+- [x] Update ROADMAP.md
+- [x] Delete stale `docs/examples/` directory
 
 ### Validation Criteria
 
-- [ ] Docs build without error
-- [ ] Examples in docs are runnable
-- [ ] CLAUDE.md updated with lessons learned
+- [ ] `quarto render` builds without errors
+- [ ] All executable code blocks run successfully
+- [ ] Sidebar navigation works correctly
+- [x] CLAUDE.md updated with documentation conventions
 
 ---
 

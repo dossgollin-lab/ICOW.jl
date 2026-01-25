@@ -1,0 +1,25 @@
+---
+title: "Core API"
+subtitle: "Pure Physics Functions"
+engine: julia
+execute:
+  echo: false
+---
+
+The `ICOW.Core` module contains pure numeric functions that implement the iCOW model equations.
+All functions take individual numeric parameters (not structs) and are validated against the C++ reference implementation.
+
+```{julia}
+#| echo: false
+#| output: asis
+using ICOW
+
+for n in sort(collect(names(ICOW.Core)))
+    n == :Core && continue
+    obj = getfield(ICOW.Core, n)
+    println("## `$n`\n")
+    d = Base.Docs.doc(obj)
+    println(d)
+    println()
+end
+```

@@ -1,0 +1,139 @@
+---
+title: "EAD Details"
+subtitle: "Usage and Examples"
+engine: julia
+execute:
+  code-fold: true
+---
+
+## Setup
+
+```{julia}
+#| code-fold: true
+using ICOW
+using ICOW.EAD
+using Distributions
+using Random
+```
+
+## Configuration
+
+`EADConfig` holds the 28 city parameters with sensible defaults:
+
+```{julia}
+config = EADConfig()
+println("City value: \$$(config.V_city / 1e12)T")
+println("City elevation: $(config.H_city)m")
+println("Seawall height: $(config.H_seawall)m")
+```
+
+To customize parameters, use keyword arguments:
+
+```julia
+config = EADConfig(H_city=20.0, V_city=2.0e12)
+```
+
+## Scenario
+
+`EADScenario` takes a vector of surge distributions (one per year), a discount rate, and an integration method:
+
+```{julia}
+n_years = 50
+dists = [Normal(3.0, 1.0) for _ in 1:n_years]
+scenario = EADScenario(dists, 0.03, QuadratureIntegrator())
+println("Simulation horizon: $n_years years")
+println("Discount rate: 3%")
+println("Integrator: adaptive quadrature")
+```
+
+### Climate Non-Stationarity
+
+Surge distributions can vary over time to model sea level rise or increasing storm intensity:
+
+```julia
+# Sea level rise: 1 cm/year increase in surge location
+dists = [Normal(3.0 + 0.01*t, 1.0) for t in 1:50]
+scenario = EADScenario(dists, 0.03, QuadratureIntegrator())
+```
+
+### Integration Methods
+
+Choose between quadrature and Monte Carlo:
+
+```julia
+# Adaptive quadrature (deterministic, precise)
+scenario_quad = EADScenario(dists, 0.03, QuadratureIntegrator(rtol=1e-6))
+
+# Monte Carlo (stochastic, flexible)
+scenario_mc = EADScenario(dists, 0.03, MonteCarloIntegrator(n_samples=5000))
+```
+
+## Policy
+
+`StaticPolicy` uses reparameterized fractions that guarantee all physical constraints are satisfied:
+
+```{julia}
+# Moderate dike with some resistance
+policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.2, r_frac=0.1, P=0.5)
+
+# See what FloodDefenses this produces
+fd = FloodDefenses(policy, config)
+println("FloodDefenses: $fd")
+```
+
+### Policy Examples
+
+```{julia}
+# Dike-only strategy (all budget to dike height)
+dike_only = StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)
+println("Dike only: $(FloodDefenses(dike_only, config))")
+
+# Withdrawal + resistance (no dike)
+withdraw = StaticPolicy(a_frac=0.2, w_frac=0.5, b_frac=0.0, r_frac=0.3, P=0.7)
+println("Withdraw+resist: $(FloodDefenses(withdraw, config))")
+
+# No protection
+no_protect = StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)
+println("No protection: $(FloodDefenses(no_protect, config))")
+```
+
+## Running a Simulation
+
+```{julia}
+rng = MersenneTwister(42)
+outcome = simulate(config, scenario, policy, rng)
+
+investment = value(outcome.investment)
+expected_damage = value(outcome.expected_damage)
+total = total_cost(outcome)
+
+println("Investment:      \$$(round(investment / 1e9, digits=2))B")
+println("Expected damage: \$$(round(expected_damage / 1e9, digits=2))B")
+println("Total cost:      \$$(round(total / 1e9, digits=2))B")
+```
+
+## Comparing Policies
+
+```{julia}
+policies = [
+    ("No protection", StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Small dike",    StaticPolicy(a_frac=0.1, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Medium dike",   StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Large dike",    StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Mixed",         StaticPolicy(a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
+]
+
+rng = MersenneTwister(42)
+println("Policy            | Investment (\$B) | Exp. Damage (\$B) | Total (\$B)")
+println("------------------|-----------------|-------------------|----------")
+for (name, pol) in policies
+    o = simulate(config, scenario, pol, rng)
+    inv = value(o.investment) / 1e9
+    dmg = value(o.expected_damage) / 1e9
+    tot = total_cost(o) / 1e9
+    println("$(rpad(name, 18))| $(lpad(round(inv, digits=2), 15)) | $(lpad(round(dmg, digits=2), 17)) | $(lpad(round(tot, digits=2), 8))")
+end
+```
+
+This table reveals the investment-damage tradeoff: larger dikes cost more upfront but reduce expected damage.
+The optimal strategy balances these two objectives.

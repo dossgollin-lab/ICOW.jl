@@ -1,0 +1,131 @@
+---
+title: "Stochastic Details"
+subtitle: "Usage and Examples"
+engine: julia
+execute:
+  code-fold: true
+---
+
+## Setup
+
+```{julia}
+#| code-fold: true
+using ICOW
+using ICOW.Stochastic
+using Random
+```
+
+## Configuration
+
+`StochasticConfig` holds the same 28 city parameters as `EADConfig`:
+
+```{julia}
+config = StochasticConfig()
+println("City value: \$$(config.V_city / 1e12)T")
+println("City elevation: $(config.H_city)m")
+println("Seawall height: $(config.H_seawall)m")
+```
+
+## Scenario
+
+`StochasticScenario` takes a surge time series (one value per year) and a discount rate:
+
+```{julia}
+# Generate a surge time series (e.g., sampled from a distribution)
+rng = MersenneTwister(123)
+n_years = 50
+surges = 3.0 .+ randn(rng, n_years)  # Normal(3.0, 1.0) surges
+
+scenario = StochasticScenario(surges=surges, discount_rate=0.03)
+println("Simulation horizon: $n_years years")
+println("Surge range: $(round(minimum(surges), digits=2))m to $(round(maximum(surges), digits=2))m")
+```
+
+::: {.callout-tip}
+In typical usage, you generate many scenarios (different surge sequences) and simulate each one to build a distribution of outcomes.
+:::
+
+## Policy
+
+`StaticPolicy` uses the same reparameterized fractions as in EAD mode:
+
+```{julia}
+policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.2, r_frac=0.1, P=0.5)
+fd = FloodDefenses(policy, config)
+println("FloodDefenses: $fd")
+```
+
+## Running a Simulation
+
+```{julia}
+rng = MersenneTwister(42)
+outcome = simulate(config, scenario, policy, rng)
+
+investment = value(outcome.investment)
+damage = value(outcome.damage)
+total = total_cost(outcome)
+
+println("Investment: \$$(round(investment / 1e9, digits=2))B")
+println("Damage:     \$$(round(damage / 1e9, digits=2))B")
+println("Total cost: \$$(round(total / 1e9, digits=2))B")
+```
+
+## Outcome Distribution Across Seeds
+
+Because dike failure is stochastic, different RNG seeds produce different outcomes for the same scenario:
+
+```{julia}
+n_replicates = 100
+damages = Float64[]
+for seed in 1:n_replicates
+    rng = MersenneTwister(seed)
+    o = simulate(config, scenario, policy, rng)
+    push!(damages, value(o.damage))
+end
+
+mean_dmg = sum(damages) / length(damages)
+sorted = sort(damages)
+q05 = sorted[max(1, round(Int, 0.05 * n_replicates))]
+q95 = sorted[min(n_replicates, round(Int, 0.95 * n_replicates))]
+
+println("Damage distribution across $n_replicates seeds:")
+println("  Mean:          \$$(round(mean_dmg / 1e9, digits=2))B")
+println("  5th percentile: \$$(round(q05 / 1e9, digits=2))B")
+println("  95th percentile: \$$(round(q95 / 1e9, digits=2))B")
+```
+
+The spread between the 5th and 95th percentiles shows how much risk is hidden when only looking at the expected value.
+
+## Comparing Policies
+
+```{julia}
+policies = [
+    ("No protection", StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Small dike",    StaticPolicy(a_frac=0.1, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Medium dike",   StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Large dike",    StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Mixed",         StaticPolicy(a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
+]
+
+n_seeds = 50
+println("Policy            | Investment (\$B) | Mean Damage (\$B) | 95th %ile (\$B)")
+println("------------------|-----------------|------------------|---------------")
+for (name, pol) in policies
+    inv = nothing
+    dmgs = Float64[]
+    for seed in 1:n_seeds
+        rng = MersenneTwister(seed)
+        o = simulate(config, scenario, pol, rng)
+        if inv === nothing
+            inv = value(o.investment) / 1e9
+        end
+        push!(dmgs, value(o.damage) / 1e9)
+    end
+    mean_d = sum(dmgs) / length(dmgs)
+    q95_d = sort(dmgs)[min(n_seeds, round(Int, 0.95 * n_seeds))]
+    println("$(rpad(name, 18))| $(lpad(round(inv, digits=2), 15)) | $(lpad(round(mean_d, digits=2), 16)) | $(lpad(round(q95_d, digits=2), 13))")
+end
+```
+
+The 95th percentile column reveals tail risk that mean damage alone cannot capture.
+A policy with lower mean damage may still have higher tail risk.

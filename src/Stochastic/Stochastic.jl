@@ -15,8 +15,8 @@ export StochasticConfig, StochasticScenario, StochasticState
 export StaticPolicy, StochasticOutcome
 export validate_config, is_feasible, total_cost
 
-# Re-export simulate for convenience
-using SimOptDecisions: simulate
-export simulate
+# Re-export SimOptDecisions utilities for convenience
+using SimOptDecisions: simulate, value
+export simulate, value
 
 end # module Stochastic
