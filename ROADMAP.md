@@ -267,10 +267,12 @@ Use SimOptDecisions definition macros throughout for full framework integration:
 end
 ```
 
-**Conversion to FloodDefenses (in `get_action`):**
+**Conversion to FloodDefenses (via constructor):**
 
 ```julia
-function to_defenses(policy::StaticPolicy, H_city)
+# Extend FloodDefenses with policy conversion constructors
+function FloodDefenses(policy::StaticPolicy, city::CityParameters)
+    H_city = city.H_city
     A = value(policy.a_frac) * H_city    # total height budget
     W = value(policy.w_frac) * A          # withdrawal
     remaining = A - W                      # remaining for B + D
@@ -280,6 +282,8 @@ function to_defenses(policy::StaticPolicy, H_city)
     P = value(policy.P)
     return FloodDefenses(W, R, P, D, B)
 end
+
+FloodDefenses(policy::StaticPolicy, config::StochasticConfig) = FloodDefenses(policy, config.city)
 ```
 
 **Why it works:**
@@ -488,7 +492,7 @@ src/Stochastic/
   include("types.jl")
   include("simulation.jl")
   export StochasticConfig, StochasticScenario, StochasticState
-  export StaticPolicy, StochasticOutcome, to_defenses
+  export StaticPolicy, StochasticOutcome
   end
   ```
 - [ ] Update `src/ICOW.jl` to include submodule
@@ -526,7 +530,7 @@ src/Stochastic/
       @continuous P 0.0 0.99      # resistance fraction
   end
   ```
-  - [ ] `to_defenses(policy, H_city)` → FloodDefenses (conversion function)
+  - [ ] `FloodDefenses(policy, city)` and `FloodDefenses(policy, config)` constructors
 - [ ] `StochasticOutcome` using `@outcomedef`:
   ```julia
   @outcomedef StochasticOutcome begin
@@ -546,7 +550,7 @@ src/Stochastic/
   - Other years: return zero policy
   - **Note:** Returns policy object, not FloodDefenses (conversion in run_timestep)
 - [ ] `SimOptDecisions.run_timestep(state, action, t, config, scenario, rng)`:
-  - Convert action fractions to FloodDefenses using `config.city.H_city`
+  - Convert action to FloodDefenses: `fd = FloodDefenses(action, config)`
   - Enforce irreversibility: `new_defenses = max(current, action_defenses)`
   - Check feasibility; return Inf costs if infeasible
   - Calculate marginal investment cost
@@ -578,6 +582,33 @@ src/Stochastic/
 - [ ] Update `test/runtests.jl` to include stochastic tests
 
 ### Design Decisions (Resolved)
+
+#### FloodDefenses Constructors from Policy
+
+Add convenience constructors to convert reparameterized policy to FloodDefenses:
+
+```julia
+# In src/Stochastic/types.jl - extend FloodDefenses with policy conversion
+function FloodDefenses(policy::StaticPolicy, city::CityParameters)
+    H_city = city.H_city
+    A = value(policy.a_frac) * H_city
+    W = value(policy.w_frac) * A
+    remaining = A - W
+    B = value(policy.b_frac) * remaining
+    D = remaining - B
+    R = value(policy.r_frac) * H_city
+    P = value(policy.P)
+    return FloodDefenses(W, R, P, D, B)
+end
+
+# Convenience: also accept config directly
+FloodDefenses(policy::StaticPolicy, config::StochasticConfig) = FloodDefenses(policy, config.city)
+```
+
+This encapsulates the reparameterization logic and makes `run_timestep` cleaner:
+```julia
+fd = FloodDefenses(action, config)  # instead of to_defenses(action, config.city.H_city)
+```
 
 #### Action Type Flow
 
