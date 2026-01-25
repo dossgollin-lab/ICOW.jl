@@ -17,9 +17,25 @@
   **All bugs found in the C++ reference are documented here** (7 total as of Jan 2026).
 - **ROADMAP.md**: The implementation plan with checklist items.
   Mark items complete with `[x]` as you finish them.
+  **Update CLAUDE.md at the end of each phase** to reflect architectural changes.
 - **C++ Reference**: The original implementation is at [rceres/ICOW](https://github.com/rceres/ICOW/blob/master/src/iCOW_2018_06_11.cpp).
   Download locally to `_background/iCOW_2018_06_11.cpp` for reference (file is in .gitignore and cannot be redistributed).
   **Contains 7 bugs** - see `_background/equations.md` for complete documentation.
+
+### Current Architecture
+
+```
+src/
+├── ICOW.jl          # Main module: exports, simple types (Scenario, Config, etc.)
+├── types.jl         # Shared types: Levers, CityParameters, validate_parameters, is_feasible
+├── simulate.jl      # Simulation function
+└── Core/            # Pure numeric functions (no structs, validated against C++)
+    ├── Core.jl
+    ├── geometry.jl  # dike_volume
+    ├── costs.jl     # withdrawal_cost, resistance_cost, dike_cost, etc.
+    ├── zones.jl     # zone_boundaries, zone_values
+    └── damage.jl    # base_zone_damage, zone_damage, total_event_damage, etc.
+```
 
 ### Zero Backwards Compatibility
 
@@ -71,19 +87,16 @@ julia --project test/validation/cpp_reference/validate_cpp_outputs.jl  # Validat
 
 - 8 test cases covering edge cases (zero levers, R $\geq$ B, high surge, etc.)
 - Withdrawal and resistance cost calculations
-- All zone value calculations
+- Zone boundaries and values
 - Validation tolerance: rtol=1e-10 (floating-point precision)
 
-**Note on Dike Volume:**
-Dike and total investment cost comparisons are **skipped** because Julia uses a corrected geometric formula for dike volume (see Equation 6 in `_background/equations.md`).
-The paper's original formula is numerically unstable for realistic city slopes (S $\approx$ 0.0085 causes negative values under the square root).
-The Julia formula computes the same geometric shape but via direct integration, avoiding the instability.
+**Not tested:** Dike cost (Julia uses a corrected geometric formula; see `_background/equations.md` Equation 6).
 
 **Maintenance:**
 
 - When adding new physics functions, add corresponding test cases to the C++ harness
-- Re-run validation after any changes to `src/costs.jl`, `src/geometry.jl`, or `src/zones.jl`
-- If validation fails, investigate whether Julia or C++ is correct by checking `_background/equations.md`
+- Re-run validation after any changes to `src/Core/` files
+- If validation fails, check `_background/equations.md` to determine which is correct
 
 ## Code Quality & Style
 

@@ -5,14 +5,14 @@ using Distributions
 using QuadGK
 using SimOptDecisions
 
+# Types (plain structs, no dependencies)
+include("types.jl")
+export Levers, CityParameters
+export validate_parameters, is_feasible
+
 # Core submodule (pure physics functions)
 include("Core/Core.jl")
 using .Core
-
-# Re-export Core types
-const Levers = Core.Levers
-const CityParameters = Core.CityParameters
-export Levers, CityParameters
 
 # Simple scenario: just pre-sampled surges
 struct Scenario

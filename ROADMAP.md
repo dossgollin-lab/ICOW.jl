@@ -4,14 +4,14 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 1. Core Pure Functions | In Progress | Structs still in Core, need to move out |
+| 1. Core Pure Functions | Complete | Types moved to src/types.jl, Core exports only functions |
 | 2. Shared Types Module | Not Started | |
 | 3. Stochastic Submodule | Not Started | |
 | 4. EAD Submodule | Not Started | |
-| 5. Cleanup | Not Started | |
+| 5. Cleanup | Not Started | Old test files need cleanup (pre-existing) |
 | 6. Documentation | Not Started | |
 
-**Current Phase:** 1 (Remaining tasks)
+**Current Phase:** 2 (Shared Types Module)
 
 **Blocking Issues:** None
 
@@ -47,6 +47,14 @@ Use checkboxes thoroughly:
 
 Update checkboxes as work progresses. Each task should be atomic enough that it's clearly done or not done.
 
+### Update CLAUDE.md
+
+At the end of each phase, update `CLAUDE.md` to reflect:
+
+- Changes to file/directory structure (Current Architecture section)
+- New coding patterns or conventions discovered
+- Any lessons learned during implementation
+
 ### Understanding Current Behavior
 
 Before modifying any code, consult these references:
@@ -56,7 +64,7 @@ Before modifying any code, consult these references:
 | Mathematical formulas | `_background/equations.md` | Paper (Ceres et al. 2019) |
 | C++ reference behavior | `_background/iCOW_2018_06_11.cpp` | `test/validation/cpp_reference/` |
 | Current Julia implementation | `src/` files | Existing tests in `test/` |
-| SimOptDecisions API | `/Users/jamesdoss-gollin/Documents/dossgollin-lab/SimOptDecisions` | SimOptDecisions docs |
+| SimOptDecisions API | `_background/simoptdecisions_api.md` | SimOptDecisions package source |
 | Project guidelines | `CLAUDE.md` | This file |
 
 ### Lessons Learned
@@ -174,12 +182,12 @@ test/
 
 **Goal:** Core contains only pure numeric functions, no structs.
 
-**Status:** In Progress
+**Status:** Complete
 
 **Reference files:**
 
-- Current Core: `src/Core/Core.jl`, `src/Core/types.jl`
-- Target: Core exports only functions from `geometry.jl`, `costs.jl`, `zones.jl`, `damage.jl`
+- Core: `src/Core/Core.jl` (pure functions only)
+- Types: `src/types.jl` (Levers, CityParameters)
 
 ### Completed Tasks
 
@@ -205,28 +213,28 @@ test/
 
 ### Remaining Tasks
 
-- [ ] Move `Levers{T}` struct from `src/Core/types.jl` to `src/types.jl`
+- [x] Move `Levers{T}` struct from `src/Core/types.jl` to `src/types.jl`
   - Copy struct definition and constructor
   - Copy `is_feasible` function
   - Copy `Base.max` method for irreversibility
-- [ ] Move `CityParameters{T}` struct from `src/Core/types.jl` to `src/types.jl`
+- [x] Move `CityParameters{T}` struct from `src/Core/types.jl` to `src/types.jl`
   - Copy struct definition with all fields and defaults
   - Copy `validate_parameters` function
-- [ ] Delete `src/Core/types.jl`
-- [ ] Update `src/Core/Core.jl`:
+- [x] Delete `src/Core/types.jl`
+- [x] Update `src/Core/Core.jl`:
   - Remove `include("types.jl")`
   - Remove type exports (`Levers`, `CityParameters`, `validate_parameters`, `is_feasible`)
   - Keep only function exports
-- [ ] Update `src/ICOW.jl` to include new `src/types.jl`
-- [ ] Verify Core functions still work (they take individual params, not structs)
-- [ ] Run C++ validation to confirm no regression
+- [x] Update `src/ICOW.jl` to include new `src/types.jl`
+- [x] Verify Core functions still work (they take individual params, not structs)
+- [x] Run C++ validation to confirm no regression
 
 ### Validation Criteria
 
-- [ ] `Core` module exports ONLY functions, no types
-- [ ] `src/types.jl` contains `Levers` and `CityParameters`
-- [ ] C++ validation passes
-- [ ] Package loads without error: `using ICOW`
+- [x] `Core` module exports ONLY functions, no types
+- [x] `src/types.jl` contains `Levers` and `CityParameters`
+- [x] C++ validation passes
+- [x] Package loads without error: `using ICOW`
 
 ---
 
@@ -240,7 +248,7 @@ test/
 
 **Reference files:**
 
-- Current types: `src/Core/types.jl` (to be moved in Phase 1)
+- Current types: `src/types.jl` (moved from Core in Phase 1)
 - Zone definitions: `_background/equations.md` (Zone Definitions section)
 - Wrapper targets: `src/Core/*.jl` functions
 

@@ -1,21 +1,14 @@
 # Core physics submodule for the iCOW model
 # Pure numeric functions validated against C++ reference implementation
-# No SimOptDecisions dependencies
+# No structs - types live in main ICOW module
 
 module Core
-
-# Types (plain structs)
-include("types.jl")
 
 # Pure numeric functions
 include("geometry.jl")
 include("costs.jl")
 include("zones.jl")
 include("damage.jl")
-
-# Export types
-export Levers, CityParameters
-export validate_parameters, is_feasible
 
 # Export geometry
 export dike_volume

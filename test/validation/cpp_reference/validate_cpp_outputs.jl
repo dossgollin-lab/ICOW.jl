@@ -1,10 +1,7 @@
 # Validate Core physics functions against debugged C++ reference outputs
 #
-# NOTE: Dike cost comparison is SKIPPED because Julia uses a corrected geometric
-# formula for dike volume (see _background/equations.md Equation 6). The debugged C++
-# still uses the original paper's formula which is numerically unstable for
-# realistic city slopes. The Julia formula is mathematically equivalent but
-# computed via stable direct geometric integration.
+# NOTE: Dike cost is NOT validated because Julia uses a corrected geometric formula
+# for dike volume. See _background/equations.md Equation 6 for details.
 
 using Test
 
@@ -109,7 +106,7 @@ function main()
         D = levers_dict["D"]
         B = levers_dict["B"]
 
-        # Test withdrawal cost using Core pure numeric function
+        # Test withdrawal cost
         julia_wc = Core.withdrawal_cost(V_CITY, H_CITY, F_W, W)
         cpp_wc = cpp_costs[test_name]["withdrawal_cost"]
         @test julia_wc ≈ cpp_wc rtol=rtol
@@ -118,22 +115,12 @@ function main()
         # Test value after withdrawal
         V_w = Core.value_after_withdrawal(V_CITY, H_CITY, F_L, W)
 
-        # Test resistance cost using Core pure numeric function
+        # Test resistance cost
         f_cR = Core.resistance_cost_fraction(F_ADJ, F_LIN, F_EXP, T_EXP, P)
         julia_rc = Core.resistance_cost(V_w, f_cR, H_BLDG, H_CITY, W, R, B, B_BASEMENT)
         cpp_rc = cpp_costs[test_name]["resistance_cost"]
         @test julia_rc ≈ cpp_rc rtol=rtol
         println("  ✓ Resistance cost: Julia=$julia_rc, C++=$cpp_rc")
-
-        # Test dike volume and cost - SKIPPED (Julia uses corrected geometric formula)
-        if D > 0.0
-            julia_dv = Core.dike_volume(H_CITY, D_CITY, D_STARTUP, S_DIKE, W_D, W_CITY, D)
-            julia_dc = Core.dike_cost(julia_dv, C_D)
-        else
-            julia_dc = 0.0
-        end
-        cpp_dc = cpp_costs[test_name]["dike_cost"]
-        println("  ⊘ Dike cost (skipped): Julia=$julia_dc, C++=$cpp_dc")
 
         # Test zone boundaries
         bounds = Core.zone_boundaries(H_CITY, W, R, B, D)
@@ -145,8 +132,7 @@ function main()
     end
 
     println("\n" * "=" ^ 60)
-    println("✓ Core withdrawal and resistance costs match C++ reference")
-    println("⊘ Dike costs skipped (Julia uses corrected formula)")
+    println("✓ All validated costs match C++ reference")
     println("=" ^ 60)
 end
 
