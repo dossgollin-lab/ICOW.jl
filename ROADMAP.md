@@ -75,6 +75,109 @@ Document lessons here for later addition to `CLAUDE.md`:
 
 ---
 
+## SimOptDecisions API Reference
+
+Reference: `/Users/jamesdoss-gollin/Documents/dossgollin-lab/SimOptDecisions/src/`
+
+### Abstract Types
+
+Users subtype these to create domain-specific implementations:
+
+| Type | Purpose |
+|------|---------|
+| `AbstractConfig` | Immutable problem configuration (city parameters, constants) |
+| `AbstractScenario` | Uncertainty representation (surge time series, distributions) |
+| `AbstractState` | System state at any timestep (current defenses) |
+| `AbstractPolicy` | Decision rule mapping (state, time, scenario) → action |
+| `AbstractOutcome` | Final simulation result (investment, damage totals) |
+
+### Required Callbacks
+
+Five methods must be implemented for each Config/Scenario/Policy combination:
+
+```julia
+# 1. Create initial state before first timestep
+SimOptDecisions.initialize(config, scenario, rng) → State
+
+# 2. Define time points to iterate over
+SimOptDecisions.time_axis(config, scenario) → 1:n_years
+
+# 3. Map (policy, state, time, scenario) to action
+SimOptDecisions.get_action(policy, state, t::TimeStep, scenario) → Action
+
+# 4. Execute one timestep: (state, action) → (new_state, step_record)
+SimOptDecisions.run_timestep(state, action, t::TimeStep, config, scenario, rng) → (State, StepRecord)
+
+# 5. Aggregate step records into final outcome
+SimOptDecisions.compute_outcome(step_records, config, scenario) → Outcome
+```
+
+### Simulation Flow
+
+```
+simulate(config, scenario, policy, rng)
+  │
+  ├── state = initialize(config, scenario, rng)
+  │
+  ├── for t in time_axis(config, scenario):
+  │     action = get_action(policy, state, t, scenario)
+  │     (state, record) = run_timestep(state, action, t, config, scenario, rng)
+  │     push!(records, record)
+  │
+  └── return compute_outcome(records, config, scenario)
+```
+
+### TimeStep Helper
+
+`TimeStep` wraps both index and value:
+
+- `index(t)` → 1-based position
+- `value(t)` → actual time (year number)
+- `is_first(t)` → true if first timestep
+- `discount_factor(rate, t)` → `1 / (1 + rate)^value(t)`
+
+### Optimization API
+
+For policy optimization:
+
+```julia
+# Policy must implement:
+SimOptDecisions.params(policy) → Vector{Float64}           # Extract parameters
+SimOptDecisions.param_bounds(::Type{Policy}) → Vector{Tuple{Float64,Float64}}  # Bounds
+
+# Run optimization:
+objectives = [minimize(:damage), minimize(:investment)]
+result = optimize(config, scenarios, PolicyType, metric_calculator, objectives;
+                  backend=MetaheuristicsBackend(algorithm=:ECA))
+
+# Access Pareto front:
+for (params, obj_values) in pareto_front(result)
+    # ...
+end
+```
+
+### Metric Computation
+
+Declarative metrics for outcome aggregation:
+
+```julia
+metrics = [
+    ExpectedValue(:mean_cost, :cost),
+    Variance(:var_damage, :damage),
+    Quantile(:q95_loss, :loss, 0.95),
+]
+result = compute_metrics(metrics, outcomes)  # → NamedTuple
+```
+
+### Key Design Patterns
+
+1. **Type stability**: Use parametric structs `struct Policy{T<:Real}` for specialization
+2. **Zero allocations**: Use `NoRecorder()` in optimization (default)
+3. **RNG control**: All callbacks receive `AbstractRNG` for reproducibility
+4. **Step records**: Return NamedTuples from `run_timestep` for type stability
+
+---
+
 ## Overview
 
 Reorganize ICOW into a clean architecture:
@@ -124,6 +227,87 @@ Document: `f_failed = 1.5` includes conceptual repair/reconstruction costs.
 - `StaticPolicy` duplicated in each submodule (different state/scenario spaces)
 - Separate `optimize()` functions per submodule
 - Scenarios ARE forcing (no separate Forcing types)
+
+### SimOptDecisions Macros
+
+Use SimOptDecisions definition macros throughout for full framework integration:
+
+| Type | Macro | Notes |
+|------|-------|-------|
+| Config | `@configdef` | Wraps CityParameters fields with `@continuous` |
+| Scenario | `@scenariodef` | Uses `@timeseries` for surges, `@continuous` for discount_rate |
+| State | Manual struct | Must be mutable; convert FloodDefenses to/from 5 scalars |
+| Policy | `@policydef` | Uses reparameterized bounds (see below) |
+| Outcome | `@outcomedef` | `@continuous` for investment, damage |
+
+### Policy Reparameterization
+
+**Problem:** FloodDefenses constraints depend on `H_city` (config-dependent), but `@policydef` requires static bounds.
+
+**Constraints to satisfy:**
+
+1. `W ≥ 0`
+2. `B ≥ W` (can't withdraw above dike base)
+3. `D ≥ 0`
+4. `W + B + D ≤ H_city`
+5. `R ≥ 0`
+6. `0 ≤ P < 1`
+
+**Solution:** Reparameterize using fractions that guarantee all constraints:
+
+```julia
+@policydef StaticPolicy begin
+    @continuous a_frac 0.0 1.0    # total height budget as fraction of H_city
+    @continuous w_frac 0.0 0.5    # W's share of budget (capped at 50% so B ≥ W possible)
+    @continuous b_frac 0.0 1.0    # how to split remaining (A-2W) between B-W and D
+    @continuous r_frac 0.0 1.0    # R as fraction of H_city (independent)
+    @continuous P 0.0 0.99        # resistance fraction
+end
+```
+
+**Conversion to FloodDefenses (in `get_action`):**
+
+```julia
+function to_defenses(policy::StaticPolicy, H_city)
+    A = value(policy.a_frac) * H_city           # total budget
+    W = value(policy.w_frac) * A                 # withdrawal
+    slack = A - 2W                               # remaining after guaranteeing B ≥ W
+    B = W + value(policy.b_frac) * slack         # dike base (≥ W)
+    D = (1 - value(policy.b_frac)) * slack       # dike height
+    R = value(policy.r_frac) * H_city            # resistance (independent)
+    P = value(policy.P)
+    return FloodDefenses(W, R, P, D, B)
+end
+```
+
+**Why it works:**
+
+| Constraint | Guaranteed by |
+|------------|---------------|
+| `W ≥ 0` | `w_frac ≥ 0`, `a_frac ≥ 0` |
+| `B ≥ W` | `B = W + b_frac * slack` where `slack ≥ 0` |
+| `D ≥ 0` | `(1 - b_frac) ≥ 0` since `b_frac ≤ 1` |
+| `W + B + D ≤ H` | `W + B + D = 2W + slack = A = a_frac * H ≤ H` |
+| `R ≥ 0` | `r_frac ≥ 0` |
+| `P < 1` | `P ≤ 0.99` |
+
+**Derivation:**
+
+- `A = a_frac * H_city` (total budget)
+- `W = w_frac * A` where `w_frac ≤ 0.5` ensures `W ≤ A/2`
+- `slack = A - 2W ≥ 0` (remaining height after reserving W for both W and minimum B=W)
+- `B = W + b_frac * slack` ∈ `[W, W + slack] = [W, A - W]`
+- `D = (1 - b_frac) * slack` ∈ `[0, slack]`
+- Verify: `W + B + D = W + (W + b_frac * slack) + (1 - b_frac) * slack = 2W + slack = A ≤ H` ✓
+
+**Edge cases:**
+
+| Parameters | Result | Valid? |
+|------------|--------|--------|
+| `a_frac=0` | W=B=D=0 (no protection) | ✓ |
+| `a_frac=1, w_frac=0` | W=0, B+D=H | ✓ |
+| `a_frac=1, w_frac=0.5` | W=H/2, slack=0, B=W=H/2, D=0 | ✓ |
+| `a_frac=1, w_frac=0.5, b_frac=any` | Same (slack=0 dominates) | ✓ |
 
 ## Target Architecture
 
