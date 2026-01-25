@@ -71,7 +71,9 @@ Before modifying any code, consult these references:
 
 Document lessons here for later addition to `CLAUDE.md`:
 
-1. *(none yet)*
+1. **Constraint consistency:** When Core functions have preconditions (like `W < H_city` to avoid division by zero), the `is_feasible` check must enforce the same constraint. Audit both together.
+
+2. **Type stability in conditionals:** When a function returns different values based on a runtime condition, ensure both branches return the same concrete type. Extract type parameters from the input that determines the output type.
 
 ---
 
@@ -569,8 +571,22 @@ src/
 - [x] Irreversibility enforced (defenses never decrease)
 - [x] Dike failure is stochastic (different RNG seeds → different damages)
 - [x] Discounting applied correctly
-- [x] All tests pass (81 tests)
+- [x] All tests pass (83 tests)
 - [x] C++ validation still passes (Core unchanged)
+
+### Post-Implementation Audit (Complete)
+
+Comprehensive audit identified and fixed:
+
+1. **`is_feasible` constraint mismatch (critical):** Changed `W <= H_city` to `W < H_city` to match `Core.withdrawal_cost` which requires strict inequality to avoid division by zero.
+
+2. **Type instability in `get_action`:** Changed to extract type parameter from policy (`Tp`) instead of state (`T`), ensuring both branches return same type.
+
+3. **Stochastic variation test:** Added test verifying different RNG seeds produce different damages (uses moderate surges near dike height for intermediate failure probability).
+
+4. **Discount factor documentation:** Added comment explaining end-of-year discounting convention.
+
+5. **SimOptDecisions integration:** Added `SimOptDecisions.validate_config` hook and re-exported `simulate` for convenience.
 
 ---
 
