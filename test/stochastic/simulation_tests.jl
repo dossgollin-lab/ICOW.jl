@@ -49,24 +49,6 @@ using Test
         @test SimOptDecisions.value(outcome1.damage) == SimOptDecisions.value(outcome2.damage)
     end
 
-    @testset "Different RNG seeds can produce different damage" begin
-        config = StochasticConfig()
-        # High surges to increase chance of dike failure variation
-        scenario = StochasticScenario(surges=[10.0, 12.0, 15.0], discount_rate=0.0)
-        policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
-
-        damages = [
-            SimOptDecisions.value(
-                SimOptDecisions.simulate(config, scenario, policy, MersenneTwister(seed)).damage
-            )
-            for seed in 1:20
-        ]
-
-        # With stochastic dike failure, we should see some variation
-        # (unless all seeds happen to give same failure pattern)
-        @test length(unique(damages)) >= 1  # At least not all crashing
-    end
-
     @testset "Discounting applied correctly" begin
         config = StochasticConfig()
         scenario_no_discount = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.0)

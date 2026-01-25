@@ -95,6 +95,9 @@ function validate_config(config::StochasticConfig)
     return nothing
 end
 
+# Hook into SimOptDecisions validation
+SimOptDecisions.validate_config(config::StochasticConfig) = validate_config(config)
+
 """
     is_feasible(fd::FloodDefenses, config::StochasticConfig) -> Bool
 
