@@ -168,6 +168,13 @@ cd test/validation/cpp_reference
 - Use `code-fold: true` for setup blocks; keep key examples visible.
 - Use Quarto callouts (`{.callout-tip}`, `{.callout-note}`, `{.callout-warning}`) for tips, notes, and warnings.
 
+### Output Display
+
+- **Never** use `println` for displaying tabular data in documentation.
+- Use `DataFrames.DataFrame` for tables (renders as HTML in Quarto).
+- Use CairoMakie for visualizations.
+- Prefer structured output (DataFrames, plots) over manual text formatting.
+
 ## Code Quality & Style
 
 - Physics functions (geometry.jl, costs.jl) must be pure (no side effects).

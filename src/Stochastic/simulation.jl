@@ -4,7 +4,11 @@
 # SimOptDecisions Callbacks
 # =============================================================================
 
-"""Initialize state at start of simulation."""
+"""
+    SimOptDecisions.initialize(config::StochasticConfig, scenario, rng) -> StochasticState
+
+Create initial state with zero-protection FloodDefenses.
+"""
 function SimOptDecisions.initialize(
     config::StochasticConfig{T},
     scenario::StochasticScenario,
@@ -13,12 +17,20 @@ function SimOptDecisions.initialize(
     StochasticState{T}()
 end
 
-"""Return time axis (years)."""
+"""
+    SimOptDecisions.time_axis(config::StochasticConfig, scenario) -> UnitRange
+
+Return simulation time axis from surge time series length.
+"""
 function SimOptDecisions.time_axis(config::StochasticConfig, scenario::StochasticScenario)
     1:length(SimOptDecisions.value(scenario.surges))
 end
 
-"""Get action from policy given current state."""
+"""
+    SimOptDecisions.get_action(policy::StaticPolicy, state, t, scenario) -> StaticPolicy
+
+Return policy at t=1 (build year), zero policy thereafter.
+"""
 function SimOptDecisions.get_action(
     policy::StaticPolicy{Tp},
     state::StochasticState,
@@ -35,7 +47,11 @@ function SimOptDecisions.get_action(
     end
 end
 
-"""Execute one timestep: apply action, compute costs and damage."""
+"""
+    SimOptDecisions.run_timestep(state, action, t, config::StochasticConfig, scenario, rng) -> (state, record)
+
+Execute one year: convert policy to defenses, enforce irreversibility, compute investment and stochastic damage.
+"""
 function SimOptDecisions.run_timestep(
     state::StochasticState{T},
     action::StaticPolicy,
@@ -79,7 +95,11 @@ function SimOptDecisions.run_timestep(
     return (new_state, record)
 end
 
-"""Aggregate step records into final outcome."""
+"""
+    SimOptDecisions.compute_outcome(step_records, config::StochasticConfig, scenario) -> StochasticOutcome
+
+Aggregate step records into discounted investment and damage totals.
+"""
 function SimOptDecisions.compute_outcome(
     step_records::Vector,
     config::StochasticConfig{T},
@@ -103,7 +123,11 @@ end
 # Helper Functions
 # =============================================================================
 
-"""Calculate total investment cost for given defenses."""
+"""
+    _investment_cost(config::StochasticConfig, fd::FloodDefenses) -> cost
+
+Calculate total investment cost (withdrawal + resistance + dike) for given defenses.
+"""
 function _investment_cost(config::StochasticConfig{T}, fd::FloodDefenses{T}) where {T}
     C_W = Core.withdrawal_cost(config.V_city, config.H_city, config.f_w, fd.W)
 
@@ -121,7 +145,11 @@ function _investment_cost(config::StochasticConfig{T}, fd::FloodDefenses{T}) whe
     return C_W + C_R + C_D
 end
 
-"""Calculate stochastic damage with sampled dike failure."""
+"""
+    _stochastic_damage(config::StochasticConfig, fd::FloodDefenses, h_raw, rng) -> damage
+
+Calculate realized damage for a single surge with sampled dike failure (Bernoulli draw).
+"""
 function _stochastic_damage(
     config::StochasticConfig{T},
     fd::FloodDefenses{T},

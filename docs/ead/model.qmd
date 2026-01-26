@@ -10,6 +10,9 @@ engine: julia
 The EAD (Expected Annual Damage) mode computes the **expected damage** from flooding by analytically integrating over uncertainty.
 It provides deterministic, smooth objective values that are well-suited for optimization.
 
+In many risk management contexts, a decision-maker needs to evaluate thousands of candidate strategies quickly.
+EAD mode serves this need by replacing stochastic sampling with analytical integration, producing a single deterministic cost for each policy evaluation.
+
 ## How It Works
 
 EAD uses two-level integration:
@@ -57,6 +60,11 @@ EAD mode is the right choice when:
 
 For static policies, EAD mode converges to the mean of Stochastic mode outcomes by the Law of Large Numbers.
 
+::: {.callout-note}
+Both modes give the same expected cost in the limit.
+The key difference is that EAD provides a single deterministic number, while Stochastic mode reveals the full distribution of outcomes.
+:::
+
 ## Integration Methods
 
 ### Quadrature
@@ -79,6 +87,10 @@ It integrates over the surge distribution's quantile range (0.01% to 99.99%).
 ::: {.callout-tip}
 Use quadrature for most purposes.
 Monte Carlo is mainly useful for validation or exotic distributions.
+:::
+
+::: {.callout-tip}
+See [Details](details.qmd) for worked examples with DataFrames tables and visualizations.
 :::
 
 ## References

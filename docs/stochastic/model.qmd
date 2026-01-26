@@ -33,6 +33,13 @@ This means:
 
 This stochasticity is essential for understanding tail risk and the variance of outcomes.
 
+### When Variance Matters
+
+Two policies with equal expected damage can have very different outcome distributions.
+A dike-heavy strategy concentrates risk: it performs well unless the dike fails, in which case losses are catastrophic.
+A diversified strategy (withdrawal + resistance + small dike) spreads risk across mechanisms, producing less extreme tails.
+Stochastic mode is the only way to see this distinction.
+
 ## When to Use Stochastic Mode
 
 Stochastic mode is the right choice when:
@@ -56,6 +63,10 @@ Stochastic mode is the right choice when:
 ::: {.callout-note}
 For static policies, the mean of many Stochastic runs converges to the EAD result by the Law of Large Numbers.
 The variance across runs reveals the risk that EAD mode hides.
+:::
+
+::: {.callout-tip}
+See [Details](details.qmd) for worked examples showing damage distributions and policy comparisons with visualizations.
 :::
 
 ## References

@@ -7,18 +7,18 @@
 abstract type IntegrationMethod end
 
 """
-    QuadratureIntegrator{T<:Real}
+    QuadratureIntegrator{T<:Real}(rtol=1e-6)
 
-Numerical integration using adaptive quadrature (QuadGK).
+Adaptive quadrature integration via QuadGK. Default relative tolerance is `1e-6`.
 """
 Base.@kwdef struct QuadratureIntegrator{T<:Real} <: IntegrationMethod
     rtol::T = 1e-6
 end
 
 """
-    MonteCarloIntegrator
+    MonteCarloIntegrator(n_samples=1000)
 
-Monte Carlo integration by sampling from distribution.
+Monte Carlo integration by sampling from the surge distribution. Default is `1000` samples.
 """
 Base.@kwdef struct MonteCarloIntegrator <: IntegrationMethod
     n_samples::Int = 1000
@@ -225,5 +225,15 @@ SimOptDecisions.@outcomedef EADOutcome begin
     @continuous expected_damage
 end
 
-"""Total cost is investment plus expected damage."""
+@doc """
+    EADOutcome
+
+Simulation outcome holding discounted investment cost and expected damage.
+""" EADOutcome
+
+"""
+    total_cost(o::EADOutcome) -> T
+
+Total cost is investment plus expected damage.
+"""
 total_cost(o::EADOutcome) = SimOptDecisions.value(o.investment) + SimOptDecisions.value(o.expected_damage)

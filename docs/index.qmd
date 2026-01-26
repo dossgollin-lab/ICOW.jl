@@ -126,9 +126,9 @@ rng = MersenneTwister(42)
 outcome = simulate(config, scenario, policy, rng)
 
 # Results (value() extracts numeric values from outcome fields)
-println("Investment: \$$(round(value(outcome.investment) / 1e9, digits=2))B")
-println("Expected damage: \$$(round(value(outcome.expected_damage) / 1e9, digits=2))B")
-println("Total cost: \$$(round(total_cost(outcome) / 1e9, digits=2))B")
+value(outcome.investment)       # investment cost ($)
+value(outcome.expected_damage)  # expected flood damage ($)
+total_cost(outcome)             # investment + expected damage ($)
 ```
 
 The `StaticPolicy` uses a stick-breaking reparameterization to guarantee all physical constraints are satisfied.

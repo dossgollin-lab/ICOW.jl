@@ -2,10 +2,9 @@
 # Implements zone partitioning from Figure 3 and _background/equations.md
 
 """
-    zone_boundaries(H_city, W, R, B, D)
+    zone_boundaries(H_city, W, R, B, D) -> NTuple{10}
 
-Calculate zone boundary elevations.
-Returns tuple: (z0_low, z0_high, z1_low, z1_high, z2_low, z2_high, z3_low, z3_high, z4_low, z4_high)
+Calculate zone boundary elevations (Figure 3). See _background/equations.md.
 """
 function zone_boundaries(H_city::T, W::T, R::T, B::T, D::T) where {T<:AbstractFloat}
     z0_low = zero(T)
@@ -27,11 +26,9 @@ function zone_boundaries(H_city::T, W::T, R::T, B::T, D::T) where {T<:AbstractFl
 end
 
 """
-    zone_values(V_w, H_city, W, R, B, D, r_prot, r_unprot)
+    zone_values(V_w, H_city, W, R, B, D, r_prot, r_unprot) -> NTuple{5}
 
-Calculate zone economic values.
-Returns tuple of 5 values: (val_z0, val_z1, val_z2, val_z3, val_z4)
-V_w is value after withdrawal.
+Calculate zone economic values (Zone Values section). See _background/equations.md.
 """
 function zone_values(
     V_w::T, H_city::T, W::T, R::T, B::T, D::T, r_prot::T, r_unprot::T

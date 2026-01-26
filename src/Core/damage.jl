@@ -2,10 +2,9 @@
 # Implements Equation 9 and zone-specific damage from _background/equations.md
 
 """
-    base_zone_damage(z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage)
+    base_zone_damage(z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage) -> damage
 
-Calculate base damage for a zone (before modifiers like resistance or dike factors).
-Uses C++ damage formula with basement depth.
+Calculate base damage for a zone before modifiers (Equation 9). See _background/equations.md.
 """
 function base_zone_damage(
     z_low::T, z_high::T, value::T, h_surge::T, b_basement::T, H_bldg::T, f_damage::T
@@ -29,10 +28,9 @@ function base_zone_damage(
 end
 
 """
-    zone_damage(zone_idx, z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage, P, f_intact, f_failed, dike_failed)
+    zone_damage(zone_idx, z_low, z_high, value, h_surge, b_basement, H_bldg, f_damage, P, f_intact, f_failed, dike_failed) -> damage
 
-Calculate damage for a single zone based on zone index (0-4).
-Zone 0: withdrawn, Zone 1: resistant, Zone 2: unprotected, Zone 3: dike-protected, Zone 4: above dike.
+Calculate damage for a single zone with zone-specific modifiers (Equation 9). See _background/equations.md.
 """
 function zone_damage(
     zone_idx::Int, z_low::T, z_high::T, value::T, h_surge::T,
@@ -59,11 +57,9 @@ function zone_damage(
 end
 
 """
-    total_event_damage(bounds, values, h_surge, b_basement, H_bldg, f_damage, P, f_intact, f_failed, d_thresh, f_thresh, gamma_thresh, dike_failed)
+    total_event_damage(bounds, values, h_surge, ..., dike_failed) -> damage
 
-Calculate total damage for a single surge event across all zones.
-bounds: tuple of 10 boundary values from zone_boundaries()
-values: tuple of 5 zone values from zone_values()
+Calculate total damage for a single surge event across all zones. See _background/equations.md.
 """
 function total_event_damage(
     bounds::NTuple{10,T}, values::NTuple{5,T}, h_surge::T,

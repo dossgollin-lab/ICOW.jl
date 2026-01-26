@@ -4,7 +4,11 @@
 # SimOptDecisions Callbacks
 # =============================================================================
 
-"""Initialize state at start of simulation."""
+"""
+    SimOptDecisions.initialize(config::EADConfig, scenario, rng) -> EADState
+
+Create initial state with zero-protection FloodDefenses.
+"""
 function SimOptDecisions.initialize(
     config::EADConfig{T},
     scenario::EADScenario,
@@ -13,12 +17,20 @@ function SimOptDecisions.initialize(
     EADState{T}()
 end
 
-"""Return time axis (years)."""
+"""
+    SimOptDecisions.time_axis(config::EADConfig, scenario) -> UnitRange
+
+Return simulation time axis from surge distribution vector length.
+"""
 function SimOptDecisions.time_axis(config::EADConfig, scenario::EADScenario)
     1:length(scenario.distributions)
 end
 
-"""Get action from policy given current state."""
+"""
+    SimOptDecisions.get_action(policy::StaticPolicy, state, t, scenario) -> StaticPolicy
+
+Return policy at t=1 (build year), zero policy thereafter.
+"""
 function SimOptDecisions.get_action(
     policy::StaticPolicy{Tp},
     state::EADState,
@@ -35,7 +47,11 @@ function SimOptDecisions.get_action(
     end
 end
 
-"""Execute one timestep: apply action, compute costs and expected damage."""
+"""
+    SimOptDecisions.run_timestep(state, action, t, config::EADConfig, scenario, rng) -> (state, record)
+
+Execute one year: convert policy to defenses, enforce irreversibility, compute investment and expected damage.
+"""
 function SimOptDecisions.run_timestep(
     state::EADState{T},
     action::StaticPolicy,
@@ -78,7 +94,11 @@ function SimOptDecisions.run_timestep(
     return (new_state, record)
 end
 
-"""Aggregate step records into final outcome."""
+"""
+    SimOptDecisions.compute_outcome(step_records, config::EADConfig, scenario) -> EADOutcome
+
+Aggregate step records into discounted investment and expected damage totals.
+"""
 function SimOptDecisions.compute_outcome(
     step_records::Vector,
     config::EADConfig{T},
@@ -102,7 +122,11 @@ end
 # Helper Functions
 # =============================================================================
 
-"""Calculate total investment cost for given defenses."""
+"""
+    _investment_cost(config::EADConfig, fd::FloodDefenses) -> cost
+
+Calculate total investment cost (withdrawal + resistance + dike) for given defenses.
+"""
 function _investment_cost(config::EADConfig{T}, fd::FloodDefenses{T}) where {T}
     C_W = Core.withdrawal_cost(config.V_city, config.H_city, config.f_w, fd.W)
 

@@ -190,5 +190,15 @@ SimOptDecisions.@outcomedef StochasticOutcome begin
     @continuous damage
 end
 
-"""Total cost is investment plus damage."""
+@doc """
+    StochasticOutcome
+
+Simulation outcome holding discounted investment cost and realized damage.
+""" StochasticOutcome
+
+"""
+    total_cost(o::StochasticOutcome) -> T
+
+Total cost is investment plus realized damage.
+"""
 total_cost(o::StochasticOutcome) = SimOptDecisions.value(o.investment) + SimOptDecisions.value(o.damage)
