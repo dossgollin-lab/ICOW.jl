@@ -24,7 +24,7 @@ iCOW bridges the gap between two extremes in flood risk modeling:
 | Model Type | Pros | Cons |
 |------------|------|------|
 | **Simple models** (van Dantzig style) | Fast, analytical | Single strategy (dikes only), binary damage |
-| **Regional models** (CLARA style) | Realistic, site-specific | Computationally expensive, requires extensive data |
+| **Regional models** | Realistic, site-specific | Computationally expensive, requires extensive data |
 | **iCOW** | Fast enough for optimization | Captures multiple strategies and realistic damage |
 
 Simple models like @vandantzig_dike:1956 assume dikes either hold (zero damage) or fail (100% damage).
