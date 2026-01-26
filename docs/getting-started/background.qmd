@@ -8,15 +8,14 @@ engine: julia
 ## The Problem
 
 Coastal cities concentrate people, infrastructure, and economic value at low elevations where storm surges cause the most damage.
-Globally, flood exposure has been growing faster than population, driven by development in flood-prone areas [@jongman_Globalexposureriver:2012].
 Managing this risk requires choosing among multiple protection strategies -- and making those choices before the storms arrive.
 
 This is fundamentally a decision problem under uncertainty: how much should a city invest in flood protection, and what combination of strategies should it use?
-The answer depends on uncertain future hazards, the costs of different interventions, and the city's tolerance for residual risk [@keller_management:2021].
+The answer depends on uncertain future hazards, the costs of different interventions, and the city's tolerance for residual risk [@keller_management:2021; @doss-gollin_subjective:2023].
 
 ## Strategies for Coastal Flood Protection
 
-Real-world coastal cities use three broad categories of protection, often in combination [@vanberchum_coastal:2019]:
+Real-world coastal cities use three broad categories of protection, often in combination:
 
 ### Withdrawal (Managed Retreat)
 

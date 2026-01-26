@@ -21,7 +21,7 @@ The wedge captures the first-order effect -- higher surges flood more area at gr
 ### Homogeneous Building Stock
 
 All buildings are treated identically within each zone, with uniform height ($H_{\text{bldg}}$) and value density.
-Real cities have a mix of residential, commercial, and industrial buildings with different vulnerability functions [@demoel_reducing:2014].
+Real cities have a mix of residential, commercial, and industrial buildings with different vulnerability functions.
 
 **Implication**: The model captures portfolio-level tradeoffs but not building-level targeting of interventions.
 
