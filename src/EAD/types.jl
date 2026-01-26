@@ -177,20 +177,8 @@ mutable struct EADState{T<:AbstractFloat} <: SimOptDecisions.AbstractState
     defenses::FloodDefenses{T}
 end
 
-EADState{T}() where {T<:AbstractFloat} = EADState(
-    FloodDefenses{T}(zero(T), zero(T), zero(T), zero(T), zero(T))
-)
-
-# =============================================================================
-# StaticPolicy - reparameterized for optimization
-# =============================================================================
-
-SimOptDecisions.@policydef StaticPolicy begin
-    @continuous a_frac 0.0 1.0  # total height budget as fraction of H_city
-    @continuous w_frac 0.0 1.0  # W's share of budget
-    @continuous b_frac 0.0 1.0  # B's share of remaining (A - W)
-    @continuous r_frac 0.0 1.0  # R as fraction of H_city
-    @continuous P 0.0 0.99      # resistance fraction
+function EADState{T}() where {T<:AbstractFloat}
+    EADState(FloodDefenses{T}(zero(T), zero(T), zero(T), zero(T), zero(T)))
 end
 
 """
@@ -231,4 +219,6 @@ Simulation outcome holding discounted investment cost and expected damage.
 
 Total cost is investment plus expected damage.
 """
-total_cost(o::EADOutcome) = SimOptDecisions.value(o.investment) + SimOptDecisions.value(o.expected_damage)
+function total_cost(o::EADOutcome)
+    SimOptDecisions.value(o.investment) + SimOptDecisions.value(o.expected_damage)
+end

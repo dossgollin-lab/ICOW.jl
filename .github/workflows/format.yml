@@ -1,0 +1,31 @@
+name: Format
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1"
+      - uses: julia-actions/cache@v2
+      - name: Install JuliaFormatter and format
+        run: |
+          julia -e 'import Pkg; Pkg.add("JuliaFormatter")'
+          julia -e 'using JuliaFormatter; format(".", BlueStyle())'
+      - name: Commit formatting changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-format with JuliaFormatter (BlueStyle)"
+          branch: ${{ github.head_ref || github.ref_name }}

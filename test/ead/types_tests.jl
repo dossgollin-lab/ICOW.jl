@@ -4,9 +4,6 @@ using SimOptDecisions
 using Distributions
 using Test
 
-# Import EAD-specific names to avoid ambiguity with Stochastic module
-import ICOW.EAD: validate_config, is_feasible, StaticPolicy
-
 @testset "IntegrationMethod" begin
     @test QuadratureIntegrator().rtol == 1e-6
     @test MonteCarloIntegrator().n_samples == 1000
@@ -97,7 +94,9 @@ end
 end
 
 @testset "EADScenario" begin
-    scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
+    scenario = EADScenario(
+        surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03
+    )
     @test value(scenario.surge_loc) == 3.0
     @test value(scenario.surge_scale) == 1.0
     @test value(scenario.surge_shape) == 0.0

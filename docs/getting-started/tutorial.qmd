@@ -1,0 +1,245 @@
+---
+title: "Tutorial"
+subtitle: "Your First iCOW Analysis"
+bibliography: ../references.bib
+engine: julia
+---
+
+This tutorial walks through a complete flood risk analysis using ICOW.jl.
+By the end, you will have configured a coastal city, tried several protection strategies, and compared their investment-vs-damage tradeoffs.
+
+::: {.callout-note}
+## What You'll Need
+
+- Julia 1.10 or later with ICOW.jl installed (see [Home](../index.qmd) for installation)
+- Basic familiarity with Julia syntax (variables, functions, arrays)
+- No prior knowledge of flood risk modeling is assumed
+:::
+
+## Setup
+
+```{julia}
+#| code-fold: true
+using ICOW
+using ICOW.EAD
+using Random
+using CairoMakie
+CairoMakie.activate!(type = "svg")
+```
+
+## The Setting
+
+Imagine you are advising a coastal city on flood protection investments.
+The city sits on a wedge of land that rises from sea level to $H_{\text{city}} = 17$ meters.
+It has a short existing seawall, but major storm surges can overtop it and cause serious damage.
+
+You need to answer: **what combination of withdrawal, resistance, and dikes should the city invest in?**
+
+## Step 1: Configure the City
+
+An `EADConfig` holds the 28 physical and economic parameters that define the city.
+The defaults describe a Manhattan-like setting.
+
+```{julia}
+config = EADConfig()
+```
+
+The most important parameters to understand are:
+
+| Parameter | Value | What It Means |
+|-----------|-------|---------------|
+| `V_city` | \$1.5T | Total value of all buildings and infrastructure |
+| `H_city` | 17.0 m | Elevation from waterfront to highest point |
+| `H_seawall` | 1.75 m | Existing seawall height (surges below this cause no flooding) |
+| `H_bldg` | 30.0 m | Average building height (normalizes resistance costs) |
+
+You can customize any parameter:
+
+```{julia}
+# A smaller, lower-lying city
+config_small = EADConfig(V_city=5e11, H_city=10.0, H_seawall=1.0)
+```
+
+For this tutorial, we will use the defaults.
+
+## Step 2: Define the Hazard
+
+Storm surge heights follow a Generalized Extreme Value (GEV) distribution, which is the natural statistical model for annual maxima.
+An `EADScenario` specifies the GEV parameters and a discount rate:
+
+```{julia}
+scenario = EADScenario(
+    surge_loc=3.0,     # location (m): typical annual max surge
+    surge_scale=1.0,   # scale (m): spread of surge heights
+    surge_shape=0.0,   # shape: 0 = Gumbel (light-tailed)
+    discount_rate=0.03  # 3% annual discount rate
+)
+```
+
+::: {.callout-tip}
+## GEV Shape Parameter
+
+The shape parameter controls the tail behavior:
+
+- `shape = 0`: Gumbel distribution (light-tailed, exponential decay)
+- `shape > 0`: Fréchet distribution (heavy-tailed, more extreme surges possible)
+- `shape < 0`: Weibull distribution (bounded upper tail)
+
+For most coastal locations, the shape parameter is near zero or slightly positive.
+:::
+
+## Step 3: Try a Protection Strategy
+
+A `StaticPolicy` specifies how to allocate protection using five fractions, all between 0 and 1.
+The "stick-breaking" parameterization guarantees that all physical constraints are satisfied automatically (see [Architecture](../core/architecture.qmd) for details).
+
+Let's try a strategy that invests in a moderate dike with some resistance:
+
+```{julia}
+policy_mixed = StaticPolicy(
+    a_frac=0.3,   # use 30% of city elevation as protection budget
+    w_frac=0.1,   # 10% of budget goes to withdrawal
+    b_frac=0.2,   # 20% of remaining budget goes to dike base
+    r_frac=0.1,   # resistance height = 10% of H_city
+    P=0.5          # flood-proof 50% of buildings
+)
+```
+
+What does this translate to in meters?
+The policy converts to a `FloodDefenses` struct:
+
+```{julia}
+fd = FloodDefenses(policy_mixed, config)
+fd
+```
+
+## Step 4: Run the Simulation
+
+The `simulate` function computes the total investment cost and expected flood damage over the planning horizon (50 years by default), discounted to present value:
+
+```{julia}
+rng = MersenneTwister(42)
+outcome = simulate(config, scenario, policy_mixed, rng)
+outcome
+```
+
+The outcome tells you the present-value investment cost and expected damage.
+The total cost is their sum:
+
+```{julia}
+total_cost(outcome)
+```
+
+## Step 5: Compare Strategies
+
+One strategy is not enough -- you need to compare alternatives.
+Here are five archetypes ranging from "do nothing" to "heavy investment":
+
+```{julia}
+strategies = [
+    ("No protection",      StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Dike only",          StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Withdraw + resist",  StaticPolicy(a_frac=0.2, w_frac=0.5, b_frac=0.0, r_frac=0.3, P=0.7)),
+    ("Mixed",              StaticPolicy(a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
+    ("High dike + resist", StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3)),
+]
+policy_list = last.(strategies)
+strategy_names = first.(strategies)
+```
+
+The `explore()` function evaluates all policies against a scenario in one call and returns a structured dataset:
+
+```{julia}
+result = explore(config, [scenario], policy_list; progress=false)
+```
+
+Now plot the **investment vs. expected damage** tradeoff:
+
+```{julia}
+inv_vals = vec(result[:investment].data) ./ 1e9
+dmg_vals = vec(result[:expected_damage].data) ./ 1e9
+
+fig = Figure(; size=(650, 420))
+ax = Axis(fig[1, 1];
+    xlabel="Investment (\$B)",
+    ylabel="Expected Damage (\$B)",
+    title="Investment vs Expected Damage")
+scatter!(ax, inv_vals, dmg_vals; markersize=14, color=:steelblue)
+for (i, name) in enumerate(strategy_names)
+    text!(ax, inv_vals[i], dmg_vals[i]; text=name, fontsize=10, offset=(8, 4))
+end
+fig
+```
+
+::: {.callout-tip}
+## Reading the Plot
+
+Points in the **lower-left** are cheapest overall (low investment + low damage).
+The ideal strategy minimizes the sum of investment and expected damage -- but this depends on what you're optimizing for.
+A risk-averse decision-maker might prefer a strategy with slightly higher expected cost but much lower tail risk.
+:::
+
+## Step 6: What if the Hazard Is Different?
+
+So far we assumed a specific surge distribution.
+But in practice, the GEV parameters are uncertain -- this is a key aspect of decision making under deep uncertainty.
+
+Let's see how our strategies perform under a **heavier-tailed** surge distribution (positive shape parameter):
+
+```{julia}
+scenario_heavy = EADScenario(
+    surge_loc=3.0,
+    surge_scale=1.0,
+    surge_shape=0.15,   # heavier tail: more extreme surges possible
+    discount_rate=0.03
+)
+
+scenarios_both = [scenario, scenario_heavy]
+result_both = explore(config, scenarios_both, policy_list; progress=false)
+```
+
+```{julia}
+fig = Figure(; size=(700, 420))
+ax = Axis(fig[1, 1];
+    xlabel="Investment (\$B)",
+    ylabel="Expected Damage (\$B)",
+    title="Strategy Performance Under Two Hazard Scenarios")
+
+# Light-tailed scenario
+inv_1 = result_both[:investment].data[:, 1] ./ 1e9
+dmg_1 = result_both[:expected_damage].data[:, 1] ./ 1e9
+scatter!(ax, inv_1, dmg_1; markersize=12, color=:steelblue, label="Gumbel (shape=0)")
+
+# Heavy-tailed scenario
+inv_2 = result_both[:investment].data[:, 2] ./ 1e9
+dmg_2 = result_both[:expected_damage].data[:, 2] ./ 1e9
+scatter!(ax, inv_2, dmg_2; markersize=12, color=:firebrick, marker=:diamond, label="Fréchet (shape=0.15)")
+
+# Connect same policies across scenarios
+for i in 1:length(policy_list)
+    lines!(ax, [inv_1[i], inv_2[i]], [dmg_1[i], dmg_2[i]]; color=:gray70, linewidth=1)
+    text!(ax, inv_2[i], dmg_2[i]; text=strategy_names[i], fontsize=9, offset=(8, 4))
+end
+axislegend(ax; position=:rt)
+fig
+```
+
+::: {.callout-warning}
+## Key Insight
+
+Investment costs stay the same across scenarios (they depend only on the policy), but expected damage shifts substantially.
+Strategies that looked adequate under a light-tailed hazard may leave the city badly exposed under heavier tails.
+This is why **analyzing sensitivity to uncertain hazard parameters** is essential before committing to a strategy.
+:::
+
+## Next Steps
+
+You've completed a basic iCOW analysis.
+Here's where to go from here:
+
+- **Understand the math**: [Equations](../core/equations.qmd) describes every cost and damage formula
+- **Explore tail risk**: [Stochastic Walkthrough](../stochastic/details.qmd) shows how stochastic dike failure creates hidden variance
+- **Understand the design**: [Architecture](../core/architecture.qmd) explains the module structure and policy reparameterization
+- **Check assumptions**: [Assumptions & Scope](assumptions.qmd) describes what the model can and cannot represent
+
+## References

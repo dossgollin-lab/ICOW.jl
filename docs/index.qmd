@@ -14,8 +14,19 @@ This package is under active development and the API may change.
 
 ## What is iCOW?
 
+Coastal cities face a difficult decision problem: how much to invest in flood protection, and what combination of strategies to use.
+The answer depends on uncertain future storm hazards, the cost structures of different interventions, and the decision-maker's tolerance for risk [@keller_management:2021].
+
 ICOW.jl is a Julia implementation of the "Island City on a Wedge" (iCOW) model from @ceres_cityonawedge:2019.
-It is a **storm surge risk modeling framework of intermediate complexity** designed for analyzing flood risk management decisions.
+It provides a **flood risk modeling framework of intermediate complexity** -- fast enough to evaluate millions of strategy combinations, yet rich enough to capture the nonlinear interactions between withdrawal, resistance, and dike protection that simpler models miss.
+
+::: {.callout-note}
+## Who Is This For?
+
+This package is designed for researchers and students working on **climate risk management** and **decision making under uncertainty**.
+If you study how communities should invest in flood protection under uncertain hazards, iCOW provides a fast, transparent test bed for exploring strategy portfolios and their sensitivity to assumptions.
+No prior flood modeling experience is needed -- the [Background](getting-started/background.qmd) page introduces the physical concepts.
+:::
 
 ### Why iCOW?
 
@@ -36,7 +47,7 @@ iCOW provides a middle ground: it's computationally efficient enough to evaluate
 ## SimOptDecisions Framework
 
 ICOW.jl uses the [SimOptDecisions.jl](https://dossgollin-lab.github.io/SimOptDecisions/) framework for sequential decision-making under uncertainty.
-Understanding a few key concepts will help you use the package effectively:
+If you are new to SimOptDecisions, here is a brief overview of its key concepts as they appear in iCOW:
 
 | Concept | In iCOW | Description |
 |---------|---------|-------------|
@@ -49,7 +60,7 @@ Understanding a few key concepts will help you use the package effectively:
 This separation enables:
 
 - **Modularity**: Swap forcing scenarios without changing policy logic
-- **Optimization**: Tune policy parameters to minimize objectives
+- **Exploration**: Use `explore()` to evaluate many policies across many scenarios
 - **Extensibility**: Add adaptive policies that respond to observed storms
 
 See the [SimOptDecisions documentation](https://dossgollin-lab.github.io/SimOptDecisions/) for more on the underlying framework.
@@ -69,26 +80,10 @@ The key difference is that Stochastic mode reveals the **variance** and **tail b
 ::: {.callout-tip}
 ## Choosing a Mode
 
-Use **EAD mode** when you want fast, deterministic expected values for optimization or screening many policies.
+Use **EAD mode** when you want fast, deterministic expected values for comparing strategies or sweeping over scenarios.
 
-Use **Stochastic mode** when you care about the distribution of outcomes or when you want to design realistic adaptive policies.
+Use **Stochastic mode** when you care about the distribution of outcomes -- e.g., how often a strategy leads to catastrophic losses.
 :::
-
-## The Wedge Geometry
-
-The model represents a coastal city as an **island on a wedge-shaped terrain** that rises from sea level.
-This geometry, inspired by areas like Manhattan's South Street Seaport, captures a key physical reality:
-
-**Higher storm surges cause more damage in two ways:**
-
-1. **Larger flooded area** -- water reaches further inland on the slope
-2. **Deeper flooding** -- buildings at low elevations experience greater depth
-
-This creates nonlinear damage relationships that simple models miss.
-The wedge approximation applies to any coastal city where terrain rises from the waterfront.
-
-Decision-makers invest in three types of protection -- withdrawal, resistance (flood-proofing), and dikes -- which divide the city into five elevation zones with different damage behavior.
-See the [Equations](core/equations.qmd) page for the full mathematical formulation.
 
 ## Installation
 
@@ -129,10 +124,18 @@ See [Architecture](core/architecture.qmd) for details on how policy fractions ma
 
 ## Next Steps
 
+**New to iCOW or flood risk modeling?** Start here:
+
+- [Background](getting-started/background.qmd) -- Physical motivation and real-world strategies
+- [Tutorial](getting-started/tutorial.qmd) -- Hands-on walkthrough of a complete analysis
+- [Assumptions & Scope](getting-started/assumptions.qmd) -- What the model can and cannot represent
+
+**Ready to dive into the details?**
+
 - [Equations](core/equations.qmd) -- Full mathematical formulation
 - [Architecture](core/architecture.qmd) -- Module structure and type system
-- [EAD Details](ead/details.qmd) -- Expected annual damage mode walkthrough
-- [Stochastic Details](stochastic/details.qmd) -- Stochastic simulation mode walkthrough
+- [EAD Walkthrough](ead/details.qmd) -- Expected annual damage mode
+- [Stochastic Walkthrough](stochastic/details.qmd) -- Stochastic simulation mode
 - [API Reference](api/core.qmd) -- Function signatures and docstrings
 
 ## References

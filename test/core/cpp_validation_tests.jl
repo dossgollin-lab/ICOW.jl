@@ -101,12 +101,18 @@ end
                 @test julia_wc ≈ cpp_costs[test_name]["withdrawal_cost"] rtol = rtol
 
                 # Test value after withdrawal
-                julia_vw = ICOWCore.value_after_withdrawal(CPP_V_CITY, CPP_H_CITY, CPP_F_L, W)
+                julia_vw = ICOWCore.value_after_withdrawal(
+                    CPP_V_CITY, CPP_H_CITY, CPP_F_L, W
+                )
                 @test julia_vw ≈ cpp_costs[test_name]["value_after_withdrawal"] rtol = rtol
 
                 # Test resistance cost
-                f_cR = ICOWCore.resistance_cost_fraction(CPP_F_ADJ, CPP_F_LIN, CPP_F_EXP, CPP_T_EXP, P)
-                julia_rc = ICOWCore.resistance_cost(julia_vw, f_cR, CPP_H_BLDG, CPP_H_CITY, W, R, B, CPP_B_BASEMENT)
+                f_cR = ICOWCore.resistance_cost_fraction(
+                    CPP_F_ADJ, CPP_F_LIN, CPP_F_EXP, CPP_T_EXP, P
+                )
+                julia_rc = ICOWCore.resistance_cost(
+                    julia_vw, f_cR, CPP_H_BLDG, CPP_H_CITY, W, R, B, CPP_B_BASEMENT
+                )
                 @test julia_rc ≈ cpp_costs[test_name]["resistance_cost"] rtol = rtol
             end
         end
@@ -130,7 +136,9 @@ end
 
                 # Zone values: C++ outputs zone1_value..zone4_value = val_z1..val_z4
                 V_w = ICOWCore.value_after_withdrawal(CPP_V_CITY, CPP_H_CITY, CPP_F_L, W)
-                values = ICOWCore.zone_values(V_w, CPP_H_CITY, W, R, B, D, CPP_R_PROT, CPP_R_UNPROT)
+                values = ICOWCore.zone_values(
+                    V_w, CPP_H_CITY, W, R, B, D, CPP_R_PROT, CPP_R_UNPROT
+                )
                 @test values[2] ≈ cpp_zones[test_name]["zone1_value"] rtol = rtol  # val_z1
                 @test values[3] ≈ cpp_zones[test_name]["zone2_value"] rtol = rtol  # val_z2
                 @test values[4] ≈ cpp_zones[test_name]["zone3_value"] rtol = rtol  # val_z3

@@ -21,4 +21,7 @@ using Distributions
         include("ead/types_tests.jl")
         include("ead/simulation_tests.jl")
     end
+
+    # Package quality checks
+    include("test_aqua.jl")
 end

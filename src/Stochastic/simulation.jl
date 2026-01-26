@@ -10,9 +10,7 @@
 Create initial state with zero-protection FloodDefenses.
 """
 function SimOptDecisions.initialize(
-    config::StochasticConfig{T},
-    scenario::StochasticScenario,
-    ::AbstractRNG
+    config::StochasticConfig{T}, scenario::StochasticScenario, ::AbstractRNG
 ) where {T}
     StochasticState{T}()
 end
@@ -35,7 +33,7 @@ function SimOptDecisions.get_action(
     policy::StaticPolicy{Tp},
     state::StochasticState,
     t::SimOptDecisions.TimeStep,
-    scenario::StochasticScenario
+    scenario::StochasticScenario,
 ) where {Tp}
     # Static policy: return policy in year 1, zero policy otherwise
     # Conversion to FloodDefenses happens in run_timestep (which has config)
@@ -43,7 +41,9 @@ function SimOptDecisions.get_action(
         policy
     else
         # Return a zero policy (type from policy, not state, for type stability)
-        StaticPolicy(a_frac=zero(Tp), w_frac=zero(Tp), b_frac=zero(Tp), r_frac=zero(Tp), P=zero(Tp))
+        StaticPolicy(;
+            a_frac=zero(Tp), w_frac=zero(Tp), b_frac=zero(Tp), r_frac=zero(Tp), P=zero(Tp)
+        )
     end
 end
 
@@ -58,7 +58,7 @@ function SimOptDecisions.run_timestep(
     t::SimOptDecisions.TimeStep,
     config::StochasticConfig{T},
     scenario::StochasticScenario,
-    rng::AbstractRNG
+    rng::AbstractRNG,
 ) where {T}
     year = SimOptDecisions.index(t)
 
@@ -71,8 +71,15 @@ function SimOptDecisions.run_timestep(
     # Check feasibility - return infinite costs if infeasible
     if !is_feasible(new_defenses, config)
         new_state = StochasticState(new_defenses)
-        record = (investment=T(Inf), damage=T(Inf), W=new_defenses.W, R=new_defenses.R,
-                  P=new_defenses.P, D=new_defenses.D, B=new_defenses.B)
+        record = (
+            investment=T(Inf),
+            damage=T(Inf),
+            W=new_defenses.W,
+            R=new_defenses.R,
+            P=new_defenses.P,
+            D=new_defenses.D,
+            B=new_defenses.B,
+        )
         return (new_state, record)
     end
 
@@ -89,8 +96,15 @@ function SimOptDecisions.run_timestep(
     new_state = StochasticState(new_defenses)
 
     # Step record with defense values for tracing
-    record = (investment=cost, damage=damage, W=new_defenses.W, R=new_defenses.R,
-              P=new_defenses.P, D=new_defenses.D, B=new_defenses.B)
+    record = (
+        investment=cost,
+        damage=damage,
+        W=new_defenses.W,
+        R=new_defenses.R,
+        P=new_defenses.P,
+        D=new_defenses.D,
+        B=new_defenses.B,
+    )
 
     return (new_state, record)
 end
@@ -101,9 +115,7 @@ end
 Aggregate step records into discounted investment and damage totals.
 """
 function SimOptDecisions.compute_outcome(
-    step_records::Vector,
-    config::StochasticConfig{T},
-    scenario::StochasticScenario
+    step_records::Vector, config::StochasticConfig{T}, scenario::StochasticScenario
 ) where {T}
     r = SimOptDecisions.value(scenario.discount_rate)
     total_investment = zero(T)
@@ -116,7 +128,7 @@ function SimOptDecisions.compute_outcome(
         total_damage += record.damage * df
     end
 
-    StochasticOutcome(investment=total_investment, damage=total_damage)
+    StochasticOutcome(; investment=total_investment, damage=total_damage)
 end
 
 # =============================================================================
@@ -132,13 +144,25 @@ function _investment_cost(config::StochasticConfig{T}, fd::FloodDefenses{T}) whe
     C_W = Core.withdrawal_cost(config.V_city, config.H_city, config.f_w, fd.W)
 
     V_w = Core.value_after_withdrawal(config.V_city, config.H_city, config.f_l, fd.W)
-    f_cR = Core.resistance_cost_fraction(config.f_adj, config.f_lin, config.f_exp, config.t_exp, fd.P)
-    C_R = Core.resistance_cost(V_w, f_cR, config.H_bldg, config.H_city, fd.W, fd.R, fd.B, config.b_basement)
+    f_cR = Core.resistance_cost_fraction(
+        config.f_adj, config.f_lin, config.f_exp, config.t_exp, fd.P
+    )
+    C_R = Core.resistance_cost(
+        V_w, f_cR, config.H_bldg, config.H_city, fd.W, fd.R, fd.B, config.b_basement
+    )
 
     if fd.D == zero(T)
         C_D = zero(T)
     else
-        V_d = Core.dike_volume(config.H_city, config.D_city, config.D_startup, config.s_dike, config.w_d, config.W_city, fd.D)
+        V_d = Core.dike_volume(
+            config.H_city,
+            config.D_city,
+            config.D_startup,
+            config.s_dike,
+            config.w_d,
+            config.W_city,
+            fd.D,
+        )
         C_D = Core.dike_cost(V_d, config.c_d)
     end
 
@@ -151,10 +175,7 @@ end
 Calculate realized damage for a single surge with sampled dike failure (Bernoulli draw).
 """
 function _stochastic_damage(
-    config::StochasticConfig{T},
-    fd::FloodDefenses{T},
-    h_raw::T,
-    rng::AbstractRNG
+    config::StochasticConfig{T}, fd::FloodDefenses{T}, h_raw::T, rng::AbstractRNG
 ) where {T}
     h_eff = Core.effective_surge(h_raw, config.H_seawall, config.f_runup)
 
@@ -167,11 +188,23 @@ function _stochastic_damage(
     # Zone data
     V_w = Core.value_after_withdrawal(config.V_city, config.H_city, config.f_l, fd.W)
     bounds = Core.zone_boundaries(config.H_city, fd.W, fd.R, fd.B, fd.D)
-    values = Core.zone_values(V_w, config.H_city, fd.W, fd.R, fd.B, fd.D, config.r_prot, config.r_unprot)
+    values = Core.zone_values(
+        V_w, config.H_city, fd.W, fd.R, fd.B, fd.D, config.r_prot, config.r_unprot
+    )
 
     return Core.total_event_damage(
-        bounds, values, h_eff,
-        config.b_basement, config.H_bldg, config.f_damage, fd.P, config.f_intact, config.f_failed,
-        config.d_thresh, config.f_thresh, config.gamma_thresh, dike_failed
+        bounds,
+        values,
+        h_eff,
+        config.b_basement,
+        config.H_bldg,
+        config.f_damage,
+        fd.P,
+        config.f_intact,
+        config.f_failed,
+        config.d_thresh,
+        config.f_thresh,
+        config.gamma_thresh,
+        dike_failed,
     )
 end
