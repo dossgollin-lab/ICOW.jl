@@ -36,10 +36,10 @@ config = EADConfig()
 
 Key parameters:
 
-- City value: \$$(config.V_city / 1e12)T
-- City elevation: $(config.H_city) m
-- Building height: $(config.H_bldg) m
-- Seawall height: $(config.H_seawall) m
+- City value: \$`{julia} config.V_city / 1e12`T
+- City elevation: `{julia} config.H_city` m
+- Building height: `{julia} config.H_bldg` m
+- Seawall height: `{julia} config.H_seawall` m
 
 ::: {.callout-note}
 The default parameters are inspired by Lower Manhattan's geography and economy.
@@ -177,5 +177,5 @@ rng = MersenneTwister(42)
 o_mc = simulate(config_m, scenario, policy, rng)
 ```
 
-- Quadrature total cost: \$$(round(total_cost(o_quad) / 1e9; digits=2))B
-- Monte Carlo total cost: \$$(round(total_cost(o_mc) / 1e9; digits=2))B
+- Quadrature total cost: \$`{julia} round(total_cost(o_quad) / 1e9; digits=2)`B
+- Monte Carlo total cost: \$`{julia} round(total_cost(o_mc) / 1e9; digits=2)`B

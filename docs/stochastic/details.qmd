@@ -38,10 +38,10 @@ config = StochasticConfig()
 
 Key parameters:
 
-- City value: \$$(config.V_city / 1e12)T
-- City elevation: $(config.H_city) m
-- Building height: $(config.H_bldg) m
-- Seawall height: $(config.H_seawall) m
+- City value: \$`{julia} config.V_city / 1e12`T
+- City elevation: `{julia} config.H_city` m
+- Building height: `{julia} config.H_bldg` m
+- Seawall height: `{julia} config.H_seawall` m
 
 ## Defining the Surge Scenario
 
@@ -122,9 +122,9 @@ axislegend(ax; position=:rt)
 fig
 ```
 
-- Mean damage: \$$(round(mean(damages) / 1e9; digits=2))B
-- 5th percentile: \$$(round(quantile(damages, 0.05) / 1e9; digits=2))B
-- 95th percentile: \$$(round(quantile(damages, 0.95) / 1e9; digits=2))B
+- Mean damage: \$`{julia} round(mean(damages) / 1e9; digits=2)`B
+- 5th percentile: \$`{julia} round(quantile(damages, 0.05) / 1e9; digits=2)`B
+- 95th percentile: \$`{julia} round(quantile(damages, 0.95) / 1e9; digits=2)`B
 
 ::: {.callout-warning}
 The gap between the 5th and 95th percentiles reveals **hidden risk** that expected-value analysis misses.
