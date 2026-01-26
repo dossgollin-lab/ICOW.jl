@@ -22,6 +22,9 @@ jobs:
 
       - uses: julia-actions/cache@v2
 
+      - name: Install unregistered dependencies
+        run: julia --project -e 'using Pkg; Pkg.add(url="https://github.com/dossgollin-lab/SimOptDecisions.git")'
+
       - uses: julia-actions/julia-buildpkg@v1
 
       - uses: julia-actions/julia-runtest@v1
@@ -37,6 +40,9 @@ jobs:
           version: "1.10"
 
       - uses: julia-actions/julia-downgrade-compat@v1
+
+      - name: Install unregistered dependencies
+        run: julia --project -e 'using Pkg; Pkg.add(url="https://github.com/dossgollin-lab/SimOptDecisions.git")'
 
       - uses: julia-actions/julia-buildpkg@v1
 
