@@ -1,4 +1,5 @@
 @testset "Aqua.jl" begin
     using Aqua
-    Aqua.test_all(ICOW; deps_compat=(; ignore=[:Random]))
+    # persistent_tasks=false: Aqua can't resolve unregistered dep SimOptDecisions in a fresh env
+    Aqua.test_all(ICOW; persistent_tasks=false, deps_compat=(; ignore=[:Random]))
 end
