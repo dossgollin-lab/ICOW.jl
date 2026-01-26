@@ -1,0 +1,64 @@
+# Test Case: zero_case
+# Levers: W=0, R=0, P=0, D=0, B=0
+withdrawal_cost: 0
+value_after_withdrawal: 1500000000000
+resistance_cost: 0
+dike_cost: 0
+total_investment_cost: 0
+
+# Test Case: dike_only
+# Levers: W=0, R=0, P=0, D=5, B=0
+withdrawal_cost: 0
+value_after_withdrawal: 1500000000000
+resistance_cost: 0
+dike_cost: 93310003.1800973
+total_investment_cost: 93310003.1800973
+
+# Test Case: full_protection
+# Levers: W=2, R=3, P=0.8, D=5, B=1
+withdrawal_cost: 200000000000
+value_after_withdrawal: 1498235294117.65
+resistance_cost: 11673750000
+dike_cost: 93310003.1800973
+total_investment_cost: 211767060003.18
+
+# Test Case: resistance_only
+# Levers: W=0, R=4, P=0.5, D=0, B=0
+withdrawal_cost: 0
+value_after_withdrawal: 1500000000000
+resistance_cost: 0
+dike_cost: 0
+total_investment_cost: 0
+
+# Test Case: withdrawal_only
+# Levers: W=5, R=0, P=0, D=0, B=0
+withdrawal_cost: 625000000000
+value_after_withdrawal: 1495588235294.12
+resistance_cost: 0
+dike_cost: 0
+total_investment_cost: 625000000000
+
+# Test Case: edge_r_geq_b
+# Levers: W=0, R=6, P=0.5, D=3, B=5
+withdrawal_cost: 0
+value_after_withdrawal: 1500000000000
+resistance_cost: 23658088235.2941
+dike_cost: 49450001.6224986
+total_investment_cost: 23707538236.9166
+
+# Test Case: high_surge
+# Levers: W=2, R=3, P=0.8, D=5, B=1
+withdrawal_cost: 200000000000
+value_after_withdrawal: 1498235294117.65
+resistance_cost: 11673750000
+dike_cost: 93310003.1800973
+total_investment_cost: 211767060003.18
+
+# Test Case: below_seawall
+# Levers: W=0, R=0, P=0, D=0, B=0
+withdrawal_cost: 0
+value_after_withdrawal: 1500000000000
+resistance_cost: 0
+dike_cost: 0
+total_investment_cost: 0
+

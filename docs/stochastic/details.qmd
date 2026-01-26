@@ -1,0 +1,156 @@
+---
+title: "Stochastic Details"
+subtitle: "Usage and Examples"
+engine: julia
+---
+
+## Setup
+
+```{julia}
+#| code-fold: true
+using ICOW.Stochastic
+using Random
+using CairoMakie
+CairoMakie.activate!(type = "svg")
+using Statistics
+```
+
+## Configuring the City
+
+`StochasticConfig` holds the same 28 city parameters as `EADConfig`.
+The defaults describe a Manhattan-like coastal city.
+
+```{julia}
+config = StochasticConfig()
+```
+
+Key parameters:
+
+- City value: \$$(config.V_city / 1e12)T
+- City elevation: $(config.H_city) m
+- Building height: $(config.H_bldg) m
+- Seawall height: $(config.H_seawall) m
+
+## Defining the Surge Scenario
+
+Unlike EAD mode (which takes distributions), Stochastic mode takes a **realized time series** of annual maximum surge heights -- one value per year.
+This represents a single "what if" trajectory of storms.
+
+```{julia}
+rng = MersenneTwister(123)
+n_years = 50
+surges = 3.0 .+ randn(rng, n_years)
+
+scenario = StochasticScenario(surges=surges, discount_rate=0.03)
+```
+
+```{julia}
+fig = Figure(; size=(600, 300))
+ax = Axis(fig[1, 1]; xlabel="Year", ylabel="Surge height (m)", title="Surge time series")
+barplot!(ax, 1:n_years, surges; color=:steelblue, gap=0.1)
+hlines!(ax, [config.H_seawall]; color=:red, linestyle=:dash, linewidth=2, label="Seawall ($(config.H_seawall)m)")
+axislegend(ax; position=:rt)
+fig
+```
+
+Surges above the seawall line cause flooding.
+The dashed red line shows the existing seawall protection -- everything above it contributes to flood damage (after wave runup adjustment).
+
+::: {.callout-tip}
+In practice, you generate many surge sequences (e.g., from a GEV distribution) and simulate each one to build a distribution of outcomes.
+:::
+
+## Choosing a Protection Strategy
+
+`StaticPolicy` uses the same reparameterized fractions as EAD mode.
+Here are several archetypal strategies:
+
+```{julia}
+archetypes = [
+    ("No protection",        StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Dike only",            StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Withdraw + resist",    StaticPolicy(a_frac=0.2, w_frac=0.5, b_frac=0.0, r_frac=0.3, P=0.7)),
+    ("Mixed",                StaticPolicy(a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
+    ("High dike + resist",   StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3)),
+]
+policies = last.(archetypes)
+names = first.(archetypes)
+```
+
+## Running a Simulation
+
+```{julia}
+policy = policies[4]  # Mixed strategy
+rng = MersenneTwister(42)
+outcome = simulate(config, scenario, policy, rng)
+outcome
+```
+
+## Why Stochastic? The Role of Randomness
+
+The same policy, scenario, and surge sequence can produce **different outcomes** because dike failure is a Bernoulli event.
+Running many replicates reveals the damage distribution:
+
+```{julia}
+n_replicates = 200
+damages = [
+    value(simulate(config, scenario, policy, MersenneTwister(seed)).damage)
+    for seed in 1:n_replicates
+]
+```
+
+```{julia}
+fig = Figure(; size=(600, 350))
+ax = Axis(fig[1, 1]; xlabel="Damage (\$B)", ylabel="Count", title="Damage distribution ($n_replicates replicates)")
+hist!(ax, damages ./ 1e9; bins=30, color=(:steelblue, 0.7))
+vlines!(ax, [mean(damages) / 1e9]; color=:red, linewidth=2, label="Mean")
+vlines!(ax, [quantile(damages, 0.05) / 1e9]; color=:orange, linewidth=2, linestyle=:dash, label="5th pctile")
+vlines!(ax, [quantile(damages, 0.95) / 1e9]; color=:purple, linewidth=2, linestyle=:dash, label="95th pctile")
+axislegend(ax; position=:rt)
+fig
+```
+
+- Mean damage: \$$(round(mean(damages) / 1e9; digits=2))B
+- 5th percentile: \$$(round(quantile(damages, 0.05) / 1e9; digits=2))B
+- 95th percentile: \$$(round(quantile(damages, 0.95) / 1e9; digits=2))B
+
+::: {.callout-warning}
+The gap between the 5th and 95th percentiles reveals **hidden risk** that expected-value analysis misses.
+A policy that looks optimal under EAD may have unacceptable tail losses.
+:::
+
+## Comparing Policies
+
+We use `explore()` to evaluate all five policies against our scenario.
+Because dike failure is stochastic, we run multiple seeds by creating duplicate scenarios:
+
+```{julia}
+n_seeds = 50
+scenarios = [StochasticScenario(surges=surges, discount_rate=0.03) for _ in 1:n_seeds]
+result = explore(config, scenarios, policies; progress=false)
+result
+```
+
+The result is a YAXArrays Dataset with dimensions `(policy, scenario)`.
+Each "scenario" here is the same surge sequence evaluated with a different RNG seed, so the scenario dimension captures seed-to-seed variance:
+
+```{julia}
+# Mean and 95th percentile damage across seeds for each policy
+mean_dmg = [mean(result[:damage].data[p, :]) for p in 1:length(policies)] ./ 1e9
+p95_dmg = [quantile(result[:damage].data[p, :], 0.95) for p in 1:length(policies)] ./ 1e9
+
+fig = Figure(; size=(600, 400))
+ax = Axis(fig[1, 1]; xlabel="Mean Damage (\$B)", ylabel="95th Percentile Damage (\$B)",
+    title="Mean vs Tail Risk by Policy")
+scatter!(ax, mean_dmg, p95_dmg; markersize=14, color=:steelblue)
+for (i, name) in enumerate(names)
+    text!(ax, mean_dmg[i], p95_dmg[i]; text=name, fontsize=10, offset=(8, 4))
+end
+fig
+```
+
+::: {.callout-note}
+Policies that reduce mean damage do not always reduce tail risk proportionally.
+A dike-heavy strategy may have low average damage but catastrophic outcomes when the dike fails.
+The mixed strategy balances mean and tail performance by diversifying across defense types.
+:::

@@ -1,29 +1,24 @@
 using ICOW
 using Test
+using Random
+using Distributions
 
 @testset "ICOW.jl" begin
-    # Phase 1: Parameters & Validation
-    include("parameters_tests.jl")
+    # Core types (FloodDefenses)
     include("types_tests.jl")
 
-    # Phase 2: Type System & Simulation Modes
-    include("forcing_tests.jl")
-    include("states_tests.jl")
-    include("policies_tests.jl")
+    # Core physics functions (validated against debugged C++ reference)
+    include("core/cpp_validation_tests.jl")
 
-    # Phase 3: Geometry
-    include("geometry_tests.jl")
+    # Stochastic submodule
+    @testset "Stochastic" begin
+        include("stochastic/types_tests.jl")
+        include("stochastic/simulation_tests.jl")
+    end
 
-    # Phase 4: Costs and Dike Failure
-    include("costs_tests.jl")
-
-    # Phase 5: Zones & Event Damage
-    include("zones_tests.jl")
-    include("damage_tests.jl")
-
-    # Phase 7: Simulation Engine & Objectives
-    include("simulation_tests.jl")
-
-    # Phase 9: Optimization
-    include("optimization_tests.jl")
+    # EAD submodule
+    @testset "EAD" begin
+        include("ead/types_tests.jl")
+        include("ead/simulation_tests.jl")
+    end
 end

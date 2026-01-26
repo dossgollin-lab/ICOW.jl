@@ -1,0 +1,97 @@
+---
+title: "EAD Model"
+subtitle: "Expected Annual Damage Mode"
+bibliography: ../references.bib
+engine: julia
+---
+
+## Overview
+
+The EAD (Expected Annual Damage) mode computes the **expected damage** from flooding by analytically integrating over uncertainty.
+It provides deterministic, smooth objective values that are well-suited for optimization.
+
+In many risk management contexts, a decision-maker needs to evaluate thousands of candidate strategies quickly.
+EAD mode serves this need by replacing stochastic sampling with analytical integration, producing a single deterministic cost for each policy evaluation.
+
+## How It Works
+
+EAD uses two-level integration:
+
+$$
+\text{EAD} = \int p_h(h) \cdot \mathbb{E}[\text{damage} \mid h] \, dh
+$$
+
+### Inner Expectation (Analytical)
+
+For a given surge height $h$, the expected damage integrates over dike failure analytically:
+
+$$
+\mathbb{E}[\text{damage} \mid h] = p_{fail}(h) \cdot d_{failed}(h) + (1 - p_{fail}(h)) \cdot d_{intact}(h)
+$$
+
+This eliminates the stochastic dike failure uncertainty exactly -- no sampling is needed.
+
+### Outer Expectation (Numerical)
+
+The surge distribution is a stationary GEV, parameterized by location, scale, and shape in the `EADScenario`.
+The expected damage is integrated over this distribution using the integration method on `EADConfig`:
+
+- **Adaptive quadrature** (`QuadratureIntegrator`): Uses QuadGK for precise numerical integration
+- **Monte Carlo sampling** (`MonteCarloIntegrator`): Samples surge heights from the distribution
+
+## When to Use EAD
+
+EAD mode is the right choice when:
+
+- You want **fast, deterministic** evaluations for optimization
+- You need **smooth** objective landscapes (no sampling noise)
+- You are doing **risk-neutral** policy comparison (expected cost minimization)
+- You want the simulation to be **RNG-independent** (with quadrature integration)
+
+## Comparison with Stochastic Mode
+
+| Property | EAD | Stochastic |
+|----------|-----|------------|
+| Dike failure | Integrated analytically | Sampled (Bernoulli) per event |
+| Output | Expected damage (deterministic with quadrature) | Realized damage (varies with RNG) |
+| Speed | Faster per evaluation | Needs many replicates |
+| Variance info | No | Yes |
+| Tail risk | No | Yes |
+| Convergence | Immediate (quadrature) | By Law of Large Numbers |
+
+For static policies, EAD mode converges to the mean of Stochastic mode outcomes by the Law of Large Numbers.
+
+::: {.callout-note}
+Both modes give the same expected cost in the limit.
+The key difference is that EAD provides a single deterministic number, while Stochastic mode reveals the full distribution of outcomes.
+:::
+
+## Integration Methods
+
+### Quadrature
+
+`QuadratureIntegrator(rtol=1e-6)` uses adaptive Gauss-Kronrod quadrature from QuadGK.jl.
+It integrates over the surge distribution's quantile range (0.01% to 99.99%).
+
+- **Deterministic**: Same result regardless of RNG seed
+- **Precise**: Adaptive error control via relative tolerance
+- **Best for**: Optimization, parameter sweeps, sensitivity analysis
+
+### Monte Carlo
+
+`MonteCarloIntegrator(n_samples=1000)` samples surge heights from the distribution.
+
+- **Stochastic**: Varies with RNG seed (but converges with more samples)
+- **Flexible**: Works with any distribution, including complex mixtures
+- **Best for**: Validation, distributions where quadrature struggles
+
+::: {.callout-tip}
+Use quadrature for most purposes.
+Monte Carlo is mainly useful for validation or exotic distributions.
+:::
+
+::: {.callout-tip}
+See [Details](details.qmd) for worked examples with visualizations.
+:::
+
+## References

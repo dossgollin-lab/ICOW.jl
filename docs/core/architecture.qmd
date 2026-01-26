@@ -1,0 +1,156 @@
+---
+title: "Architecture"
+subtitle: "Module Structure and Type System"
+engine: julia
+---
+
+## Module Hierarchy
+
+ICOW.jl is organized into three submodules:
+
+```text
+ICOW
+├── FloodDefenses          (shared type, exported from main module)
+├── Core                   (pure numeric functions)
+│   ├── geometry.jl        dike_volume
+│   ├── costs.jl           withdrawal_cost, resistance_cost, dike_cost, ...
+│   ├── zones.jl           zone_boundaries, zone_values
+│   └── damage.jl          base_zone_damage, zone_damage, total_event_damage, ...
+├── Stochastic             (SimOptDecisions integration, discrete event simulation)
+│   ├── types.jl           StochasticConfig, StochasticScenario, StaticPolicy, ...
+│   └── simulation.jl      5 SimOptDecisions callbacks + helpers
+└── EAD                    (SimOptDecisions integration, expected annual damage)
+    ├── types.jl           EADConfig, EADScenario, StaticPolicy, ...
+    └── simulation.jl      5 SimOptDecisions callbacks + integration helpers
+```
+
+**Design principle:** Core contains only pure functions with individual numeric parameters.
+Types live either in the main module (`FloodDefenses`) or in the respective submodules.
+Stochastic and EAD are independent -- you can use either without the other.
+
+## FloodDefenses
+
+The shared `FloodDefenses{T}` struct stores the five decision levers:
+
+```julia
+struct FloodDefenses{T<:Real}
+    W::T  # Withdrawal height (m) - absolute
+    R::T  # Resistance height (m) - relative to W
+    P::T  # Resistance percentage [0, 1)
+    D::T  # Dike height (m) - relative to W+B
+    B::T  # Dike base height (m) - relative to W
+end
+```
+
+### Constraints
+
+The constructor enforces:
+
+- $W \geq 0$, $R \geq 0$, $D \geq 0$, $B \geq 0$
+- $0 \leq P < 1$ (strict upper bound to avoid division by zero in Equation 3)
+
+The `is_feasible` function additionally checks:
+
+- $W < H_{city}$ (strict, to avoid division by zero in withdrawal cost)
+- $W + B + D \leq H_{city}$ (defenses cannot exceed city elevation)
+
+### Irreversibility
+
+`Base.max(a::FloodDefenses, b::FloodDefenses)` returns the element-wise maximum.
+This enforces the irreversibility constraint: once defenses are built, they can only increase.
+
+```julia
+# Defenses can only grow over time
+new_defenses = max(state.defenses, action_defenses)
+```
+
+## Policy Reparameterization
+
+### The Problem
+
+`FloodDefenses` has coupled constraints (e.g., $W + B + D \leq H_{city}$) that depend on the city configuration.
+Optimization algorithms need box-bounded parameters in $[0, 1]$.
+
+### The Solution: Stick-Breaking
+
+`StaticPolicy` uses a stick-breaking reparameterization where all parameters are fractions in $[0, 1]$:
+
+| Parameter | Range | Meaning |
+|-----------|-------|---------|
+| `a_frac` | $[0, 1]$ | Total height budget as fraction of $H_{city}$ |
+| `w_frac` | $[0, 1]$ | $W$'s share of budget $A$ |
+| `b_frac` | $[0, 1]$ | $B$'s share of remaining $(A - W)$ |
+| `r_frac` | $[0, 1]$ | $R$ as fraction of $H_{city}$ (independent) |
+| `P` | $[0, 0.99]$ | Resistance fraction |
+
+### Conversion to FloodDefenses
+
+```julia
+A = a_frac * H_city        # total height budget
+W = w_frac * A              # withdrawal
+remaining = A - W           # left for B + D
+B = b_frac * remaining      # dike base
+D = remaining - B           # dike height = (1 - b_frac) * remaining
+R = r_frac * H_city         # resistance (independent)
+```
+
+### Why It Works
+
+| Constraint | Guaranteed by |
+|------------|---------------|
+| $W \geq 0$ | `w_frac` $\geq 0$, `a_frac` $\geq 0$ |
+| $B \geq 0$ | `b_frac` $\geq 0$, `remaining` $\geq 0$ |
+| $D \geq 0$ | $D = (1 - \texttt{b\_frac}) \cdot \texttt{remaining}$, both terms $\geq 0$ |
+| $W + B + D \leq H_{city}$ | $W + B + D = A = \texttt{a\_frac} \cdot H_{city} \leq H_{city}$ |
+| $R \geq 0$ | `r_frac` $\geq 0$ |
+| $P < 1$ | $P \leq 0.99$ |
+
+## SimOptDecisions Callbacks
+
+Both Stochastic and EAD implement five required SimOptDecisions methods:
+
+```text
+simulate(config, scenario, policy, rng)
+  |
+  ├── state = initialize(config, scenario, rng)
+  |        → Creates zero-protection state
+  |
+  ├── for t in time_axis(config, scenario):
+  |     action = get_action(policy, state, t, scenario)
+  |           → Returns policy at t=1, zero policy otherwise
+  |     (state, record) = run_timestep(state, action, t, config, scenario, rng)
+  |           → Converts policy → FloodDefenses
+  |           → Enforces irreversibility via max()
+  |           → Computes investment + damage
+  |
+  └── return compute_outcome(records, config, scenario)
+              → Aggregates with discounting
+```
+
+### How Core Functions Feed In
+
+The `run_timestep` callback calls Core functions to compute costs and damage:
+
+```text
+run_timestep
+  ├── FloodDefenses(policy, config)     # Policy → absolute lever values
+  ├── max(state.defenses, new_defenses) # Irreversibility
+  ├── _investment_cost(config, fd)
+  │     ├── Core.withdrawal_cost(...)
+  │     ├── Core.value_after_withdrawal(...)
+  │     ├── Core.resistance_cost_fraction(...)
+  │     ├── Core.resistance_cost(...)
+  │     ├── Core.dike_volume(...)
+  │     └── Core.dike_cost(...)
+  └── damage calculation
+        ├── Core.effective_surge(...)
+        ├── Core.dike_failure_probability(...)
+        ├── Core.zone_boundaries(...)
+        ├── Core.zone_values(...)
+        └── Core.total_event_damage(...)
+```
+
+The key difference between modes is how damage is computed:
+
+- **Stochastic**: Samples dike failure (Bernoulli) per event, returns realized damage
+- **EAD**: Integrates expected damage analytically over dike failure, then numerically over surge distribution

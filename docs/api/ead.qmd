@@ -1,0 +1,28 @@
+---
+title: "EAD API"
+subtitle: "Expected Annual Damage Types and Functions"
+engine: julia
+execute:
+  echo: false
+---
+
+The `ICOW.EAD` module provides SimOptDecisions integration for expected annual damage computation.
+See [EAD Model](../ead/model.qmd) for conceptual overview and [EAD Details](../ead/details.qmd) for usage examples.
+
+```{julia}
+#| echo: false
+#| output: asis
+using ICOW
+using ICOW.EAD
+
+for n in sort(collect(names(ICOW.EAD)))
+    n == :EAD && continue
+    n == :simulate && continue  # from SimOptDecisions re-export
+    n == :value && continue     # from SimOptDecisions re-export
+    obj = getfield(ICOW.EAD, n)
+    println("## `$n`\n")
+    d = Base.Docs.doc(obj)
+    println(d)
+    println()
+end
+```

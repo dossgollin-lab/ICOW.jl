@@ -1,0 +1,170 @@
+---
+title: "EAD Details"
+subtitle: "Usage and Examples"
+engine: julia
+---
+
+## Setup
+
+```{julia}
+#| code-fold: true
+using ICOW.EAD
+using Random
+using CairoMakie
+CairoMakie.activate!(type = "svg")
+```
+
+## Configuring the City
+
+`EADConfig` encodes the physical and economic characteristics of a coastal city: its geometry (elevation profile, building height, coastline length), the cost structure for each defense type, and damage parameters.
+The 28 default values are calibrated to a Manhattan-like setting.
+
+```{julia}
+config = EADConfig()
+```
+
+Key parameters:
+
+- City value: \$$(config.V_city / 1e12)T
+- City elevation: $(config.H_city) m
+- Building height: $(config.H_bldg) m
+- Seawall height: $(config.H_seawall) m
+
+::: {.callout-note}
+The default parameters are inspired by Lower Manhattan's geography and economy.
+Customize any parameter via keyword arguments: `EADConfig(H_city=20.0, V_city=2.0e12)`.
+:::
+
+## Defining the Hazard
+
+An `EADScenario` specifies a **stationary** surge hazard using Generalized Extreme Value (GEV) parameters -- location, scale, and shape -- plus a discount rate.
+All four fields are `@continuous` parameters, so `explore()` works out of the box.
+
+```{julia}
+scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
+```
+
+The GEV distribution is the natural choice for annual maximum storm surges.
+When `surge_shape=0.0` the distribution is Gumbel (light-tailed); positive shape gives heavier tails (Fr\'echet), negative shape gives bounded tails (Weibull).
+
+## Integration Methods
+
+EAD mode computes expected damage by integrating over the surge distribution.
+The integration method is set on `EADConfig` (not the scenario), since it controls computation, not uncertainty.
+Two methods are available:
+
+- **`QuadratureIntegrator(rtol=1e-6)`** -- adaptive Gauss-Kronrod quadrature; deterministic, precise
+- **`MonteCarloIntegrator(n_samples=1000)`** -- random sampling; stochastic, flexible
+
+```{julia}
+config_quad = EADConfig(integrator=QuadratureIntegrator())
+config_mc = EADConfig(integrator=MonteCarloIntegrator(n_samples=10_000))
+```
+
+::: {.callout-tip}
+Use quadrature for most purposes.
+Monte Carlo is mainly useful for validation or distributions where quadrature struggles (e.g., heavy mixtures).
+:::
+
+## Choosing a Protection Strategy
+
+A `StaticPolicy` specifies protection levels using **reparameterized fractions** that guarantee all physical constraints ($W + B + D \leq H_{city}$, $0 \leq P < 1$) are always satisfied.
+The policy converts to a `FloodDefenses` struct with absolute meter values:
+
+```{julia}
+policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.2, r_frac=0.1, P=0.5)
+fd = FloodDefenses(policy, config)
+fd
+```
+
+Different strategies allocate height budget across the three defense types in different ways:
+
+```{julia}
+archetypes = [
+    ("No protection",        StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Dike only",            StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Withdraw + resist",    StaticPolicy(a_frac=0.2, w_frac=0.5, b_frac=0.0, r_frac=0.3, P=0.7)),
+    ("Mixed",                StaticPolicy(a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
+    ("High dike + resist",   StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3)),
+]
+policies = last.(archetypes)
+names = first.(archetypes)
+```
+
+```{julia}
+fig = Figure(; size=(600, 350))
+ax = Axis(fig[1, 1]; xlabel="Policy", ylabel="Height (m)", title="Height allocation by strategy",
+    xticks=(1:length(archetypes), names), xticklabelrotation=pi/6)
+
+ws = [FloodDefenses(p, config).W for p in policies]
+bs = [FloodDefenses(p, config).B for p in policies]
+ds = [FloodDefenses(p, config).D for p in policies]
+
+barplot!(ax, 1:length(archetypes), ws; label="W", color=:dodgerblue)
+barplot!(ax, 1:length(archetypes), bs; offset=ws, label="B", color=:orange)
+barplot!(ax, 1:length(archetypes), ds; offset=ws .+ bs, label="D", color=:forestgreen)
+axislegend(ax; position=:lt)
+fig
+```
+
+## Running a Simulation
+
+The `simulate` function runs the full loop: initialize state, apply the policy in year 1, then compute investment costs and expected damage for each year, discounting to present value.
+
+```{julia}
+rng = MersenneTwister(42)
+outcome = simulate(config, scenario, policy, rng)
+outcome
+```
+
+## The Investment-Damage Tradeoff
+
+The central question in flood risk management is how much to invest in protection.
+More investment reduces expected damage but costs money upfront.
+The optimal strategy minimizes total cost (investment + expected damage).
+
+We use `explore()` to evaluate all five policies against our scenario in one call.
+It returns a YAXArrays Dataset with dimensions `(policy, scenario)`:
+
+```{julia}
+result = explore(config, [scenario], policies; progress=false)
+result
+```
+
+```{julia}
+inv_vals = vec(result[:investment].data) ./ 1e9
+dmg_vals = vec(result[:expected_damage].data) ./ 1e9
+
+fig = Figure(; size=(600, 400))
+ax = Axis(fig[1, 1]; xlabel="Investment (\$B)", ylabel="Expected Damage (\$B)",
+    title="Investment vs Expected Damage")
+scatter!(ax, inv_vals, dmg_vals; markersize=14, color=:steelblue)
+for (i, name) in enumerate(names)
+    text!(ax, inv_vals[i], dmg_vals[i]; text=name, fontsize=10, offset=(8, 4))
+end
+fig
+```
+
+::: {.callout-note}
+This analysis is **risk-neutral**: it treats expected damage as the objective.
+A risk-averse decision-maker would weight tail losses more heavily, which favors larger investments.
+The [Stochastic Details](../stochastic/details.qmd) page shows how to analyze tail risk.
+:::
+
+## Sensitivity to Integration Method
+
+Quadrature and Monte Carlo should agree when the number of samples is large enough.
+Here we verify this for the mixed policy:
+
+```{julia}
+config_q = EADConfig(integrator=QuadratureIntegrator())
+config_m = EADConfig(integrator=MonteCarloIntegrator(n_samples=10_000))
+
+rng = MersenneTwister(42)
+o_quad = simulate(config_q, scenario, policy, rng)
+rng = MersenneTwister(42)
+o_mc = simulate(config_m, scenario, policy, rng)
+```
+
+- Quadrature total cost: \$$(round(total_cost(o_quad) / 1e9; digits=2))B
+- Monte Carlo total cost: \$$(round(total_cost(o_mc) / 1e9; digits=2))B

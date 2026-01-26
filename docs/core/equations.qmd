@@ -1,0 +1,305 @@
+---
+title: "Equations"
+subtitle: "Mathematical Reference"
+bibliography: ../references.bib
+engine: julia
+---
+
+This page presents the mathematical formulation of the iCOW model from @ceres_cityonawedge:2019.
+All equations are implemented in `ICOW.Core`.
+
+## Decision Levers
+
+The model has five decision levers, stored in the `FloodDefenses` struct:
+
+| Lever | Symbol | Description | Units | Constraints |
+|-------|--------|-------------|-------|-------------|
+| Withdrawal | $W$ | Height below which city is relocated (absolute) | m | $0 \leq W < H_{\text{city}}$ |
+| Resistance Height | $R$ | Height of flood-proofing above $W$ (relative) | m | $R \geq 0$ |
+| Resistance Percentage | $P$ | Fraction of buildings made resistant | -- | $0 \leq P < 1$ |
+| Dike Height | $D$ | Height of dike above its base (relative) | m | $D \geq 0$ |
+| Dike Base | $B$ | Height of dike base above $W$ (relative) | m | $B \geq 0$ |
+
+$W$ is the only absolute lever (measured from sea level).
+All other levers ($R$, $B$, $D$) are relative to $W$.
+The absolute elevation of the dike base is $W + B$; the dike top is at $W + B + D$.
+
+The constraint $W + B + D \leq H_{\text{city}}$ ensures that defenses do not exceed the city's maximum elevation.
+
+## Zone Definitions
+
+The city is partitioned into five zones based on lever settings:
+
+| Zone | Elevation Range | Width | Description | Value Ratio |
+|------|-----------------|-------|-------------|-------------|
+| 0 | $0$ to $W$ | $W$ | Withdrawn (no value) | 0 |
+| 1 | $W$ to $W + \min(R, B)$ | $\min(R, B)$ | Resistant | $r_{\text{unprot}} = 0.95$ |
+| 2 | $W + \min(R, B)$ to $W + B$ | $B - R$ (if $R < B$) | Unprotected gap | $r_{\text{unprot}} = 0.95$ |
+| 3 | $W + B$ to $W + B + D$ | $D$ | Dike protected | $r_{\text{prot}} = 1.1$ |
+| 4 | $W + B + D$ to $H_{\text{city}}$ | $H_{\text{city}} - W - B - D$ | Above dike | $1.0$ |
+
+Zone 2 only exists when $R < B$ (resistance does not reach the dike base).
+
+### Cross-Section Diagram
+
+```{julia}
+#| code-fold: true
+using ICOW
+using CairoMakie
+CairoMakie.activate!(type = "svg")
+
+# Example defenses: W=2, R=1.5, P=0.5, D=4, B=3
+fd = FloodDefenses(W=2.0, R=1.5, P=0.5, D=4.0, B=3.0)
+H_city = 17.0
+
+W, R, B, D = fd.W, fd.R, fd.B, fd.D
+z1_top = W + min(R, B)
+z2_top = W + B
+z3_top = W + B + D
+
+colors = (
+    z0="#CC0099",  # dark magenta
+    z1="#008B8B",  # dark cyan
+    z2="#0000CD",  # medium blue
+    z3="#FF8C00",  # dark orange
+    z4="#228B22",  # forest green
+)
+
+fig = Figure(size=(700, 250))
+ax = Axis(fig[1, 1],
+    xlabel="Elevation (m)",
+    limits=((-0.5, H_city + 0.5), (-0.4, 1)),
+    xticks=0:2:H_city)
+hideydecorations!(ax)
+hidespines!(ax, :t, :l, :r)
+
+bar_y = 0.5
+bar_h = 0.35
+
+function zone_bar!(ax, x_lo, x_hi, color, label)
+    poly!(ax, Point2f[(x_lo, bar_y - bar_h / 2), (x_hi, bar_y - bar_h / 2),
+            (x_hi, bar_y + bar_h / 2), (x_lo, bar_y + bar_h / 2)],
+        color=color, strokecolor=:white, strokewidth=1)
+    text!(ax, (x_lo + x_hi) / 2, bar_y, text=label, color=:white, fontsize=9,
+        align=(:center, :center), font=:bold)
+end
+
+zone_bar!(ax, 0, W, colors.z0, "Zone 0\nWithdrawn")
+zone_bar!(ax, W, z1_top, colors.z1, "Zone 1\nResistant")
+if R < B
+    zone_bar!(ax, z1_top, z2_top, colors.z2, "Zone 2\nGap")
+end
+zone_bar!(ax, z2_top, z3_top, colors.z3, "Zone 3\nDike-protected")
+zone_bar!(ax, z3_top, H_city, colors.z4, "Zone 4\nAbove-dike")
+
+function bracket!(ax, x_lo, x_hi, label, y_pos)
+    lines!(ax, [x_lo, x_lo], [y_pos, y_pos - 0.08], color=:gray30, linewidth=1)
+    lines!(ax, [x_hi, x_hi], [y_pos, y_pos - 0.08], color=:gray30, linewidth=1)
+    lines!(ax, [x_lo, x_hi], [y_pos - 0.08, y_pos - 0.08], color=:gray30, linewidth=1)
+    text!(ax, (x_lo + x_hi) / 2, y_pos - 0.12, text=label, fontsize=9,
+        align=(:center, :top), color=:gray30)
+end
+
+y_base = bar_y - bar_h / 2 - 0.02
+bracket!(ax, 0, W, "W", y_base)
+bracket!(ax, W, W + R, "R", y_base)
+bracket!(ax, W, z2_top, "B", y_base - 0.18)
+bracket!(ax, z2_top, z3_top, "D", y_base)
+
+fig
+```
+
+### Zone Value Ratios
+
+The value ratios $r_{\text{prot}} = 1.1$ and $r_{\text{unprot}} = 0.95$ mean that zone values do not sum exactly to $V_w$.
+This is intentional:
+
+- **Protected areas appreciate**: Dike protection increases land/building values
+- **Unprotected areas depreciate**: Residual flood risk reduces property values
+
+## Cost Equations
+
+### Withdrawal Cost (Equation 1)
+
+$$
+C_W = \frac{V_{\text{city}} \cdot W \cdot f_w}{H_{\text{city}} - W}
+$$
+
+### City Value After Withdrawal (Equation 2)
+
+$$
+V_w = V_{\text{city}} \cdot \left(1 - \frac{f_l \cdot W}{H_{\text{city}}}\right)
+$$
+
+### Resistance Cost Fraction (Equation 3)
+
+$$
+f_{\text{cR}} = f_{\text{adj}} \cdot \left( f_{\text{lin}} \cdot P + \frac{f_{\text{exp}} \cdot \max(0, P - t_{\text{exp}})}{1 - P} \right)
+$$
+
+The factor $f_{\text{adj}} = 1.25$ is present in the original implementation but not prominently shown in the paper.
+
+### Resistance Cost (Equations 4--5)
+
+When $R < B$ (unconstrained):
+
+$$
+C_R = \frac{V_w \cdot f_{\text{cR}} \cdot R \cdot (R/2 + b)}{H_{\text{bldg}} \cdot (H_{\text{city}} - W)}
+$$
+
+When $R \geq B$ (resistance capped at dike base):
+
+$$
+C_R = \frac{V_w \cdot f_{\text{cR}} \cdot B \cdot (R - B/2 + b)}{H_{\text{bldg}} \cdot (H_{\text{city}} - W)}
+$$
+
+::: {.callout-note}
+$R > B$ is a **dominated strategy**: physical protection is capped at $B$ but cost increases with $R$.
+The optimizer will naturally discover this.
+:::
+
+### Dike Volume (Equation 6)
+
+$$
+V_{\text{dike}} = \underbrace{W_{\text{city}} \cdot h_d \left( w_d + \frac{h_d}{s^2} \right)}_{\text{Main Seawall}} + \underbrace{\frac{h_d^2}{S} \left( w_d + \frac{2 h_d}{3 s^2} \right)}_{\text{Side Wings}}
+$$
+
+Where $h_d = D + D_{\text{startup}}$ is the effective dike height and $S = H_{\text{city}} / D_{\text{city}}$ is the terrain slope.
+
+The dike consists of two geometric components:
+
+- **Main seawall**: A trapezoidal prism along the coastline
+- **Side wings**: Two tapered prisms running inland up the city slope
+
+### Dike Cost (Equation 7)
+
+$$
+C_D = V_{\text{dike}} \cdot c_d
+$$
+
+### Total Investment
+
+$$
+C_{\text{total}} = C_W + C_R + C_D
+$$
+
+## Damage Equations
+
+### Effective Surge Height
+
+$$
+h_{\text{eff}} = \begin{cases}
+0 & \text{if } h_{\text{raw}} \leq H_{\text{seawall}} \\
+h_{\text{raw}} \cdot f_{\text{runup}} - H_{\text{seawall}} & \text{if } h_{\text{raw}} > H_{\text{seawall}}
+\end{cases}
+$$
+
+### Dike Failure Probability (Equation 8)
+
+$$
+p_{\text{fail}} = \begin{cases}
+p_{\text{min}} & \text{if } h_{\text{surge}} < t_{\text{fail}} \cdot D \\
+\frac{h_{\text{surge}} - t_{\text{fail}} \cdot D}{D(1 - t_{\text{fail}})} & \text{if } t_{\text{fail}} \cdot D \leq h_{\text{surge}} < D \\
+1.0 & \text{if } h_{\text{surge}} \geq D
+\end{cases}
+$$
+
+Here $h_{\text{surge}}$ is the surge height **above the dike base** (not absolute elevation).
+
+### Zone Damage (Equation 9)
+
+Base damage for zone $Z$:
+
+$$
+d_Z = Val_Z \cdot \frac{Vol_F}{Vol_Z} \cdot f_{\text{damage}}
+$$
+
+Zone-specific modifiers:
+
+- **Zone 1** (resistant): $d_1 = \text{base} \cdot (1 - P)$
+- **Zone 3** (dike-protected): $d_3 = \text{base} \cdot f_{\text{dike}}$ where $f_{\text{dike}} = f_{\text{intact}}$ if dike holds, $f_{\text{failed}}$ if dike fails
+- **Zones 2, 4**: standard damage (no modifier)
+
+### Zone Values
+
+$$
+Val_{Z1} = V_w \cdot r_{\text{unprot}} \cdot \frac{\min(R, B)}{H_{\text{city}} - W}
+$$
+
+$$
+Val_{Z2} = V_w \cdot r_{\text{unprot}} \cdot \frac{B - R}{H_{\text{city}} - W}
+$$
+
+$$
+Val_{Z3} = V_w \cdot r_{\text{prot}} \cdot \frac{D}{H_{\text{city}} - W}
+$$
+
+$$
+Val_{Z4} = V_w \cdot \frac{H_{\text{city}} - W - B - D}{H_{\text{city}} - W}
+$$
+
+### Threshold Damage
+
+$$
+d_{\text{total}} = \begin{cases}
+\sum d_Z & \text{if } \sum d_Z \leq d_{\text{thresh}} \\
+\sum d_Z + \left( f_{\text{thresh}} \cdot (\sum d_Z - d_{\text{thresh}}) \right)^{\gamma_{\text{thresh}}} & \text{if } \sum d_Z > d_{\text{thresh}}
+\end{cases}
+$$
+
+The threshold penalty represents **catastrophic damage amplification** -- when damages exceed $d_{\text{thresh}}$, cascading effects occur (social disruption, insurance market failures, compound vulnerabilities).
+
+### Expected Annual Damage Integration
+
+EAD mode uses two-level integration:
+
+$$
+\text{EAD} = \int p_h(h) \cdot \mathbb{E}[\text{damage} \mid h] \, dh
+$$
+
+The inner expectation (analytical) integrates over dike failure:
+
+$$
+\mathbb{E}[\text{damage} \mid h] = p_{\text{fail}}(h) \cdot d_{\text{failed}}(h) + (1 - p_{\text{fail}}(h)) \cdot d_{\text{intact}}(h)
+$$
+
+The outer expectation is computed numerically via adaptive quadrature or Monte Carlo sampling.
+
+## Parameters
+
+All 28 parameters are fields in `StochasticConfig` / `EADConfig`:
+
+| Category | Parameter | Symbol | Default | Units | Description |
+|----------|-----------|--------|---------|-------|-------------|
+| Geometry | $V_{\text{city}}$ | `V_city` | $1.5 \times 10^{12}$ | \$ | Total replacement value of all city infrastructure and buildings |
+| Geometry | $H_{\text{bldg}}$ | `H_bldg` | 30.0 | m | Average building height, used to normalize resistance costs per floor |
+| Geometry | $H_{\text{city}}$ | `H_city` | 17.0 | m | Total elevation change from the seawall to the highest point of the city |
+| Geometry | $D_{\text{city}}$ | `D_city` | 2000.0 | m | Horizontal distance from the seawall to the city's peak elevation |
+| Geometry | $W_{\text{city}}$ | `W_city` | 43000.0 | m | Length of the coastline along which the seawall and dike are built |
+| Geometry | $H_{\text{seawall}}$ | `H_seawall` | 1.75 | m | Height of the existing seawall; surges below this cause no flooding |
+| Dike | $D_{\text{startup}}$ | `D_startup` | 2.0 | m | Minimum effective dike height representing fixed mobilization costs (added to $D$) |
+| Dike | $w_d$ | `w_d` | 3.0 | m | Width of the flat top of the dike cross-section |
+| Dike | $s$ | `s_dike` | 0.5 | m/m | Ratio of horizontal run to vertical rise on each side of the dike |
+| Dike | $c_d$ | `c_d` | 10.0 | \$/m$^3$ | Unit cost of dike construction material per cubic meter |
+| Zones | $r_{\text{prot}}$ | `r_prot` | 1.1 | -- | Value multiplier for dike-protected land (Zone 3); values above 1 reflect appreciation from protection |
+| Zones | $r_{\text{unprot}}$ | `r_unprot` | 0.95 | -- | Value multiplier for unprotected land (Zones 1--2); values below 1 reflect depreciation from residual risk |
+| Withdrawal | $f_w$ | `f_w` | 1.0 | -- | Scales the cost of relocating buildings and infrastructure from the withdrawn zone |
+| Withdrawal | $f_l$ | `f_l` | 0.01 | -- | Fraction of city value permanently lost per meter of withdrawal height |
+| Resistance | $f_{\text{adj}}$ | `f_adj` | 1.25 | -- | Overall multiplier on resistance costs (present in C++ but not prominent in paper) |
+| Resistance | $f_{\text{lin}}$ | `f_lin` | 0.35 | -- | Weight of the linear component of resistance cost as a function of $P$ |
+| Resistance | $f_{\text{exp}}$ | `f_exp` | 0.115 | -- | Weight of the exponential component that makes high $P$ values increasingly expensive |
+| Resistance | $t_{\text{exp}}$ | `t_exp` | 0.4 | -- | Threshold of $P$ above which the exponential cost component activates |
+| Resistance | $b$ | `b_basement` | 3.0 | m | Depth of basements below ground; flood-proofing must extend this far below the surface |
+| Damage | $f_{\text{damage}}$ | `f_damage` | 0.39 | -- | Maximum fraction of a zone's value destroyed when fully inundated |
+| Damage | $f_{\text{intact}}$ | `f_intact` | 0.03 | -- | Damage multiplier for Zone 3 when the dike holds (seepage and wave overtopping) |
+| Damage | $f_{\text{failed}}$ | `f_failed` | 1.5 | -- | Damage multiplier for Zone 3 when the dike fails (amplified by sudden breach flooding) |
+| Damage | $t_{\text{fail}}$ | `t_fail` | 0.95 | -- | Fraction of dike height $D$ at which failure probability begins to rise above $p_{\text{min}}$ |
+| Damage | $p_{\text{min}}$ | `p_min` | 0.05 | -- | Baseline probability of dike failure even when surge is well below the dike crest |
+| Damage | $f_{\text{runup}}$ | `f_runup` | 1.1 | -- | Multiplier on raw surge height to account for wave runup effects at the seawall |
+| Threshold | $d_{\text{thresh}}$ | `d_thresh` | $4 \times 10^{9}$ | \$ | Damage level above which cascading societal effects (insurance collapse, displacement) amplify losses |
+| Threshold | $f_{\text{thresh}}$ | `f_thresh` | 1.0 | -- | Scales the excess damage above $d_{\text{thresh}}$ before applying the power-law penalty |
+| Threshold | $\gamma_{\text{thresh}}$ | `gamma_thresh` | 1.01 | -- | Exponent of the power-law penalty applied to excess damage above the threshold |
+
+: {tbl-colwidths="[8,10,8,7,5,62]"}
+
+## References

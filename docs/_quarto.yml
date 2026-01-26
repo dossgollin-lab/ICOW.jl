@@ -15,20 +15,32 @@ website:
     contents:
       - href: index.qmd
         text: Home
-      - href: examples/getting_started.qmd
-        text: Getting Started
+      - section: "Core"
+        contents:
+          - href: core/equations.qmd
+            text: Equations
+          - href: core/architecture.qmd
+            text: Architecture
       - section: "EAD Mode"
         contents:
-          - href: examples/ead_analysis.qmd
-            text: Policy Analysis
-          - href: examples/ead_optimization.qmd
-            text: Policy Search
+          - href: ead/model.qmd
+            text: Model
+          - href: ead/details.qmd
+            text: Details
       - section: "Stochastic Mode"
         contents:
-          - href: examples/stochastic_analysis.qmd
-            text: Policy Analysis
-          - href: examples/stochastic_optimization.qmd
-            text: Policy Search
+          - href: stochastic/model.qmd
+            text: Model
+          - href: stochastic/details.qmd
+            text: Details
+      - section: "API Reference"
+        contents:
+          - href: api/core.qmd
+            text: Core
+          - href: api/ead.qmd
+            text: EAD
+          - href: api/stochastic.qmd
+            text: Stochastic
   page-footer:
     left: "ICOW.jl - Dossgollin Lab"
     right:
@@ -45,10 +57,12 @@ format:
     code-annotations: hover
     html-math-method: mathjax
     date-format: long
+    fig-format: svg
 
 # Julia engine configuration
 engine: julia
 execute:
-  exeflags: ["--project=..", "--threads=auto"]
+  exeflags: ["--project=@.", "--threads=auto"]
   freeze: auto
   cache: true
+  code-fold: true

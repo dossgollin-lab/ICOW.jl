@@ -17,9 +17,91 @@
   **All bugs found in the C++ reference are documented here** (7 total as of Jan 2026).
 - **ROADMAP.md**: The implementation plan with checklist items.
   Mark items complete with `[x]` as you finish them.
+  **Update CLAUDE.md at the end of each phase** to reflect architectural changes.
 - **C++ Reference**: The original implementation is at [rceres/ICOW](https://github.com/rceres/ICOW/blob/master/src/iCOW_2018_06_11.cpp).
   Download locally to `_background/iCOW_2018_06_11.cpp` for reference (file is in .gitignore and cannot be redistributed).
   **Contains 7 bugs** - see `_background/equations.md` for complete documentation.
+
+### Current Architecture
+
+```
+src/
+├── ICOW.jl              # Main module: exports FloodDefenses, Core, Stochastic, EAD
+├── types.jl             # FloodDefenses only (shared across modes)
+├── Core/                # Pure numeric functions (validated against C++)
+│   ├── Core.jl
+│   ├── geometry.jl      # dike_volume
+│   ├── costs.jl         # withdrawal_cost, resistance_cost, dike_cost, etc.
+│   ├── zones.jl         # zone_boundaries, zone_values
+│   └── damage.jl        # base_zone_damage, zone_damage, total_event_damage, etc.
+├── Stochastic/          # SimOptDecisions integration for discrete event simulation
+│   ├── Stochastic.jl    # Module definition
+│   ├── types.jl         # StochasticConfig, StochasticScenario, StaticPolicy, etc.
+│   └── simulation.jl    # 5 SimOptDecisions callbacks + helpers
+└── EAD/                 # SimOptDecisions integration for expected annual damage
+    ├── EAD.jl           # Module definition
+    ├── types.jl         # EADConfig, EADScenario, IntegrationMethod, etc.
+    └── simulation.jl    # 5 SimOptDecisions callbacks + integration helpers
+```
+
+**Stochastic Submodule (ICOW.Stochastic):**
+
+Types subtype SimOptDecisions abstracts:
+
+- `StochasticConfig <: AbstractConfig` - 28 city parameters (flattened, no nesting)
+- `StochasticScenario <: AbstractScenario` - `@timeseries surges` + `@continuous discount_rate`
+- `StochasticState <: AbstractState` - holds `defenses::FloodDefenses{T}`
+- `StaticPolicy <: AbstractPolicy` - reparameterized fractions (a_frac, w_frac, b_frac, r_frac, P)
+- `StochasticOutcome <: AbstractOutcome` - investment + damage
+
+Policy reparameterization ensures all constraint are satisfied:
+
+- `a_frac` = total height budget as fraction of H_city
+- `w_frac` = W's share of budget
+- `b_frac` = B's share of remaining (A - W)
+- `r_frac` = R as fraction of H_city
+- `P` = resistance fraction [0, 0.99]
+
+Usage:
+```julia
+using ICOW.Stochastic
+config = StochasticConfig()
+scenario = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.03)
+policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
+outcome = SimOptDecisions.simulate(config, scenario, policy, rng)
+```
+
+**EAD Submodule (ICOW.EAD):**
+
+Types subtype SimOptDecisions abstracts:
+
+- `EADConfig <: AbstractConfig` - 28 city parameters + `n_years` + `integrator`
+- `EADScenario <: AbstractScenario` - `@scenariodef` with `@continuous surge_loc, surge_scale, surge_shape, discount_rate`
+- `EADState <: AbstractState` - holds `defenses::FloodDefenses{T}`
+- `StaticPolicy <: AbstractPolicy` - same reparameterization as Stochastic
+- `EADOutcome <: AbstractOutcome` - investment + expected_damage
+
+Integration methods (on EADConfig):
+
+- `QuadratureIntegrator{T}(rtol=1e-6)` - adaptive quadrature via QuadGK
+- `MonteCarloIntegrator(n_samples=1000)` - Monte Carlo sampling
+
+Usage:
+```julia
+using ICOW.EAD
+config = EADConfig()  # 50 years, quadrature by default
+scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
+policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
+outcome = SimOptDecisions.simulate(config, scenario, policy, rng)
+```
+
+### Zero Backwards Compatibility
+
+**CRITICAL**: This is a first-draft package with zero users.
+Make breaking changes freely.
+Delete deprecated code immediately.
+No compatibility shims, no `@deprecate`, no `# removed` comments.
+If something is unused, delete it completely.
 
 ### Mathematical Fidelity
 
@@ -41,7 +123,6 @@ A debugged version of the C++ code is maintained for validation purposes:
 - **icow_debugged.cpp**: C++ code with all 7 bugs fixed to match paper formulas
 - **compile.sh**: Build script (requires Homebrew g++-15 on macOS)
 - **outputs/**: Reference test outputs generated from debugged C++
-- **validate_cpp_outputs.jl**: Julia script to validate implementation matches C++
 
 **Purpose:**
 
@@ -51,31 +132,45 @@ A debugged version of the C++ code is maintained for validation purposes:
 
 **Usage:**
 
+C++ validation runs as part of the normal test suite (`test/core/cpp_validation_tests.jl`).
+The reference output files in `test/validation/cpp_reference/outputs/` are committed to the repo.
+
+To regenerate C++ outputs (only needed when adding new test cases):
+
 ```bash
 cd test/validation/cpp_reference
 ./compile.sh              # Compile debugged C++
-./icow_test               # Generate reference outputs
-cd ../../..
-julia --project test/validation/cpp_reference/validate_cpp_outputs.jl  # Validate Julia
+./icow_test               # Regenerate reference outputs
 ```
 
 **What's tested:**
 
 - 8 test cases covering edge cases (zero levers, R $\geq$ B, high surge, etc.)
 - Withdrawal and resistance cost calculations
-- All zone value calculations
+- Zone boundaries and values
 - Validation tolerance: rtol=1e-10 (floating-point precision)
 
-**Note on Dike Volume:**
-Dike and total investment cost comparisons are **skipped** because Julia uses a corrected geometric formula for dike volume (see Equation 6 in `_background/equations.md`).
-The paper's original formula is numerically unstable for realistic city slopes (S $\approx$ 0.0085 causes negative values under the square root).
-The Julia formula computes the same geometric shape but via direct integration, avoiding the instability.
+**Not tested:** Dike cost (Julia uses a corrected geometric formula; see `_background/equations.md` Equation 6).
 
 **Maintenance:**
 
 - When adding new physics functions, add corresponding test cases to the C++ harness
-- Re-run validation after any changes to `src/costs.jl`, `src/geometry.jl`, or `src/zones.jl`
-- If validation fails, investigate whether Julia or C++ is correct by checking `_background/equations.md`
+- Re-run validation after any changes to `src/Core/` files
+- If validation fails, check `_background/equations.md` to determine which is correct
+
+## Documentation
+
+- Every `.qmd` file must specify `engine: julia` in its YAML frontmatter.
+- Never use the Jupyter engine for documentation.
+- Use `code-fold: true` for setup blocks; keep key examples visible.
+- Use Quarto callouts (`{.callout-tip}`, `{.callout-note}`, `{.callout-warning}`) for tips, notes, and warnings.
+
+### Output Display
+
+- **Never** use `println` for displaying data in documentation.
+- Use `explore()` for multi-policy or multi-scenario results (returns YAXArrays Dataset).
+- Use CairoMakie for visualizations.
+- Let Julia's display system show structs and results directly (e.g., `outcome` not `println(outcome)`).
 
 ## Code Quality & Style
 
@@ -99,7 +194,7 @@ Example:
 
 ```julia
 """
-    calculate_dike_volume(city::CityParameters, D) -> volume
+    dike_volume(H_city, D_city, D_startup, s_dike, w_d, W_city, D) -> volume
 
 Calculate dike material volume (Equation 6). See _background/equations.md.
 """
@@ -114,7 +209,7 @@ Prefer `immutable struct` over `mutable struct` unless state modification is str
 
 ### Assertions
 
-Use `@assert` aggressively in constructors to enforce physical bounds (e.g., $W \le B$).
+Use `@assert` aggressively in constructors to enforce physical bounds (e.g., $0 \leq P < 1$).
 
 ### Dependencies
 
@@ -174,19 +269,19 @@ For constraint validation tests, use the format:
 **Good examples:**
 
 ```julia
-# total_value > 0; negative values are physically meaningless
-@test_throws AssertionError validate_parameters(CityParameters(total_value = -1000.0))
+# W >= 0; defense heights must be non-negative
+@test_throws AssertionError FloodDefenses(-1.0, 0, 0, 0, 0)
 
-# W ≤ B; cannot withdraw from areas above the dike base (they're protected)
-@test_throws AssertionError Levers(5.0, 0, 0, 5.0, 2.0)
+# 0 <= P < 1; resistance percentage must be a valid fraction
+@test_throws AssertionError FloodDefenses(0, 0, 1.5, 0, 0)
 ```
 
 Group related tests under a single comment when they test the same constraint:
 
 ```julia
 # 0 ≤ P ≤ 1; resistance percentage must be a valid fraction
-@test_throws AssertionError Levers(0, 0, 1.5, 0, 0)
-@test_throws AssertionError Levers(0, 0, -0.1, 0, 0)
+@test_throws AssertionError FloodDefenses(0, 0, 1.5, 0, 0)
+@test_throws AssertionError FloodDefenses(0, 0, -0.1, 0, 0)
 ```
 
 This makes tests self-documenting and helps future developers understand the domain logic.
