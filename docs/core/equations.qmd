@@ -8,6 +8,14 @@ engine: julia
 This page presents the mathematical formulation of the iCOW model from @ceres_cityonawedge:2019.
 All equations are implemented in `ICOW.Core`.
 
+::: {.callout-tip}
+## How to Read This Page
+
+This is a reference for the model's equations, not a tutorial.
+If you are new to iCOW, start with the [Background](../getting-started/background.qmd) for physical intuition, or the [Tutorial](../getting-started/tutorial.qmd) for a hands-on introduction.
+Each section below includes a brief note on the physical reasoning behind the equation, followed by the precise formula.
+:::
+
 ## Decision Levers
 
 The model has five decision levers, stored in the `FloodDefenses` struct:
@@ -39,6 +47,17 @@ The city is partitioned into five zones based on lever settings:
 | 4 | $W + B + D$ to $H_{\text{city}}$ | $H_{\text{city}} - W - B - D$ | Above dike | $1.0$ |
 
 Zone 2 only exists when $R < B$ (resistance does not reach the dike base).
+
+::: {.callout-note}
+## Physical Intuition: Why Five Zones?
+
+The zones reflect how different parts of the city experience flooding differently.
+Zone 0 has been vacated entirely (no damage possible).
+Zones 1--2 are below the dike -- they flood whenever surge exceeds the seawall, but resistant buildings in Zone 1 sustain less damage.
+Zone 3 is behind the dike -- it floods only if the dike is overtopped or fails.
+Zone 4 is above the dike crest and floods only in extreme events.
+This zoning is what allows iCOW to capture graduated damage rather than a simple flood/no-flood binary.
+:::
 
 ### Cross-Section Diagram
 
@@ -121,17 +140,27 @@ This is intentional:
 
 ### Withdrawal Cost (Equation 1)
 
+Relocating people and buildings from the lowest-lying areas.
+The cost increases nonlinearly with $W$ because the denominator $H_{\text{city}} - W$ shrinks: as more of the city is vacated, the remaining land becomes more congested and valuable, making each additional meter of withdrawal more expensive.
+
 $$
 C_W = \frac{V_{\text{city}} \cdot W \cdot f_w}{H_{\text{city}} - W}
 $$
 
 ### City Value After Withdrawal (Equation 2)
 
+Withdrawal permanently removes some city value.
+The loss is small ($f_l = 0.01$ per meter) because most value migrates to higher ground rather than being destroyed.
+
 $$
 V_w = V_{\text{city}} \cdot \left(1 - \frac{f_l \cdot W}{H_{\text{city}}}\right)
 $$
 
 ### Resistance Cost Fraction (Equation 3)
+
+The cost of flood-proofing a fraction $P$ of buildings.
+The linear term ($f_{\text{lin}} \cdot P$) captures the base cost.
+The exponential term activates above a threshold $t_{\text{exp}} = 0.4$ and grows sharply as $P \to 1$, reflecting the practical difficulty of retrofitting the last holdout buildings (historic structures, buildings with complex foundations, etc.).
 
 $$
 f_{\text{cR}} = f_{\text{adj}} \cdot \left( f_{\text{lin}} \cdot P + \frac{f_{\text{exp}} \cdot \max(0, P - t_{\text{exp}})}{1 - P} \right)
@@ -140,6 +169,9 @@ $$
 The factor $f_{\text{adj}} = 1.25$ is present in the original implementation but not prominently shown in the paper.
 
 ### Resistance Cost (Equations 4--5)
+
+The total resistance cost depends on how far up the buildings are protected ($R$) and what fraction of buildings are treated ($P$, via $f_{\text{cR}}$ above).
+The cost also includes basement depth $b$ because flood-proofing must extend below ground level.
 
 When $R < B$ (unconstrained):
 
@@ -160,16 +192,14 @@ The optimizer will naturally discover this.
 
 ### Dike Volume (Equation 6)
 
+The dike is a three-dimensional structure: a trapezoidal seawall along the coastline with two tapered wings running inland up the slope.
+The wings taper because the terrain rises -- less dike height is needed further inland.
+
 $$
 V_{\text{dike}} = \underbrace{W_{\text{city}} \cdot h_d \left( w_d + \frac{h_d}{s^2} \right)}_{\text{Main Seawall}} + \underbrace{\frac{h_d^2}{S} \left( w_d + \frac{2 h_d}{3 s^2} \right)}_{\text{Side Wings}}
 $$
 
 Where $h_d = D + D_{\text{startup}}$ is the effective dike height and $S = H_{\text{city}} / D_{\text{city}}$ is the terrain slope.
-
-The dike consists of two geometric components:
-
-- **Main seawall**: A trapezoidal prism along the coastline
-- **Side wings**: Two tapered prisms running inland up the city slope
 
 ### Dike Cost (Equation 7)
 
@@ -187,6 +217,9 @@ $$
 
 ### Effective Surge Height
 
+Raw surge heights are adjusted for wave runup ($f_{\text{runup}} = 1.1$) and reduced by the existing seawall.
+Surges below the seawall cause no flooding.
+
 $$
 h_{\text{eff}} = \begin{cases}
 0 & \text{if } h_{\text{raw}} \leq H_{\text{seawall}} \\
@@ -195,6 +228,10 @@ h_{\text{raw}} \cdot f_{\text{runup}} - H_{\text{seawall}} & \text{if } h_{\text
 $$
 
 ### Dike Failure Probability (Equation 8)
+
+The dike does not simply "hold or fail" at a fixed height.
+Instead, failure probability ramps linearly from a baseline $p_{\text{min}} = 0.05$ (accounting for seepage, structural defects, etc.) to certainty as the surge approaches the dike crest.
+The threshold $t_{\text{fail}} = 0.95$ means the ramp begins when the surge reaches 95% of the dike height.
 
 $$
 p_{\text{fail}} = \begin{cases}
@@ -214,11 +251,21 @@ $$
 d_Z = Val_Z \cdot \frac{Vol_F}{Vol_Z} \cdot f_{\text{damage}}
 $$
 
+The fraction $Vol_F / Vol_Z$ captures how much of the zone is flooded (by volume, accounting for the wedge geometry).
+The factor $f_{\text{damage}} = 0.39$ is the maximum fraction of a zone's value destroyed when fully inundated.
+
 Zone-specific modifiers:
 
-- **Zone 1** (resistant): $d_1 = \text{base} \cdot (1 - P)$
+- **Zone 1** (resistant): $d_1 = \text{base} \cdot (1 - P)$ -- only non-resistant buildings are damaged
 - **Zone 3** (dike-protected): $d_3 = \text{base} \cdot f_{\text{dike}}$ where $f_{\text{dike}} = f_{\text{intact}}$ if dike holds, $f_{\text{failed}}$ if dike fails
 - **Zones 2, 4**: standard damage (no modifier)
+
+::: {.callout-note}
+## Why $f_{\text{failed}} = 1.5 > 1$?
+
+When a dike fails, damage behind it exceeds what would occur without a dike.
+This is because the sudden rush of water through a breach causes more destruction than gradual inundation -- and because residents behind the dike may not have evacuated or prepared, having trusted the dike to hold.
+:::
 
 ### Zone Values
 
@@ -240,14 +287,15 @@ $$
 
 ### Threshold Damage
 
+When total damage exceeds a threshold $d_{\text{thresh}}$, cascading societal effects amplify losses.
+This captures phenomena like insurance market collapse, mass displacement, and compound vulnerabilities that make extreme events disproportionately destructive.
+
 $$
 d_{\text{total}} = \begin{cases}
 \sum d_Z & \text{if } \sum d_Z \leq d_{\text{thresh}} \\
 \sum d_Z + \left( f_{\text{thresh}} \cdot (\sum d_Z - d_{\text{thresh}}) \right)^{\gamma_{\text{thresh}}} & \text{if } \sum d_Z > d_{\text{thresh}}
 \end{cases}
 $$
-
-The threshold penalty represents **catastrophic damage amplification** -- when damages exceed $d_{\text{thresh}}$, cascading effects occur (social disruption, insurance market failures, compound vulnerabilities).
 
 ### Expected Annual Damage Integration
 

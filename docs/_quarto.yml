@@ -15,7 +15,15 @@ website:
     contents:
       - href: index.qmd
         text: Home
-      - section: "Core"
+      - section: "Getting Started"
+        contents:
+          - href: getting-started/background.qmd
+            text: Background
+          - href: getting-started/tutorial.qmd
+            text: Tutorial
+          - href: getting-started/assumptions.qmd
+            text: Assumptions & Scope
+      - section: "The Model"
         contents:
           - href: core/equations.qmd
             text: Equations
@@ -24,15 +32,15 @@ website:
       - section: "EAD Mode"
         contents:
           - href: ead/model.qmd
-            text: Model
+            text: Concepts
           - href: ead/details.qmd
-            text: Details
+            text: Walkthrough
       - section: "Stochastic Mode"
         contents:
           - href: stochastic/model.qmd
-            text: Model
+            text: Concepts
           - href: stochastic/details.qmd
-            text: Details
+            text: Walkthrough
       - section: "API Reference"
         contents:
           - href: api/core.qmd

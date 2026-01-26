@@ -1,8 +1,20 @@
 ---
-title: "Stochastic Details"
+title: "Stochastic Walkthrough"
 subtitle: "Usage and Examples"
+bibliography: ../references.bib
 engine: julia
 ---
+
+This page demonstrates how to use the Stochastic simulation mode.
+Unlike EAD mode (which gives you a single expected value), Stochastic mode reveals the **distribution** of outcomes -- including tail risk that expected-value analysis hides.
+This is critical when evaluating strategies that concentrate risk, like dike-heavy portfolios.
+
+::: {.callout-tip}
+## Prerequisites
+
+If you are new to iCOW, start with the [Tutorial](../getting-started/tutorial.qmd) for a gentler introduction.
+This page assumes familiarity with the basic concepts (Config, Scenario, Policy, Outcome).
+:::
 
 ## Setup
 
@@ -150,7 +162,13 @@ fig
 ```
 
 ::: {.callout-note}
+## Mean vs. Tail Risk
+
 Policies that reduce mean damage do not always reduce tail risk proportionally.
 A dike-heavy strategy may have low average damage but catastrophic outcomes when the dike fails.
 The mixed strategy balances mean and tail performance by diversifying across defense types.
+
+This distinction matters for decision making: a **risk-neutral** decision-maker cares only about expected cost and would use EAD mode.
+A **risk-averse** decision-maker weights bad outcomes more heavily and needs the distributional information that Stochastic mode provides.
+Which perspective is appropriate depends on the decision context -- see @keller_management:2021 for a broader discussion.
 :::

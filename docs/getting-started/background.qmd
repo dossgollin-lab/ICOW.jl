@@ -1,0 +1,103 @@
+---
+title: "Background"
+subtitle: "Why Model Coastal Flood Risk This Way?"
+bibliography: ../references.bib
+engine: julia
+---
+
+## The Problem
+
+Coastal cities concentrate people, infrastructure, and economic value at low elevations where storm surges cause the most damage.
+Globally, flood exposure has been growing faster than population, driven by development in flood-prone areas [@jongman_Globalexposureriver:2012].
+Managing this risk requires choosing among multiple protection strategies -- and making those choices before the storms arrive.
+
+This is fundamentally a decision problem under uncertainty: how much should a city invest in flood protection, and what combination of strategies should it use?
+The answer depends on uncertain future hazards, the costs of different interventions, and the city's tolerance for residual risk [@keller_management:2021].
+
+## Strategies for Coastal Flood Protection
+
+Real-world coastal cities use three broad categories of protection, often in combination [@vanberchum_coastal:2019]:
+
+### Withdrawal (Managed Retreat)
+
+Relocating people and assets away from the lowest-lying areas.
+In practice this looks like:
+
+- Buyout programs that purchase flood-prone properties
+- Zoning changes that prevent new construction in high-risk areas
+- Relocating critical infrastructure (hospitals, power stations) to higher ground
+
+In iCOW, withdrawal is parameterized as a height $W$: everything below elevation $W$ is vacated.
+The cost increases nonlinearly because the last buildings to relocate are the most expensive -- they sit on increasingly scarce remaining land.
+
+### Resistance (Flood-Proofing)
+
+Making buildings withstand flooding without structural failure.
+In practice:
+
+- Wet flood-proofing: allowing water to enter but using water-resistant materials
+- Dry flood-proofing: sealing buildings to keep water out
+- Elevating structures on stilts or raised foundations
+
+In iCOW, resistance is parameterized by a height $R$ (how high up buildings are protected) and a fraction $P$ (what share of buildings are treated).
+The cost increases sharply as $P$ approaches 1, reflecting the difficulty of retrofitting every building in a neighborhood.
+
+### Dikes (Structural Barriers)
+
+Building levees, seawalls, or storm surge barriers.
+In practice:
+
+- Earthen levees along riverbanks and coastlines
+- Concrete floodwalls and storm surge barriers
+- Moveable barriers (like the Maeslantkering in Rotterdam)
+
+In iCOW, the dike is parameterized by a base height $B$ and a crest height $D$ above that base.
+Dikes provide strong protection -- but when they fail, damage is amplified because residents and businesses behind the dike may not have prepared for flooding.
+
+::: {.callout-tip}
+## Why Combinations Matter
+
+No single strategy is optimal in all conditions.
+Dikes provide strong average protection but create catastrophic risk if they fail.
+Withdrawal is effective but expensive.
+Resistance helps everywhere but doesn't stop flooding.
+The key insight from @ceres_cityonawedge:2019 is that **portfolios of strategies** can outperform any individual strategy -- much like diversification in finance.
+:::
+
+## The Modeling Gap
+
+Researchers studying flood risk management face a tradeoff in model complexity:
+
+**Simple analytical models** (e.g., @vandantzig_dike:1956) optimize a single strategy (typically dike height) against a single damage function.
+They are fast and analytically tractable, but they miss the richness of strategy combinations and graduated damage.
+
+**Regional simulation models** capture detailed topography, building-level damage, and hydrodynamic flooding.
+They are realistic but computationally expensive, require extensive local data, and are difficult to embed in optimization or uncertainty analysis frameworks.
+
+iCOW fills the gap between these extremes.
+It captures the essential physics -- graduated damage that depends on flood depth, multiple interacting defense strategies, nonlinear cost structures -- while remaining fast enough to evaluate millions of strategy combinations.
+This makes it suitable for the kinds of exploratory analysis and optimization that climate risk management demands.
+
+## The Wedge Geometry
+
+iCOW represents a coastal city as an **island on a wedge-shaped terrain** that rises from sea level to a maximum elevation $H_{\text{city}}$.
+This is a stylized geometry inspired by areas like Lower Manhattan, where the terrain slopes upward from the waterfront.
+
+The wedge captures a key physical reality: **higher surges cause more damage in two ways**.
+
+1. **Larger flooded area** -- water reaches further inland on the slope
+2. **Deeper flooding** -- buildings at low elevations experience greater water depth
+
+These two effects create nonlinear damage relationships that simple binary (flood/no-flood) models miss.
+The wedge approximation applies to any coastal city where terrain rises from the waterfront, which includes many real coastal settings.
+
+The defense strategies divide the city's cross-section into five **zones** with different damage characteristics.
+See the [Equations](../core/equations.qmd) page for the full zone definitions and mathematical formulation.
+
+## What's Next
+
+- **New to iCOW?** Continue to the [Tutorial](tutorial.qmd) for a hands-on walkthrough
+- **Want the math?** See [Equations](../core/equations.qmd) for the complete formulation
+- **Ready to run simulations?** Jump to [EAD Walkthrough](../ead/details.qmd) or [Stochastic Walkthrough](../stochastic/details.qmd)
+
+## References
