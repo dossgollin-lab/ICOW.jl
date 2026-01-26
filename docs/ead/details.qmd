@@ -2,23 +2,16 @@
 title: "EAD Details"
 subtitle: "Usage and Examples"
 engine: julia
-execute:
-  code-fold: true
-format:
-  html:
-    fig-format: svg
 ---
 
 ## Setup
 
 ```{julia}
 #| code-fold: true
-using ICOW
 using ICOW.EAD
-using Distributions
 using Random
-using DataFrames
 using CairoMakie
+CairoMakie.activate!(type = "svg")
 ```
 
 ## Configuring the City
@@ -28,13 +21,14 @@ The 28 default values are calibrated to a Manhattan-like setting.
 
 ```{julia}
 config = EADConfig()
-
-DataFrame(
-    Parameter = ["City value", "City elevation", "Building height", "Seawall height", "Coastline length"],
-    Value = [config.V_city / 1e12, config.H_city, config.H_bldg, config.H_seawall, config.W_city],
-    Unit = ["\$T", "m", "m", "m", "m"]
-)
 ```
+
+Key parameters:
+
+- City value: \$$(config.V_city / 1e12)T
+- City elevation: $(config.H_city) m
+- Building height: $(config.H_bldg) m
+- Seawall height: $(config.H_seawall) m
 
 ::: {.callout-note}
 The default parameters are inspired by Lower Manhattan's geography and economy.
@@ -43,36 +37,29 @@ Customize any parameter via keyword arguments: `EADConfig(H_city=20.0, V_city=2.
 
 ## Defining the Hazard
 
-An `EADScenario` specifies the surge hazard as a vector of probability distributions -- one per year -- plus a discount rate and an integration method.
-This design naturally captures **non-stationary** hazards: sea level rise, increasing storm intensity, or any other time-varying forcing.
+An `EADScenario` specifies a **stationary** surge hazard using Generalized Extreme Value (GEV) parameters -- location, scale, and shape -- plus a discount rate.
+All four fields are `@continuous` parameters, so `explore()` works out of the box.
 
 ```{julia}
-n_years = 50
-# Sea level rise: mean surge increases 1 cm/year
-dists = [Normal(3.0 + 0.01 * t, 1.0) for t in 1:n_years]
-scenario = EADScenario(dists, 0.03, QuadratureIntegrator())
+scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
 ```
 
-```{julia}
-fig = Figure(; size=(600, 300))
-ax = Axis(fig[1, 1]; xlabel="Year", ylabel="Mean surge (m)", title="Non-stationary surge hazard")
-years = 1:n_years
-means = [mean(d) for d in dists]
-lines!(ax, years, means; color=:steelblue, linewidth=2)
-band!(ax, years, means .- 1.0, means .+ 1.0; color=(:steelblue, 0.2))
-fig
-```
-
-The shaded band shows $\pm 1\sigma$ around the mean.
-Over 50 years the mean annual maximum surge rises from 3.01 m to 3.50 m.
+The GEV distribution is the natural choice for annual maximum storm surges.
+When `surge_shape=0.0` the distribution is Gumbel (light-tailed); positive shape gives heavier tails (Fr\'echet), negative shape gives bounded tails (Weibull).
 
 ## Integration Methods
 
 EAD mode computes expected damage by integrating over the surge distribution.
+The integration method is set on `EADConfig` (not the scenario), since it controls computation, not uncertainty.
 Two methods are available:
 
 - **`QuadratureIntegrator(rtol=1e-6)`** -- adaptive Gauss-Kronrod quadrature; deterministic, precise
 - **`MonteCarloIntegrator(n_samples=1000)`** -- random sampling; stochastic, flexible
+
+```{julia}
+config_quad = EADConfig(integrator=QuadratureIntegrator())
+config_mc = EADConfig(integrator=MonteCarloIntegrator(n_samples=10_000))
+```
 
 ::: {.callout-tip}
 Use quadrature for most purposes.
@@ -87,12 +74,7 @@ The policy converts to a `FloodDefenses` struct with absolute meter values:
 ```{julia}
 policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.2, r_frac=0.1, P=0.5)
 fd = FloodDefenses(policy, config)
-
-DataFrame(
-    Defense = ["Withdrawal (W)", "Resistance height (R)", "Resistance fraction (P)", "Dike height (D)", "Berm height (B)"],
-    Value = [fd.W, fd.R, fd.P, fd.D, fd.B],
-    Unit = ["m", "m", "-", "m", "m"]
-)
+fd
 ```
 
 Different strategies allocate height budget across the three defense types in different ways:
@@ -105,23 +87,18 @@ archetypes = [
     ("Mixed",                StaticPolicy(a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
     ("High dike + resist",   StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3)),
 ]
-
-rows = map(archetypes) do (name, pol)
-    fd = FloodDefenses(pol, config)
-    (Name=name, W=round(fd.W; digits=2), B=round(fd.B; digits=2), D=round(fd.D; digits=2), R=round(fd.R; digits=2), P=round(fd.P; digits=2))
-end
-DataFrame(rows)
+policies = last.(archetypes)
+names = first.(archetypes)
 ```
 
 ```{julia}
 fig = Figure(; size=(600, 350))
 ax = Axis(fig[1, 1]; xlabel="Policy", ylabel="Height (m)", title="Height allocation by strategy",
-    xticks=(1:length(archetypes), first.(archetypes)), xticklabelrotation=pi/6)
+    xticks=(1:length(archetypes), names), xticklabelrotation=pi/6)
 
-names = first.(archetypes)
-ws = [FloodDefenses(p, config).W for (_, p) in archetypes]
-bs = [FloodDefenses(p, config).B for (_, p) in archetypes]
-ds = [FloodDefenses(p, config).D for (_, p) in archetypes]
+ws = [FloodDefenses(p, config).W for p in policies]
+bs = [FloodDefenses(p, config).B for p in policies]
+ds = [FloodDefenses(p, config).D for p in policies]
 
 barplot!(ax, 1:length(archetypes), ws; label="W", color=:dodgerblue)
 barplot!(ax, 1:length(archetypes), bs; offset=ws, label="B", color=:orange)
@@ -137,11 +114,7 @@ The `simulate` function runs the full loop: initialize state, apply the policy i
 ```{julia}
 rng = MersenneTwister(42)
 outcome = simulate(config, scenario, policy, rng)
-
-DataFrame(
-    Component = ["Investment", "Expected damage", "Total cost"],
-    Value_B = round.([value(outcome.investment), value(outcome.expected_damage), total_cost(outcome)] ./ 1e9; digits=2)
-)
+outcome
 ```
 
 ## The Investment-Damage Tradeoff
@@ -150,22 +123,17 @@ The central question in flood risk management is how much to invest in protectio
 More investment reduces expected damage but costs money upfront.
 The optimal strategy minimizes total cost (investment + expected damage).
 
+We use `explore()` to evaluate all five policies against our scenario in one call.
+It returns a YAXArrays Dataset with dimensions `(policy, scenario)`:
+
 ```{julia}
-rng = MersenneTwister(42)
-results = map(archetypes) do (name, pol)
-    o = simulate(config, scenario, pol, rng)
-    (Name=name,
-     Investment_B=round(value(o.investment) / 1e9; digits=2),
-     Expected_Damage_B=round(value(o.expected_damage) / 1e9; digits=2),
-     Total_Cost_B=round(total_cost(o) / 1e9; digits=2))
-end
-DataFrame(results)
+result = explore(config, [scenario], policies; progress=false)
+result
 ```
 
 ```{julia}
-inv_vals = [r.Investment_B for r in results]
-dmg_vals = [r.Expected_Damage_B for r in results]
-names = [r.Name for r in results]
+inv_vals = vec(result[:investment].data) ./ 1e9
+dmg_vals = vec(result[:expected_damage].data) ./ 1e9
 
 fig = Figure(; size=(600, 400))
 ax = Axis(fig[1, 1]; xlabel="Investment (\$B)", ylabel="Expected Damage (\$B)",
@@ -189,18 +157,14 @@ Quadrature and Monte Carlo should agree when the number of samples is large enou
 Here we verify this for the mixed policy:
 
 ```{julia}
-scenario_quad = EADScenario(dists, 0.03, QuadratureIntegrator())
-scenario_mc = EADScenario(dists, 0.03, MonteCarloIntegrator(n_samples=10_000))
+config_q = EADConfig(integrator=QuadratureIntegrator())
+config_m = EADConfig(integrator=MonteCarloIntegrator(n_samples=10_000))
 
 rng = MersenneTwister(42)
-o_quad = simulate(config, scenario_quad, policy, rng)
+o_quad = simulate(config_q, scenario, policy, rng)
 rng = MersenneTwister(42)
-o_mc = simulate(config, scenario_mc, policy, rng)
-
-DataFrame(
-    Method = ["Quadrature", "Monte Carlo (10k)"],
-    Investment_B = round.([value(o_quad.investment), value(o_mc.investment)] ./ 1e9; digits=2),
-    Expected_Damage_B = round.([value(o_quad.expected_damage), value(o_mc.expected_damage)] ./ 1e9; digits=2),
-    Total_Cost_B = round.([total_cost(o_quad), total_cost(o_mc)] ./ 1e9; digits=2)
-)
+o_mc = simulate(config_m, scenario, policy, rng)
 ```
+
+- Quadrature total cost: \$$(round(total_cost(o_quad) / 1e9; digits=2))B
+- Monte Carlo total cost: \$$(round(total_cost(o_mc) / 1e9; digits=2))B

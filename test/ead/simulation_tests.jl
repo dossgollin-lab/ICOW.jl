@@ -18,9 +18,8 @@ import ICOW.EAD: StaticPolicy, total_cost, simulate
     end
 
     @testset "Simulation runs with quadrature" begin
-        config = EADConfig()
-        dists = [Normal(3.0, 1.0) for _ in 1:5]
-        scenario = EADScenario(dists, 0.0, QuadratureIntegrator())
+        config = EADConfig(n_years=5)
+        scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0)
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)
 
         rng = MersenneTwister(42)
@@ -32,9 +31,8 @@ import ICOW.EAD: StaticPolicy, total_cost, simulate
     end
 
     @testset "Simulation runs with Monte Carlo" begin
-        config = EADConfig()
-        dists = [Normal(3.0, 1.0) for _ in 1:5]
-        scenario = EADScenario(dists, 0.0, MonteCarloIntegrator(n_samples=100))
+        config = EADConfig(n_years=5, integrator=MonteCarloIntegrator(n_samples=100))
+        scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0)
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)
 
         rng = MersenneTwister(42)
@@ -46,9 +44,8 @@ import ICOW.EAD: StaticPolicy, total_cost, simulate
     end
 
     @testset "Zero policy produces zero investment" begin
-        config = EADConfig()
-        dists = [Normal(3.0, 1.0), Normal(3.0, 1.0)]
-        scenario = EADScenario(dists, 0.0, QuadratureIntegrator())
+        config = EADConfig(n_years=2)
+        scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0)
         policy = StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)
 
         rng = MersenneTwister(42)
@@ -58,9 +55,8 @@ import ICOW.EAD: StaticPolicy, total_cost, simulate
     end
 
     @testset "Quadrature is deterministic" begin
-        config = EADConfig()
-        dists = [Normal(3.0, 1.0) for _ in 1:5]
-        scenario = EADScenario(dists, 0.03, QuadratureIntegrator())
+        config = EADConfig(n_years=5)
+        scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
         policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
 
         # Quadrature should give identical results regardless of RNG
@@ -72,31 +68,28 @@ import ICOW.EAD: StaticPolicy, total_cost, simulate
     end
 
     @testset "Monte Carlo varies with RNG but converges" begin
-        config = EADConfig()
-        dists = [Normal(5.0, 1.0) for _ in 1:3]
+        config = EADConfig(n_years=3, integrator=MonteCarloIntegrator(n_samples=100))
+        scenario = EADScenario(surge_loc=5.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0)
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
 
         # Different seeds produce different MC results
-        scenario_mc = EADScenario(dists, 0.0, MonteCarloIntegrator(n_samples=100))
-        outcome1 = simulate(config, scenario_mc, policy, MersenneTwister(1))
-        outcome2 = simulate(config, scenario_mc, policy, MersenneTwister(2))
+        outcome1 = simulate(config, scenario, policy, MersenneTwister(1))
+        outcome2 = simulate(config, scenario, policy, MersenneTwister(2))
         @test SimOptDecisions.value(outcome1.expected_damage) != SimOptDecisions.value(outcome2.expected_damage)
 
         # Same seed produces same results
-        outcome3 = simulate(config, scenario_mc, policy, MersenneTwister(1))
+        outcome3 = simulate(config, scenario, policy, MersenneTwister(1))
         @test SimOptDecisions.value(outcome1.expected_damage) == SimOptDecisions.value(outcome3.expected_damage)
     end
 
     @testset "Quadrature and Monte Carlo agree approximately" begin
-        config = EADConfig()
-        dists = [Normal(4.0, 1.0) for _ in 1:3]
+        config_quad = EADConfig(n_years=3)
+        config_mc = EADConfig(n_years=3, integrator=MonteCarloIntegrator(n_samples=10000))
+        scenario = EADScenario(surge_loc=4.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0)
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
 
-        scenario_quad = EADScenario(dists, 0.0, QuadratureIntegrator())
-        scenario_mc = EADScenario(dists, 0.0, MonteCarloIntegrator(n_samples=10000))
-
-        outcome_quad = simulate(config, scenario_quad, policy, MersenneTwister(42))
-        outcome_mc = simulate(config, scenario_mc, policy, MersenneTwister(42))
+        outcome_quad = simulate(config_quad, scenario, policy, MersenneTwister(42))
+        outcome_mc = simulate(config_mc, scenario, policy, MersenneTwister(42))
 
         # MC should be within 5% of quadrature with enough samples
         quad_damage = SimOptDecisions.value(outcome_quad.expected_damage)
@@ -105,12 +98,10 @@ import ICOW.EAD: StaticPolicy, total_cost, simulate
     end
 
     @testset "Discounting applied correctly" begin
-        config = EADConfig()
-        dists = [Normal(3.0, 1.0) for _ in 1:3]
+        config = EADConfig(n_years=3)
+        scenario_no_discount = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0)
+        scenario_with_discount = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.1)
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
-
-        scenario_no_discount = EADScenario(dists, 0.0, QuadratureIntegrator())
-        scenario_with_discount = EADScenario(dists, 0.1, QuadratureIntegrator())
 
         outcome_no = simulate(config, scenario_no_discount, policy, MersenneTwister(42))
         outcome_yes = simulate(config, scenario_with_discount, policy, MersenneTwister(42))
@@ -119,37 +110,37 @@ import ICOW.EAD: StaticPolicy, total_cost, simulate
         @test total_cost(outcome_yes) < total_cost(outcome_no)
     end
 
-    @testset "Dirac distribution matches deterministic calculation" begin
-        config = EADConfig()
-        # Dirac distribution = point mass at specific surge value
-        dists = [Dirac(5.0), Dirac(5.0), Dirac(5.0)]
+    @testset "Near-deterministic surge matches tight-scale GEV" begin
+        config = EADConfig(n_years=3)
+        # Very small scale approximates a point mass at surge_loc
+        scenario = EADScenario(surge_loc=5.0, surge_scale=0.001, surge_shape=0.0, discount_rate=0.0)
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
 
-        scenario_quad = EADScenario(dists, 0.0, QuadratureIntegrator())
-        scenario_mc = EADScenario(dists, 0.0, MonteCarloIntegrator(n_samples=100))
+        config_mc = EADConfig(n_years=3, integrator=MonteCarloIntegrator(n_samples=100))
+        outcome_quad = simulate(config, scenario, policy, MersenneTwister(42))
+        outcome_mc = simulate(config_mc, scenario, policy, MersenneTwister(42))
 
-        outcome_quad = simulate(config, scenario_quad, policy, MersenneTwister(42))
-        outcome_mc = simulate(config, scenario_mc, policy, MersenneTwister(42))
-
-        # With Dirac distribution, both methods should give exact same result
-        @test SimOptDecisions.value(outcome_quad.expected_damage) ≈ SimOptDecisions.value(outcome_mc.expected_damage)
+        # With near-zero scale, both methods should give very similar results
+        @test isapprox(
+            SimOptDecisions.value(outcome_quad.expected_damage),
+            SimOptDecisions.value(outcome_mc.expected_damage),
+            rtol=0.01
+        )
     end
 
-    @testset "Zero surge distribution produces minimal damage" begin
-        config = EADConfig()
-        # Very low surges that don't cause significant damage
-        dists = [Dirac(0.0) for _ in 1:3]
-        scenario = EADScenario(dists, 0.0, QuadratureIntegrator())
+    @testset "Zero surge produces minimal damage" begin
+        config = EADConfig(n_years=3)
+        # Very low surge location with tiny scale
+        scenario = EADScenario(surge_loc=-5.0, surge_scale=0.01, surge_shape=0.0, discount_rate=0.0)
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
 
         outcome = simulate(config, scenario, policy, MersenneTwister(42))
-        @test SimOptDecisions.value(outcome.expected_damage) == 0.0
+        @test SimOptDecisions.value(outcome.expected_damage) < 1.0  # effectively zero
     end
 
     @testset "Infeasible policy returns infinite costs" begin
-        config = EADConfig()  # H_city = 17.0
-        dists = [Dirac(1.0), Dirac(1.0)]
-        scenario = EADScenario(dists, 0.0, QuadratureIntegrator())
+        config = EADConfig(n_years=2)
+        scenario = EADScenario(surge_loc=1.0, surge_scale=0.001, surge_shape=0.0, discount_rate=0.0)
         # a_frac=1, w_frac=1 produces W = H_city, which is infeasible (strict inequality required)
         policy = StaticPolicy(a_frac=1.0, w_frac=1.0, b_frac=0.0, r_frac=0.0, P=0.0)
 

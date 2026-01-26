@@ -21,6 +21,7 @@ test/validation/cpp_reference/*.o
 .cache/
 _freeze/
 _site/
+site_libs/
 .jupyter_cache/
 # Julia package manifest (generated, not tracked)
 Manifest.toml

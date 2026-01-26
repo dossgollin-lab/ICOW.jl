@@ -33,7 +33,8 @@ This eliminates the stochastic dike failure uncertainty exactly -- no sampling i
 
 ### Outer Expectation (Numerical)
 
-The expected damage is then integrated over the surge distribution $p_h(h)$ using either:
+The surge distribution is a stationary GEV, parameterized by location, scale, and shape in the `EADScenario`.
+The expected damage is integrated over this distribution using the integration method on `EADConfig`:
 
 - **Adaptive quadrature** (`QuadratureIntegrator`): Uses QuadGK for precise numerical integration
 - **Monte Carlo sampling** (`MonteCarloIntegrator`): Samples surge heights from the distribution
@@ -90,7 +91,7 @@ Monte Carlo is mainly useful for validation or exotic distributions.
 :::
 
 ::: {.callout-tip}
-See [Details](details.qmd) for worked examples with DataFrames tables and visualizations.
+See [Details](details.qmd) for worked examples with visualizations.
 :::
 
 ## References

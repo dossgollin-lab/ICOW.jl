@@ -20,10 +20,10 @@ end
 """
     SimOptDecisions.time_axis(config::EADConfig, scenario) -> UnitRange
 
-Return simulation time axis from surge distribution vector length.
+Return simulation time axis from config.n_years.
 """
 function SimOptDecisions.time_axis(config::EADConfig, scenario::EADScenario)
-    1:length(scenario.distributions)
+    1:config.n_years
 end
 
 """
@@ -81,8 +81,12 @@ function SimOptDecisions.run_timestep(
     cost = max(zero(T), cost)
 
     # Expected damage via integration over surge distribution
-    dist = scenario.distributions[year]
-    expected_dmg = _integrate_expected_damage(scenario.integrator, config, new_defenses, dist, rng)
+    dist = GeneralizedExtremeValue(
+        SimOptDecisions.value(scenario.surge_loc),
+        SimOptDecisions.value(scenario.surge_scale),
+        SimOptDecisions.value(scenario.surge_shape)
+    )
+    expected_dmg = _integrate_expected_damage(config.integrator, config, new_defenses, dist, rng)
 
     # Update state
     new_state = EADState(new_defenses)
@@ -104,7 +108,7 @@ function SimOptDecisions.compute_outcome(
     config::EADConfig{T},
     scenario::EADScenario
 ) where {T}
-    r = scenario.discount_rate
+    r = SimOptDecisions.value(scenario.discount_rate)
     total_investment = zero(T)
     total_expected_damage = zero(T)
 
@@ -179,12 +183,6 @@ function _integrate_expected_damage(
     dist::D,
     ::AbstractRNG
 ) where {Ti, T, D<:Distribution}
-    # Handle Dirac (point mass) distributions specially
-    if dist isa Distributions.Dirac
-        h = dist.value
-        return _expected_damage_for_surge(config, fd, T(h))
-    end
-
     # Integration bounds from distribution quantiles (avoid infinite bounds)
     h_min = T(quantile(dist, 0.0001))
     h_max = T(quantile(dist, 0.9999))

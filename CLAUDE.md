@@ -75,13 +75,13 @@ outcome = SimOptDecisions.simulate(config, scenario, policy, rng)
 
 Types subtype SimOptDecisions abstracts:
 
-- `EADConfig <: AbstractConfig` - 28 city parameters (same as StochasticConfig, duplicated)
-- `EADScenario{T,D,M} <: AbstractScenario` - distributions + discount_rate + integrator
+- `EADConfig <: AbstractConfig` - 28 city parameters + `n_years` + `integrator`
+- `EADScenario <: AbstractScenario` - `@scenariodef` with `@continuous surge_loc, surge_scale, surge_shape, discount_rate`
 - `EADState <: AbstractState` - holds `defenses::FloodDefenses{T}`
 - `StaticPolicy <: AbstractPolicy` - same reparameterization as Stochastic
 - `EADOutcome <: AbstractOutcome` - investment + expected_damage
 
-Integration methods (type-safe):
+Integration methods (on EADConfig):
 
 - `QuadratureIntegrator{T}(rtol=1e-6)` - adaptive quadrature via QuadGK
 - `MonteCarloIntegrator(n_samples=1000)` - Monte Carlo sampling
@@ -89,11 +89,8 @@ Integration methods (type-safe):
 Usage:
 ```julia
 using ICOW.EAD
-using Distributions
-config = EADConfig()
-dists = [Normal(3.0, 1.0) for _ in 1:10]  # surge distributions per year
-scenario = EADScenario(dists, 0.03, QuadratureIntegrator())
-# or: scenario = EADScenario(dists, 0.03, MonteCarloIntegrator(n_samples=5000))
+config = EADConfig()  # 50 years, quadrature by default
+scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
 policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
 outcome = SimOptDecisions.simulate(config, scenario, policy, rng)
 ```
@@ -170,10 +167,10 @@ cd test/validation/cpp_reference
 
 ### Output Display
 
-- **Never** use `println` for displaying tabular data in documentation.
-- Use `DataFrames.DataFrame` for tables (renders as HTML in Quarto).
+- **Never** use `println` for displaying data in documentation.
+- Use `explore()` for multi-policy or multi-scenario results (returns YAXArrays Dataset).
 - Use CairoMakie for visualizations.
-- Prefer structured output (DataFrames, plots) over manual text formatting.
+- Let Julia's display system show structs and results directly (e.g., `outcome` not `println(outcome)`).
 
 ## Code Quality & Style
 

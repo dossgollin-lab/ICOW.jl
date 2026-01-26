@@ -13,13 +13,14 @@ using QuadGK
 include("types.jl")
 include("simulation.jl")
 
+export FloodDefenses
 export IntegrationMethod, QuadratureIntegrator, MonteCarloIntegrator
 export EADConfig, EADScenario, EADState
 export StaticPolicy, EADOutcome
 export validate_config, is_feasible, total_cost
 
 # Re-export SimOptDecisions utilities for convenience
-using SimOptDecisions: simulate, value
-export simulate, value
+using SimOptDecisions: simulate, value, explore, outcomes_for_policy, outcomes_for_scenario
+export simulate, value, explore, outcomes_for_policy, outcomes_for_scenario
 
 end # module EAD

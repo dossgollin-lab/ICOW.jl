@@ -76,6 +76,10 @@ Base.@kwdef struct EADConfig{T<:Real} <: SimOptDecisions.AbstractConfig
     d_thresh::T = 4.0e9     # Damage threshold (\$)
     f_thresh::T = 1.0       # Threshold fraction multiplier
     gamma_thresh::T = 1.01  # Threshold exponent
+
+    # Simulation settings
+    n_years::Int = 50
+    integrator::IntegrationMethod = QuadratureIntegrator()
 end
 
 """
@@ -150,23 +154,14 @@ function is_feasible(fd::FloodDefenses, config::EADConfig)
 end
 
 # =============================================================================
-# EADScenario - surge distributions per year
+# EADScenario - stationary GEV surge parameters
 # =============================================================================
 
-"""
-    EADScenario{T, D<:Distribution, M<:IntegrationMethod}
-
-Scenario for EAD simulation with surge distributions and integration method.
-"""
-struct EADScenario{T<:Real, D<:Distribution, M<:IntegrationMethod} <: SimOptDecisions.AbstractScenario
-    distributions::Vector{D}
-    discount_rate::T
-    integrator::M
-end
-
-# Convenience constructor with default integrator
-function EADScenario(distributions::Vector{D}, discount_rate::T) where {T<:Real, D<:Distribution}
-    EADScenario{T, D, QuadratureIntegrator{T}}(distributions, discount_rate, QuadratureIntegrator{T}())
+SimOptDecisions.@scenariodef EADScenario begin
+    @continuous surge_loc -5.0 30.0
+    @continuous surge_scale 0.01 20.0
+    @continuous surge_shape -1.0 1.0
+    @continuous discount_rate 0.0 1.0
 end
 
 # =============================================================================

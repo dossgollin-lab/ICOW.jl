@@ -97,20 +97,25 @@ end
 end
 
 @testset "EADScenario" begin
-    dists = [Normal(3.0, 1.0), Normal(3.5, 1.2), Normal(4.0, 1.5)]
+    scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
+    @test value(scenario.surge_loc) == 3.0
+    @test value(scenario.surge_scale) == 1.0
+    @test value(scenario.surge_shape) == 0.0
+    @test value(scenario.discount_rate) == 0.03
+end
 
-    # With explicit integrator
-    scenario = EADScenario(dists, 0.03, QuadratureIntegrator())
-    @test length(scenario.distributions) == 3
-    @test scenario.discount_rate == 0.03
-    @test scenario.integrator isa QuadratureIntegrator
+@testset "EADConfig integrator" begin
+    # Default integrator is QuadratureIntegrator
+    config = EADConfig()
+    @test config.integrator isa QuadratureIntegrator
+    @test config.n_years == 50
 
-    # With default integrator
-    scenario = EADScenario(dists, 0.05)
-    @test scenario.integrator isa QuadratureIntegrator
+    # Custom integrator
+    config = EADConfig(integrator=MonteCarloIntegrator(n_samples=500))
+    @test config.integrator isa MonteCarloIntegrator
+    @test config.integrator.n_samples == 500
 
-    # With Monte Carlo integrator
-    scenario = EADScenario(dists, 0.03, MonteCarloIntegrator(n_samples=500))
-    @test scenario.integrator isa MonteCarloIntegrator
-    @test scenario.integrator.n_samples == 500
+    # Custom n_years
+    config = EADConfig(n_years=10)
+    @test config.n_years == 10
 end

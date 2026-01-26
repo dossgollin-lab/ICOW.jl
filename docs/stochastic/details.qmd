@@ -2,22 +2,16 @@
 title: "Stochastic Details"
 subtitle: "Usage and Examples"
 engine: julia
-execute:
-  code-fold: true
-format:
-  html:
-    fig-format: svg
 ---
 
 ## Setup
 
 ```{julia}
 #| code-fold: true
-using ICOW
 using ICOW.Stochastic
 using Random
-using DataFrames
 using CairoMakie
+CairoMakie.activate!(type = "svg")
 using Statistics
 ```
 
@@ -28,13 +22,14 @@ The defaults describe a Manhattan-like coastal city.
 
 ```{julia}
 config = StochasticConfig()
-
-DataFrame(
-    Parameter = ["City value", "City elevation", "Building height", "Seawall height", "Coastline length"],
-    Value = [config.V_city / 1e12, config.H_city, config.H_bldg, config.H_seawall, config.W_city],
-    Unit = ["\$T", "m", "m", "m", "m"]
-)
 ```
+
+Key parameters:
+
+- City value: \$$(config.V_city / 1e12)T
+- City elevation: $(config.H_city) m
+- Building height: $(config.H_bldg) m
+- Seawall height: $(config.H_seawall) m
 
 ## Defining the Surge Scenario
 
@@ -78,25 +73,17 @@ archetypes = [
     ("Mixed",                StaticPolicy(a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
     ("High dike + resist",   StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3)),
 ]
-
-rows = map(archetypes) do (name, pol)
-    fd = FloodDefenses(pol, config)
-    (Name=name, W=round(fd.W; digits=2), B=round(fd.B; digits=2), D=round(fd.D; digits=2), R=round(fd.R; digits=2), P=round(fd.P; digits=2))
-end
-DataFrame(rows)
+policies = last.(archetypes)
+names = first.(archetypes)
 ```
 
 ## Running a Simulation
 
 ```{julia}
-policy = archetypes[4][2]  # Mixed strategy
+policy = policies[4]  # Mixed strategy
 rng = MersenneTwister(42)
 outcome = simulate(config, scenario, policy, rng)
-
-DataFrame(
-    Component = ["Investment", "Damage", "Total cost"],
-    Value_B = round.([value(outcome.investment), value(outcome.damage), total_cost(outcome)] ./ 1e9; digits=2)
-)
+outcome
 ```
 
 ## Why Stochastic? The Role of Randomness
@@ -106,34 +93,26 @@ Running many replicates reveals the damage distribution:
 
 ```{julia}
 n_replicates = 200
-damages = Float64[]
-for seed in 1:n_replicates
-    rng_rep = MersenneTwister(seed)
-    o = simulate(config, scenario, policy, rng_rep)
-    push!(damages, value(o.damage))
-end
+damages = [
+    value(simulate(config, scenario, policy, MersenneTwister(seed)).damage)
+    for seed in 1:n_replicates
+]
 ```
 
 ```{julia}
 fig = Figure(; size=(600, 350))
-ax = Axis(fig[1, 1]; xlabel="Damage (\$B)", ylabel="Count", title="Damage distribution ($(n_replicates) replicates)")
+ax = Axis(fig[1, 1]; xlabel="Damage (\$B)", ylabel="Count", title="Damage distribution ($n_replicates replicates)")
 hist!(ax, damages ./ 1e9; bins=30, color=(:steelblue, 0.7))
-mean_dmg = mean(damages) / 1e9
-q05 = quantile(damages, 0.05) / 1e9
-q95 = quantile(damages, 0.95) / 1e9
-vlines!(ax, [mean_dmg]; color=:red, linewidth=2, label="Mean")
-vlines!(ax, [q05]; color=:orange, linewidth=2, linestyle=:dash, label="5th pctile")
-vlines!(ax, [q95]; color=:purple, linewidth=2, linestyle=:dash, label="95th pctile")
+vlines!(ax, [mean(damages) / 1e9]; color=:red, linewidth=2, label="Mean")
+vlines!(ax, [quantile(damages, 0.05) / 1e9]; color=:orange, linewidth=2, linestyle=:dash, label="5th pctile")
+vlines!(ax, [quantile(damages, 0.95) / 1e9]; color=:purple, linewidth=2, linestyle=:dash, label="95th pctile")
 axislegend(ax; position=:rt)
 fig
 ```
 
-```{julia}
-DataFrame(
-    Statistic = ["Mean", "5th percentile", "95th percentile", "Std deviation"],
-    Damage_B = round.([mean(damages), quantile(damages, 0.05), quantile(damages, 0.95), std(damages)] ./ 1e9; digits=2)
-)
-```
+- Mean damage: \$$(round(mean(damages) / 1e9; digits=2))B
+- 5th percentile: \$$(round(quantile(damages, 0.05) / 1e9; digits=2))B
+- 95th percentile: \$$(round(quantile(damages, 0.95) / 1e9; digits=2))B
 
 ::: {.callout-warning}
 The gap between the 5th and 95th percentiles reveals **hidden risk** that expected-value analysis misses.
@@ -142,38 +121,30 @@ A policy that looks optimal under EAD may have unacceptable tail losses.
 
 ## Comparing Policies
 
-We now run all five archetypes across many seeds to compare both average performance and tail risk:
+We use `explore()` to evaluate all five policies against our scenario.
+Because dike failure is stochastic, we run multiple seeds by creating duplicate scenarios:
 
 ```{julia}
 n_seeds = 50
-policy_results = map(archetypes) do (name, pol)
-    dmgs = Float64[]
-    inv = 0.0
-    for seed in 1:n_seeds
-        rng_rep = MersenneTwister(seed)
-        o = simulate(config, scenario, pol, rng_rep)
-        inv = value(o.investment)
-        push!(dmgs, value(o.damage))
-    end
-    (Name=name,
-     Investment_B=round(inv / 1e9; digits=2),
-     Mean_Damage_B=round(mean(dmgs) / 1e9; digits=2),
-     P95_Damage_B=round(quantile(dmgs, 0.95) / 1e9; digits=2))
-end
-DataFrame(policy_results)
+scenarios = [StochasticScenario(surges=surges, discount_rate=0.03) for _ in 1:n_seeds]
+result = explore(config, scenarios, policies; progress=false)
+result
 ```
 
+The result is a YAXArrays Dataset with dimensions `(policy, scenario)`.
+Each "scenario" here is the same surge sequence evaluated with a different RNG seed, so the scenario dimension captures seed-to-seed variance:
+
 ```{julia}
-mean_vals = [r.Mean_Damage_B for r in policy_results]
-p95_vals = [r.P95_Damage_B for r in policy_results]
-labels = [r.Name for r in policy_results]
+# Mean and 95th percentile damage across seeds for each policy
+mean_dmg = [mean(result[:damage].data[p, :]) for p in 1:length(policies)] ./ 1e9
+p95_dmg = [quantile(result[:damage].data[p, :], 0.95) for p in 1:length(policies)] ./ 1e9
 
 fig = Figure(; size=(600, 400))
 ax = Axis(fig[1, 1]; xlabel="Mean Damage (\$B)", ylabel="95th Percentile Damage (\$B)",
     title="Mean vs Tail Risk by Policy")
-scatter!(ax, mean_vals, p95_vals; markersize=14, color=:steelblue)
-for (i, name) in enumerate(labels)
-    text!(ax, mean_vals[i], p95_vals[i]; text=name, fontsize=10, offset=(8, 4))
+scatter!(ax, mean_dmg, p95_dmg; markersize=14, color=:steelblue)
+for (i, name) in enumerate(names)
+    text!(ax, mean_dmg[i], p95_dmg[i]; text=name, fontsize=10, offset=(8, 4))
 end
 fig
 ```

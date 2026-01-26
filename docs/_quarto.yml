@@ -57,6 +57,7 @@ format:
     code-annotations: hover
     html-math-method: mathjax
     date-format: long
+    fig-format: svg
 
 # Julia engine configuration
 engine: julia
@@ -64,3 +65,4 @@ execute:
   exeflags: ["--project=@.", "--threads=auto"]
   freeze: auto
   cache: true
+  code-fold: true
