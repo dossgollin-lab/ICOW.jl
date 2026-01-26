@@ -5,9 +5,6 @@ using Random
 using Distributions
 using Test
 
-# Import EAD-specific names to avoid ambiguity with Stochastic module
-import ICOW.EAD: StaticPolicy, total_cost, simulate
-
 @testset "SimOptDecisions Integration" begin
     @testset "Types subtype abstracts" begin
         @test EADConfig <: SimOptDecisions.AbstractConfig

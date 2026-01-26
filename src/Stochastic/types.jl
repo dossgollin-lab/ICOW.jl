@@ -151,18 +151,6 @@ function StochasticState{T}() where {T<:AbstractFloat}
     StochasticState(FloodDefenses{T}(zero(T), zero(T), zero(T), zero(T), zero(T)))
 end
 
-# =============================================================================
-# StaticPolicy - reparameterized for optimization
-# =============================================================================
-
-SimOptDecisions.@policydef StaticPolicy begin
-    @continuous a_frac 0.0 1.0  # total height budget as fraction of H_city
-    @continuous w_frac 0.0 1.0  # W's share of budget
-    @continuous b_frac 0.0 1.0  # B's share of remaining (A - W)
-    @continuous r_frac 0.0 1.0  # R as fraction of H_city
-    @continuous P 0.0 0.99      # resistance fraction
-end
-
 """
     FloodDefenses(policy::StaticPolicy, config::StochasticConfig)
 

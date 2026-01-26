@@ -4,9 +4,6 @@ using SimOptDecisions
 using Distributions
 using Test
 
-# Import EAD-specific names to avoid ambiguity with Stochastic module
-import ICOW.EAD: validate_config, is_feasible, StaticPolicy
-
 @testset "IntegrationMethod" begin
     @test QuadratureIntegrator().rtol == 1e-6
     @test MonteCarloIntegrator().n_samples == 1000
