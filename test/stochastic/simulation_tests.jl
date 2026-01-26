@@ -45,14 +45,18 @@ using Test
         outcome1 = simulate(config, scenario, policy, MersenneTwister(123))
         outcome2 = simulate(config, scenario, policy, MersenneTwister(123))
 
-        @test SimOptDecisions.value(outcome1.investment) == SimOptDecisions.value(outcome2.investment)
-        @test SimOptDecisions.value(outcome1.damage) == SimOptDecisions.value(outcome2.damage)
+        @test SimOptDecisions.value(outcome1.investment) ==
+            SimOptDecisions.value(outcome2.investment)
+        @test SimOptDecisions.value(outcome1.damage) ==
+            SimOptDecisions.value(outcome2.damage)
     end
 
     @testset "Discounting applied correctly" begin
         config = StochasticConfig()
         scenario_no_discount = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.0)
-        scenario_with_discount = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.1)
+        scenario_with_discount = StochasticScenario(
+            surges=[1.0, 2.0, 3.0], discount_rate=0.1
+        )
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
 
         outcome_no = simulate(config, scenario_no_discount, policy, MersenneTwister(42))
@@ -71,8 +75,9 @@ using Test
         policy = StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
 
         damages = [
-            SimOptDecisions.value(simulate(config, scenario, policy, MersenneTwister(seed)).damage)
-            for seed in 1:50
+            SimOptDecisions.value(
+                simulate(config, scenario, policy, MersenneTwister(seed)).damage
+            ) for seed in 1:50
         ]
 
         # With stochastic dike failure, different seeds should produce different damages

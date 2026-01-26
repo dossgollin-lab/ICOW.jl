@@ -97,7 +97,9 @@ end
 end
 
 @testset "EADScenario" begin
-    scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
+    scenario = EADScenario(
+        surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03
+    )
     @test value(scenario.surge_loc) == 3.0
     @test value(scenario.surge_scale) == 1.0
     @test value(scenario.surge_shape) == 0.0

@@ -147,9 +147,9 @@ mutable struct StochasticState{T<:AbstractFloat} <: SimOptDecisions.AbstractStat
     defenses::FloodDefenses{T}
 end
 
-StochasticState{T}() where {T<:AbstractFloat} = StochasticState(
-    FloodDefenses{T}(zero(T), zero(T), zero(T), zero(T), zero(T))
-)
+function StochasticState{T}() where {T<:AbstractFloat}
+    StochasticState(FloodDefenses{T}(zero(T), zero(T), zero(T), zero(T), zero(T)))
+end
 
 # =============================================================================
 # StaticPolicy - reparameterized for optimization
@@ -201,4 +201,6 @@ Simulation outcome holding discounted investment cost and realized damage.
 
 Total cost is investment plus realized damage.
 """
-total_cost(o::StochasticOutcome) = SimOptDecisions.value(o.investment) + SimOptDecisions.value(o.damage)
+function total_cost(o::StochasticOutcome)
+    SimOptDecisions.value(o.investment) + SimOptDecisions.value(o.damage)
+end

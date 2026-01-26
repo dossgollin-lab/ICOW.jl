@@ -26,7 +26,9 @@ end
 
 Calculate unitless resistance cost fraction (Equation 3). See _background/equations.md.
 """
-function resistance_cost_fraction(f_adj::T, f_lin::T, f_exp::T, t_exp::T, P::T) where {T<:AbstractFloat}
+function resistance_cost_fraction(
+    f_adj::T, f_lin::T, f_exp::T, t_exp::T, P::T
+) where {T<:AbstractFloat}
     linear_term = f_lin * P
     exponential_numerator = f_exp * max(zero(T), P - t_exp)
     exponential_term = exponential_numerator / (one(T) - P)
@@ -84,7 +86,9 @@ end
 Calculate dike failure probability (Equation 8). See _background/equations.md.
 h_surge should be surge height above dike base.
 """
-function dike_failure_probability(h_surge::T, D::T, t_fail::T, p_min::T) where {T<:AbstractFloat}
+function dike_failure_probability(
+    h_surge::T, D::T, t_fail::T, p_min::T
+) where {T<:AbstractFloat}
     # No dike means certain failure if surge > 0
     if D == zero(T)
         return h_surge > zero(T) ? one(T) : p_min

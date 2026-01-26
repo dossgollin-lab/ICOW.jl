@@ -38,7 +38,9 @@ struct FloodDefenses{T<:Real}
 end
 
 # Outer constructor with explicit type parameter
-FloodDefenses(W::T, R::T, P::T, D::T, B::T) where {T<:Real} = FloodDefenses{T}(W, R, P, D, B)
+function FloodDefenses(W::T, R::T, P::T, D::T, B::T) where {T<:Real}
+    FloodDefenses{T}(W, R, P, D, B)
+end
 
 # Outer constructor with type promotion for mixed numeric types
 function FloodDefenses(W, R, P, D, B)
@@ -59,11 +61,7 @@ Element-wise maximum of two FloodDefenses, for irreversibility enforcement.
 """
 function Base.max(a::FloodDefenses{T}, b::FloodDefenses{T}) where {T}
     FloodDefenses{T}(
-        max(a.W, b.W),
-        max(a.R, b.R),
-        max(a.P, b.P),
-        max(a.D, b.D),
-        max(a.B, b.B)
+        max(a.W, b.W), max(a.R, b.R), max(a.P, b.P), max(a.D, b.D), max(a.B, b.B)
     )
 end
 
