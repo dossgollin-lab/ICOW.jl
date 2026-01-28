@@ -17,7 +17,10 @@ using Test
     @testset "Simulation runs with quadrature" begin
         config = EADConfig(n_years=5)
         scenario = EADScenario(
-            surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0,
+            surge_loc=3.0,
+            surge_scale=1.0,
+            surge_shape=0.0,
+            discount_rate=0.0,
             mean_sea_level=zeros(5),
         )
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)
@@ -33,7 +36,10 @@ using Test
     @testset "Simulation runs with Monte Carlo" begin
         config = EADConfig(n_years=5, integrator=MonteCarloIntegrator(n_samples=100))
         scenario = EADScenario(
-            surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0,
+            surge_loc=3.0,
+            surge_scale=1.0,
+            surge_shape=0.0,
+            discount_rate=0.0,
             mean_sea_level=zeros(5),
         )
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)
@@ -49,7 +55,10 @@ using Test
     @testset "Zero policy produces zero investment" begin
         config = EADConfig(n_years=2)
         scenario = EADScenario(
-            surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0,
+            surge_loc=3.0,
+            surge_scale=1.0,
+            surge_shape=0.0,
+            discount_rate=0.0,
             mean_sea_level=zeros(2),
         )
         policy = StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)
@@ -63,7 +72,10 @@ using Test
     @testset "Quadrature is deterministic" begin
         config = EADConfig(n_years=5)
         scenario = EADScenario(
-            surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03,
+            surge_loc=3.0,
+            surge_scale=1.0,
+            surge_shape=0.0,
+            discount_rate=0.03,
             mean_sea_level=zeros(5),
         )
         policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
@@ -81,7 +93,10 @@ using Test
     @testset "Monte Carlo varies with RNG but converges" begin
         config = EADConfig(n_years=3, integrator=MonteCarloIntegrator(n_samples=100))
         scenario = EADScenario(
-            surge_loc=5.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0,
+            surge_loc=5.0,
+            surge_scale=1.0,
+            surge_shape=0.0,
+            discount_rate=0.0,
             mean_sea_level=zeros(3),
         )
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
@@ -102,7 +117,10 @@ using Test
         config_quad = EADConfig(n_years=3)
         config_mc = EADConfig(n_years=3, integrator=MonteCarloIntegrator(n_samples=10000))
         scenario = EADScenario(
-            surge_loc=4.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0,
+            surge_loc=4.0,
+            surge_scale=1.0,
+            surge_shape=0.0,
+            discount_rate=0.0,
             mean_sea_level=zeros(3),
         )
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
@@ -119,11 +137,17 @@ using Test
     @testset "Discounting applied correctly" begin
         config = EADConfig(n_years=3)
         scenario_no_discount = EADScenario(
-            surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.0,
+            surge_loc=3.0,
+            surge_scale=1.0,
+            surge_shape=0.0,
+            discount_rate=0.0,
             mean_sea_level=zeros(3),
         )
         scenario_with_discount = EADScenario(
-            surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.1,
+            surge_loc=3.0,
+            surge_scale=1.0,
+            surge_shape=0.0,
+            discount_rate=0.1,
             mean_sea_level=zeros(3),
         )
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
@@ -139,7 +163,10 @@ using Test
         config = EADConfig(n_years=3)
         # Very small scale approximates a point mass at surge_loc
         scenario = EADScenario(
-            surge_loc=5.0, surge_scale=0.001, surge_shape=0.0, discount_rate=0.0,
+            surge_loc=5.0,
+            surge_scale=0.001,
+            surge_shape=0.0,
+            discount_rate=0.0,
             mean_sea_level=zeros(3),
         )
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
@@ -160,7 +187,10 @@ using Test
         config = EADConfig(n_years=3)
         # Very low surge location with tiny scale
         scenario = EADScenario(
-            surge_loc=-5.0, surge_scale=0.01, surge_shape=0.0, discount_rate=0.0,
+            surge_loc=-5.0,
+            surge_scale=0.01,
+            surge_shape=0.0,
+            discount_rate=0.0,
             mean_sea_level=zeros(3),
         )
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
@@ -172,7 +202,10 @@ using Test
     @testset "Infeasible policy returns infinite costs" begin
         config = EADConfig(n_years=2)
         scenario = EADScenario(
-            surge_loc=1.0, surge_scale=0.001, surge_shape=0.0, discount_rate=0.0,
+            surge_loc=1.0,
+            surge_scale=0.001,
+            surge_shape=0.0,
+            discount_rate=0.0,
             mean_sea_level=zeros(2),
         )
         # a_frac=1, w_frac=1 produces W = H_city, which is infeasible (strict inequality required)
