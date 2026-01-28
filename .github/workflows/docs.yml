@@ -33,8 +33,8 @@ jobs:
         run: |
           julia --project=docs -e '
             using Pkg
-            Pkg.add(url="https://github.com/dossgollin-lab/SimOptDecisions.git")
             Pkg.develop(path=".")
+            Pkg.add(url="https://github.com/dossgollin-lab/SimOptDecisions.git")
             Pkg.instantiate()
             Pkg.precompile()
           '
