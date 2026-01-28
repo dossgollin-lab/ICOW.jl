@@ -95,7 +95,8 @@ end
 
 @testset "EADScenario" begin
     scenario = EADScenario(
-        surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03
+        surge_loc=3.0, surge_scale=1.0, surge_shape=0.0,
+        discount_rate=0.03, mean_sea_level=zeros(50)
     )
     @test value(scenario.surge_loc) == 3.0
     @test value(scenario.surge_scale) == 1.0
@@ -107,7 +108,7 @@ end
     # Default integrator is QuadratureIntegrator
     config = EADConfig()
     @test config.integrator isa QuadratureIntegrator
-    @test config.n_years == 50
+    @test config.n_years == 100
 
     # Custom integrator
     config = EADConfig(integrator=MonteCarloIntegrator(n_samples=500))

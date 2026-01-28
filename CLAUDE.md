@@ -49,7 +49,7 @@ src/
 Types subtype SimOptDecisions abstracts:
 
 - `StochasticConfig <: AbstractConfig` - 28 city parameters (flattened, no nesting)
-- `StochasticScenario <: AbstractScenario` - `@timeseries surges` + `@continuous discount_rate`
+- `StochasticScenario <: AbstractScenario` - `@timeseries surges` + `@timeseries mean_sea_level` + `@continuous discount_rate`
 - `StochasticState <: AbstractState` - holds `defenses::FloodDefenses{T}`
 - `StaticPolicy <: AbstractPolicy` - reparameterized fractions (a_frac, w_frac, b_frac, r_frac, P)
 - `StochasticOutcome <: AbstractOutcome` - investment + damage
@@ -66,7 +66,7 @@ Usage:
 ```julia
 using ICOW.Stochastic
 config = StochasticConfig()
-scenario = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.03)
+scenario = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.02, mean_sea_level=[0.0, 0.01, 0.02])
 policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
 outcome = SimOptDecisions.simulate(config, scenario, policy, rng)
 ```
@@ -76,7 +76,7 @@ outcome = SimOptDecisions.simulate(config, scenario, policy, rng)
 Types subtype SimOptDecisions abstracts:
 
 - `EADConfig <: AbstractConfig` - 28 city parameters + `n_years` + `integrator`
-- `EADScenario <: AbstractScenario` - `@scenariodef` with `@continuous surge_loc, surge_scale, surge_shape, discount_rate`
+- `EADScenario <: AbstractScenario` - `@scenariodef` with `@continuous surge_loc, surge_scale, surge_shape, discount_rate` + `@timeseries mean_sea_level`
 - `EADState <: AbstractState` - holds `defenses::FloodDefenses{T}`
 - `StaticPolicy <: AbstractPolicy` - same reparameterization as Stochastic
 - `EADOutcome <: AbstractOutcome` - investment + expected_damage
@@ -89,8 +89,8 @@ Integration methods (on EADConfig):
 Usage:
 ```julia
 using ICOW.EAD
-config = EADConfig()  # 50 years, quadrature by default
-scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
+config = EADConfig()  # 100 years, quadrature by default
+scenario = EADScenario(surge_loc=0.935, surge_scale=0.260, surge_shape=0.030, discount_rate=0.02, mean_sea_level=collect(range(0.0; step=0.01, length=100)))
 policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
 outcome = SimOptDecisions.simulate(config, scenario, policy, rng)
 ```
@@ -218,9 +218,12 @@ Use `@assert` aggressively in constructors to enforce physical bounds (e.g., $0 
 
 ### Package Management
 
-- **Never** manually edit Project.toml or Manifest.toml files.
-- **Never** run Pkg commands directly (e.g., `Pkg.add()`, `Pkg.generate()`, `Pkg.develop()`).
-- **Always** ask the human to run package management commands manually. For example: "Please run `julia --project -e 'using Pkg; Pkg.add("PackageName")'`"
+**ABSOLUTE RULE -- NO EXCEPTIONS:**
+
+- **NEVER** manually edit `Project.toml` or `Manifest.toml` files. Not to add packages, not to remove packages, not to change versions, not to fix formatting. These files are managed exclusively by Julia's Pkg system. Manual edits can corrupt the dependency graph.
+- **NEVER** run Pkg commands directly (e.g., `Pkg.add()`, `Pkg.generate()`, `Pkg.develop()`, `Pkg.rm()`).
+- **ALWAYS** ask the human to run package management commands manually. For example: "Please run `julia --project -e 'using Pkg; Pkg.add("PackageName")'`" or "Please run `julia --project=docs -e 'using Pkg; Pkg.rm("PackageName")'`"
+- This applies to ALL `Project.toml` files in the repo: the root one, `docs/Project.toml`, `test/Project.toml`, and any others.
 
 ## Workflow (Strict)
 

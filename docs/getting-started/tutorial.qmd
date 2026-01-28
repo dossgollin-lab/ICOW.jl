@@ -24,7 +24,7 @@ using ICOW
 using ICOW.EAD
 using Random
 using CairoMakie
-CairoMakie.activate!(type = "svg")
+CairoMakie.activate!(; type="svg")
 ```
 
 ## The Setting
@@ -57,7 +57,7 @@ You can customize any parameter:
 
 ```{julia}
 # A smaller, lower-lying city
-config_small = EADConfig(V_city=5e11, H_city=10.0, H_seawall=1.0)
+config_small = EADConfig(; V_city=5e11, H_city=10.0, H_seawall=1.0)
 ```
 
 For this tutorial, we will use the defaults.
@@ -65,14 +65,16 @@ For this tutorial, we will use the defaults.
 ## Step 2: Define the Hazard
 
 Storm surge heights follow a Generalized Extreme Value (GEV) distribution, which is the natural statistical model for annual maxima.
-An `EADScenario` specifies the GEV parameters and a discount rate:
+An `EADScenario` specifies the GEV parameters, a discount rate, and a mean sea level time series (which can represent sea level rise):
 
 ```{julia}
-scenario = EADScenario(
-    surge_loc=3.0,     # location (m): typical annual max surge
-    surge_scale=1.0,   # scale (m): spread of surge heights
-    surge_shape=0.0,   # shape: 0 = Gumbel (light-tailed)
-    discount_rate=0.03  # 3% annual discount rate
+n_years = config.n_years
+scenario = EADScenario(;
+    surge_loc=0.935,      # GEV location (m): calibrated to The Battery, NYC
+    surge_scale=0.260,    # GEV scale (m)
+    surge_shape=0.030,    # GEV shape: slightly heavy-tailed
+    discount_rate=0.02,   # 2% annual discount rate
+    mean_sea_level=collect(range(0.0; step=0.01, length=n_years)),  # 1 cm/yr SLR
 )
 ```
 
@@ -96,12 +98,12 @@ The "stick-breaking" parameterization guarantees that all physical constraints a
 Let's try a strategy that invests in a moderate dike with some resistance:
 
 ```{julia}
-policy_mixed = StaticPolicy(
+policy_mixed = StaticPolicy(;
     a_frac=0.3,   # use 30% of city elevation as protection budget
     w_frac=0.1,   # 10% of budget goes to withdrawal
     b_frac=0.2,   # 20% of remaining budget goes to dike base
     r_frac=0.1,   # resistance height = 10% of H_city
-    P=0.5          # flood-proof 50% of buildings
+    P=0.5,        # flood-proof 50% of buildings
 )
 ```
 
@@ -115,7 +117,7 @@ fd
 
 ## Step 4: Run the Simulation
 
-The `simulate` function computes the total investment cost and expected flood damage over the planning horizon (50 years by default), discounted to present value:
+The `simulate` function computes the total investment cost and expected flood damage over the planning horizon (100 years by default), discounted to present value:
 
 ```{julia}
 rng = MersenneTwister(42)
@@ -137,11 +139,11 @@ Here are five archetypes ranging from "do nothing" to "heavy investment":
 
 ```{julia}
 strategies = [
-    ("No protection",      StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
-    ("Dike only",          StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
-    ("Withdraw + resist",  StaticPolicy(a_frac=0.2, w_frac=0.5, b_frac=0.0, r_frac=0.3, P=0.7)),
-    ("Mixed",              StaticPolicy(a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
-    ("High dike + resist", StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3)),
+    ("No additional protection", StaticPolicy(; a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Dike only",                StaticPolicy(; a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Withdraw + resist",        StaticPolicy(; a_frac=0.2, w_frac=0.5, b_frac=1.0, r_frac=0.3, P=0.7)),
+    ("Mixed",                    StaticPolicy(; a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
+    ("High dike + resist",       StaticPolicy(; a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3)),
 ]
 policy_list = last.(strategies)
 strategy_names = first.(strategies)
@@ -187,11 +189,12 @@ But in practice, the GEV parameters are uncertain -- this is a key aspect of dec
 Let's see how our strategies perform under a **heavier-tailed** surge distribution (positive shape parameter):
 
 ```{julia}
-scenario_heavy = EADScenario(
-    surge_loc=3.0,
-    surge_scale=1.0,
+scenario_heavy = EADScenario(;
+    surge_loc=0.935,
+    surge_scale=0.260,
     surge_shape=0.15,   # heavier tail: more extreme surges possible
-    discount_rate=0.03
+    discount_rate=0.02,
+    mean_sea_level=collect(range(0.0; step=0.01, length=n_years)),
 )
 
 scenarios_both = [scenario, scenario_heavy]
@@ -208,7 +211,7 @@ ax = Axis(fig[1, 1];
 # Light-tailed scenario
 inv_1 = result_both[:investment].data[:, 1] ./ 1e9
 dmg_1 = result_both[:expected_damage].data[:, 1] ./ 1e9
-scatter!(ax, inv_1, dmg_1; markersize=12, color=:steelblue, label="Gumbel (shape=0)")
+scatter!(ax, inv_1, dmg_1; markersize=12, color=:steelblue, label="Baseline (shape=0.03)")
 
 # Heavy-tailed scenario
 inv_2 = result_both[:investment].data[:, 2] ./ 1e9

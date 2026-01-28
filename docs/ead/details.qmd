@@ -19,10 +19,11 @@ This page assumes familiarity with the basic concepts (Config, Scenario, Policy,
 
 ```{julia}
 #| code-fold: true
+#| output: false
 using ICOW.EAD
 using Random
 using CairoMakie
-CairoMakie.activate!(type = "svg")
+CairoMakie.activate!(; type="svg")
 ```
 
 ## Configuring the City
@@ -48,11 +49,16 @@ Customize any parameter via keyword arguments: `EADConfig(H_city=20.0, V_city=2.
 
 ## Defining the Hazard
 
-An `EADScenario` specifies a **stationary** surge hazard using Generalized Extreme Value (GEV) parameters -- location, scale, and shape -- plus a discount rate.
-All four fields are `@continuous` parameters, so `explore()` works out of the box.
+An `EADScenario` specifies a **stationary** surge hazard using Generalized Extreme Value (GEV) parameters -- location, scale, and shape -- plus a discount rate and a mean sea level time series.
+The GEV parameters and discount rate are `@continuous` parameters, while `mean_sea_level` is a `@timeseries` that can represent sea level rise over the planning horizon.
+The default GEV parameters below are calibrated to The Battery, NYC per @ceres_cityonawedge:2019.
 
 ```{julia}
-scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
+n_years = config.n_years
+scenario = EADScenario(;
+    surge_loc=0.935, surge_scale=0.260, surge_shape=0.030,
+    discount_rate=0.02, mean_sea_level=collect(range(0.0; step=0.01, length=n_years)),
+)
 ```
 
 The GEV distribution is the natural choice for annual maximum storm surges.
@@ -68,8 +74,8 @@ Two methods are available:
 - **`MonteCarloIntegrator(n_samples=1000)`** -- random sampling; stochastic, flexible
 
 ```{julia}
-config_quad = EADConfig(integrator=QuadratureIntegrator())
-config_mc = EADConfig(integrator=MonteCarloIntegrator(n_samples=10_000))
+config_quad = EADConfig(; integrator=QuadratureIntegrator())
+config_mc = EADConfig(; integrator=MonteCarloIntegrator(; n_samples=10_000))
 ```
 
 ::: {.callout-tip}
@@ -83,7 +89,7 @@ A `StaticPolicy` specifies protection levels using **reparameterized fractions**
 The policy converts to a `FloodDefenses` struct with absolute meter values:
 
 ```{julia}
-policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.2, r_frac=0.1, P=0.5)
+policy = StaticPolicy(; a_frac=0.3, w_frac=0.0, b_frac=0.2, r_frac=0.1, P=0.5)
 fd = FloodDefenses(policy, config)
 fd
 ```
@@ -91,12 +97,22 @@ fd
 Different strategies allocate height budget across the three defense types in different ways:
 
 ```{julia}
+#| output: false
 archetypes = [
-    ("No protection",        StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
-    ("Dike only",            StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
-    ("Withdraw + resist",    StaticPolicy(a_frac=0.2, w_frac=0.5, b_frac=0.0, r_frac=0.3, P=0.7)),
-    ("Mixed",                StaticPolicy(a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
-    ("High dike + resist",   StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3)),
+    (
+        "No additional protection",
+        StaticPolicy(; a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0),
+    ),
+    ("Dike only", StaticPolicy(; a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    (
+        "Withdraw + resist",
+        StaticPolicy(; a_frac=0.2, w_frac=0.5, b_frac=1.0, r_frac=0.3, P=0.7),
+    ),
+    ("Mixed", StaticPolicy(; a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
+    (
+        "High dike + resist",
+        StaticPolicy(; a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3),
+    ),
 ]
 policies = last.(archetypes)
 names = first.(archetypes)
@@ -104,8 +120,14 @@ names = first.(archetypes)
 
 ```{julia}
 fig = Figure(; size=(600, 350))
-ax = Axis(fig[1, 1]; xlabel="Policy", ylabel="Height (m)", title="Height allocation by strategy",
-    xticks=(1:length(archetypes), names), xticklabelrotation=pi/6)
+ax = Axis(
+    fig[1, 1];
+    xlabel="Policy",
+    ylabel="Height (m)",
+    title="Height allocation by strategy",
+    xticks=(1:length(archetypes), names),
+    xticklabelrotation=pi / 6,
+)
 
 ws = [FloodDefenses(p, config).W for p in policies]
 bs = [FloodDefenses(p, config).B for p in policies]
@@ -146,9 +168,19 @@ result
 inv_vals = vec(result[:investment].data) ./ 1e9
 dmg_vals = vec(result[:expected_damage].data) ./ 1e9
 
-fig = Figure(; size=(600, 400))
-ax = Axis(fig[1, 1]; xlabel="Investment (\$B)", ylabel="Expected Damage (\$B)",
-    title="Investment vs Expected Damage")
+fig = Figure(; size=(600, 600))
+ax = Axis(
+    fig[1, 1];
+    xlabel="Investment (\$B)",
+    ylabel="Expected Damage (\$B)",
+    title="Investment vs Expected Damage",
+    aspect=1,
+)
+max_val = max(maximum(inv_vals), maximum(dmg_vals))
+iso_costs = range(0, 2 * max_val; length=5)[2:end]
+for c in iso_costs
+    lines!(ax, [0, c], [c, 0]; color=:gray80, linestyle=:dash)
+end
 scatter!(ax, inv_vals, dmg_vals; markersize=14, color=:steelblue)
 for (i, name) in enumerate(names)
     text!(ax, inv_vals[i], dmg_vals[i]; text=name, fontsize=10, offset=(8, 4))
@@ -168,8 +200,8 @@ Quadrature and Monte Carlo should agree when the number of samples is large enou
 Here we verify this for the mixed policy:
 
 ```{julia}
-config_q = EADConfig(integrator=QuadratureIntegrator())
-config_m = EADConfig(integrator=MonteCarloIntegrator(n_samples=10_000))
+config_q = EADConfig(; integrator=QuadratureIntegrator())
+config_m = EADConfig(; integrator=MonteCarloIntegrator(; n_samples=10_000))
 
 rng = MersenneTwister(42)
 o_quad = simulate(config_q, scenario, policy, rng)

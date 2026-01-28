@@ -15,7 +15,7 @@ using Test
 
     @testset "Simulation runs" begin
         config = StochasticConfig()
-        scenario = StochasticScenario(surges=[1.0, 2.0, 3.0, 4.0, 5.0], discount_rate=0.0)
+        scenario = StochasticScenario(surges=[1.0, 2.0, 3.0, 4.0, 5.0], mean_sea_level=zeros(5), discount_rate=0.0)
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)
 
         rng = MersenneTwister(42)
@@ -28,7 +28,7 @@ using Test
 
     @testset "Zero policy produces zero investment" begin
         config = StochasticConfig()
-        scenario = StochasticScenario(surges=[1.0, 2.0], discount_rate=0.0)
+        scenario = StochasticScenario(surges=[1.0, 2.0], mean_sea_level=zeros(2), discount_rate=0.0)
         policy = StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)
 
         rng = MersenneTwister(42)
@@ -39,7 +39,7 @@ using Test
 
     @testset "Deterministic with same RNG" begin
         config = StochasticConfig()
-        scenario = StochasticScenario(surges=[1.0, 2.0, 3.0, 4.0, 5.0], discount_rate=0.03)
+        scenario = StochasticScenario(surges=[1.0, 2.0, 3.0, 4.0, 5.0], mean_sea_level=zeros(5), discount_rate=0.03)
         policy = StaticPolicy(a_frac=0.5, w_frac=0.1, b_frac=0.3, r_frac=0.2, P=0.5)
 
         outcome1 = simulate(config, scenario, policy, MersenneTwister(123))
@@ -53,9 +53,9 @@ using Test
 
     @testset "Discounting applied correctly" begin
         config = StochasticConfig()
-        scenario_no_discount = StochasticScenario(surges=[1.0, 2.0, 3.0], discount_rate=0.0)
+        scenario_no_discount = StochasticScenario(surges=[1.0, 2.0, 3.0], mean_sea_level=zeros(3), discount_rate=0.0)
         scenario_with_discount = StochasticScenario(
-            surges=[1.0, 2.0, 3.0], discount_rate=0.1
+            surges=[1.0, 2.0, 3.0], mean_sea_level=zeros(3), discount_rate=0.1
         )
         policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
 
@@ -71,7 +71,7 @@ using Test
         # Moderate surges near dike height to get intermediate failure probability
         # With a_frac=0.5, b_frac=0.5: A=8.5, B=4.25, D=4.25, dike_top=8.5
         # Surges of ~7m will sometimes overtop, sometimes not
-        scenario = StochasticScenario(surges=[7.0, 7.0, 7.0], discount_rate=0.0)
+        scenario = StochasticScenario(surges=[7.0, 7.0, 7.0], mean_sea_level=zeros(3), discount_rate=0.0)
         policy = StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.5, r_frac=0.0, P=0.0)
 
         damages = [
@@ -86,7 +86,7 @@ using Test
 
     @testset "Infeasible policy returns infinite costs" begin
         config = StochasticConfig()  # H_city = 17.0
-        scenario = StochasticScenario(surges=[1.0, 2.0], discount_rate=0.0)
+        scenario = StochasticScenario(surges=[1.0, 2.0], mean_sea_level=zeros(2), discount_rate=0.0)
         # a_frac=1, w_frac=1 produces W = H_city, which is infeasible (strict inequality required)
         policy = StaticPolicy(a_frac=1.0, w_frac=1.0, b_frac=0.0, r_frac=0.0, P=0.0)
 

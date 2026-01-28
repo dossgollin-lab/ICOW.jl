@@ -65,7 +65,7 @@ This zoning is what allows iCOW to capture graduated damage rather than a simple
 #| code-fold: true
 using ICOW
 using CairoMakie
-CairoMakie.activate!(type = "svg")
+CairoMakie.activate!(; type="svg")
 
 # Example defenses: W=2, R=1.5, P=0.5, D=4, B=3
 fd = FloodDefenses(W=2.0, R=1.5, P=0.5, D=4.0, B=3.0)
@@ -315,39 +315,99 @@ The outer expectation is computed numerically via adaptive quadrature or Monte C
 
 ## Parameters
 
-All 28 parameters are fields in `StochasticConfig` / `EADConfig`:
+All 28 parameters are fields in `StochasticConfig` / `EADConfig`.
+Default values are read directly from the struct definition:
 
-| Category | Parameter | Symbol | Default | Units | Description |
-|----------|-----------|--------|---------|-------|-------------|
-| Geometry | $V_{\text{city}}$ | `V_city` | $1.5 \times 10^{12}$ | \$ | Total replacement value of all city infrastructure and buildings |
-| Geometry | $H_{\text{bldg}}$ | `H_bldg` | 30.0 | m | Average building height, used to normalize resistance costs per floor |
-| Geometry | $H_{\text{city}}$ | `H_city` | 17.0 | m | Total elevation change from the seawall to the highest point of the city |
-| Geometry | $D_{\text{city}}$ | `D_city` | 2000.0 | m | Horizontal distance from the seawall to the city's peak elevation |
-| Geometry | $W_{\text{city}}$ | `W_city` | 43000.0 | m | Length of the coastline along which the seawall and dike are built |
-| Geometry | $H_{\text{seawall}}$ | `H_seawall` | 1.75 | m | Height of the existing seawall; surges below this cause no flooding |
-| Dike | $D_{\text{startup}}$ | `D_startup` | 2.0 | m | Minimum effective dike height representing fixed mobilization costs (added to $D$) |
-| Dike | $w_d$ | `w_d` | 3.0 | m | Width of the flat top of the dike cross-section |
-| Dike | $s$ | `s_dike` | 0.5 | m/m | Ratio of horizontal run to vertical rise on each side of the dike |
-| Dike | $c_d$ | `c_d` | 10.0 | \$/m$^3$ | Unit cost of dike construction material per cubic meter |
-| Zones | $r_{\text{prot}}$ | `r_prot` | 1.1 | -- | Value multiplier for dike-protected land (Zone 3); values above 1 reflect appreciation from protection |
-| Zones | $r_{\text{unprot}}$ | `r_unprot` | 0.95 | -- | Value multiplier for unprotected land (Zones 1--2); values below 1 reflect depreciation from residual risk |
-| Withdrawal | $f_w$ | `f_w` | 1.0 | -- | Scales the cost of relocating buildings and infrastructure from the withdrawn zone |
-| Withdrawal | $f_l$ | `f_l` | 0.01 | -- | Fraction of city value permanently lost per meter of withdrawal height |
-| Resistance | $f_{\text{adj}}$ | `f_adj` | 1.25 | -- | Overall multiplier on resistance costs (present in C++ but not prominent in paper) |
-| Resistance | $f_{\text{lin}}$ | `f_lin` | 0.35 | -- | Weight of the linear component of resistance cost as a function of $P$ |
-| Resistance | $f_{\text{exp}}$ | `f_exp` | 0.115 | -- | Weight of the exponential component that makes high $P$ values increasingly expensive |
-| Resistance | $t_{\text{exp}}$ | `t_exp` | 0.4 | -- | Threshold of $P$ above which the exponential cost component activates |
-| Resistance | $b$ | `b_basement` | 3.0 | m | Depth of basements below ground; flood-proofing must extend this far below the surface |
-| Damage | $f_{\text{damage}}$ | `f_damage` | 0.39 | -- | Maximum fraction of a zone's value destroyed when fully inundated |
-| Damage | $f_{\text{intact}}$ | `f_intact` | 0.03 | -- | Damage multiplier for Zone 3 when the dike holds (seepage and wave overtopping) |
-| Damage | $f_{\text{failed}}$ | `f_failed` | 1.5 | -- | Damage multiplier for Zone 3 when the dike fails (amplified by sudden breach flooding) |
-| Damage | $t_{\text{fail}}$ | `t_fail` | 0.95 | -- | Fraction of dike height $D$ at which failure probability begins to rise above $p_{\text{min}}$ |
-| Damage | $p_{\text{min}}$ | `p_min` | 0.05 | -- | Baseline probability of dike failure even when surge is well below the dike crest |
-| Damage | $f_{\text{runup}}$ | `f_runup` | 1.1 | -- | Multiplier on raw surge height to account for wave runup effects at the seawall |
-| Threshold | $d_{\text{thresh}}$ | `d_thresh` | $4 \times 10^{9}$ | \$ | Damage level above which cascading societal effects (insurance collapse, displacement) amplify losses |
-| Threshold | $f_{\text{thresh}}$ | `f_thresh` | 1.0 | -- | Scales the excess damage above $d_{\text{thresh}}$ before applying the power-law penalty |
-| Threshold | $\gamma_{\text{thresh}}$ | `gamma_thresh` | 1.01 | -- | Exponent of the power-law penalty applied to excess damage above the threshold |
+```{julia}
+#| code-fold: true
+#| output: asis
+using ICOW.EAD
 
-: {tbl-colwidths="[8,10,8,7,5,62]"}
+config = EADConfig()
+
+# Metadata: (symbol, category, units, description)
+meta = Dict(
+    :V_city       => (raw"$V_{\text{city}}$",       "Geometry",   "USD",       "Total replacement value of all city infrastructure and buildings"),
+    :H_bldg       => (raw"$H_{\text{bldg}}$",       "Geometry",   "m",         "Average building height, used to normalize resistance costs per floor"),
+    :H_city       => (raw"$H_{\text{city}}$",        "Geometry",   "m",         "Total elevation change from the seawall to the highest point of the city"),
+    :D_city       => (raw"$D_{\text{city}}$",        "Geometry",   "m",         "Horizontal distance from the seawall to the city's peak elevation"),
+    :W_city       => (raw"$W_{\text{city}}$",        "Geometry",   "m",         "Length of the coastline along which the seawall and dike are built"),
+    :H_seawall    => (raw"$H_{\text{seawall}}$",     "Geometry",   "m",         "Height of the existing seawall; surges below this cause no flooding"),
+    :D_startup    => (raw"$D_{\text{startup}}$",     "Dike",       "m",         "Minimum effective dike height representing fixed mobilization costs (added to D)"),
+    :w_d          => (raw"$w_d$",                     "Dike",       "m",         "Width of the flat top of the dike cross-section"),
+    :s_dike       => (raw"$s$",                       "Dike",       "m/m",       raw"Dike side slope parameter (horizontal run per unit rise = $1/s^2$)"),
+    :c_d          => (raw"$c_d$",                     "Dike",       "USD/m³",    "Unit cost of dike construction per cubic meter"),
+    :r_prot       => (raw"$r_{\text{prot}}$",        "Zones",      "--",        "Value multiplier for dike-protected land (Zone 3)"),
+    :r_unprot     => (raw"$r_{\text{unprot}}$",      "Zones",      "--",        "Value multiplier for unprotected land (Zones 1--2)"),
+    :f_w          => (raw"$f_w$",                     "Withdrawal", "--",        "Scales the cost of relocating buildings and infrastructure from the withdrawn zone"),
+    :f_l          => (raw"$f_l$",                     "Withdrawal", "--",        "Fraction of city value permanently lost per meter of withdrawal height"),
+    :f_adj        => (raw"$f_{\text{adj}}$",         "Resistance", "--",        "Overall multiplier on resistance costs (present in C++ but not prominent in paper)"),
+    :f_lin        => (raw"$f_{\text{lin}}$",         "Resistance", "--",        raw"Weight of the linear component of resistance cost as a function of $P$"),
+    :f_exp        => (raw"$f_{\text{exp}}$",         "Resistance", "--",        raw"Weight of the exponential component that makes high $P$ values increasingly expensive"),
+    :t_exp        => (raw"$t_{\text{exp}}$",         "Resistance", "--",        raw"Threshold of $P$ above which the exponential cost component activates"),
+    :b_basement   => (raw"$b$",                       "Resistance", "m",         "Depth of basements below ground; flood-proofing must extend this far below the surface"),
+    :f_damage     => (raw"$f_{\text{damage}}$",      "Damage",     "--",        "Maximum fraction of a zone's value destroyed when fully inundated"),
+    :f_intact     => (raw"$f_{\text{intact}}$",      "Damage",     "--",        "Damage multiplier for Zone 3 when the dike holds (seepage and wave overtopping)"),
+    :f_failed     => (raw"$f_{\text{failed}}$",      "Damage",     "--",        "Damage multiplier for Zone 3 when the dike fails (amplified by sudden breach flooding)"),
+    :t_fail       => (raw"$t_{\text{fail}}$",        "Damage",     "--",        raw"Fraction of dike height $D$ at which failure probability begins to rise above $p_{\text{min}}$"),
+    :p_min        => (raw"$p_{\text{min}}$",         "Damage",     "--",        "Baseline probability of dike failure even when surge is well below the dike crest"),
+    :f_runup      => (raw"$f_{\text{runup}}$",       "Damage",     "--",        "Multiplier on raw surge height to account for wave runup effects at the seawall"),
+    :d_thresh     => (raw"$d_{\text{thresh}}$",      "Threshold",  "USD",       "Damage level above which cascading societal effects amplify losses"),
+    :f_thresh     => (raw"$f_{\text{thresh}}$",      "Threshold",  "--",        raw"Scales the excess damage above $d_{\text{thresh}}$ before applying the power-law penalty"),
+    :gamma_thresh => (raw"$\gamma_{\text{thresh}}$", "Threshold",  "--",        "Exponent of the power-law penalty applied to excess damage above the threshold"),
+)
+
+# Emit a Markdown table so Quarto renders the math
+header = "| Category | Symbol | Field | Default | Units | Description |"
+sep    = "|----------|--------|-------|---------|-------|-------------|"
+println(header)
+println(sep)
+for fn in fieldnames(EADConfig)
+    haskey(meta, fn) || continue
+    sym, cat, units, desc = meta[fn]
+    val = getfield(config, fn)
+    println("| $cat | $sym | `$fn` | $val | $units | $desc |")
+end
+println()
+println(": {tbl-colwidths=\"[10,12,10,8,6,54]\"}")
+```
+
+## Deviations from @ceres_cityonawedge:2019
+
+This implementation fixes several bugs in the original C++ reference code and makes one parameter recalibration.
+Full details, including line-by-line C++ bug analysis, are in `_background/equations.md` in the source repository (not published as part of these docs).
+
+### Dike volume formula (Equation 6)
+
+The paper's Equation 6 contains a polynomial $T$ under a square root that is numerically unstable for realistic terrain slopes.
+With $S = H_{\text{city}} / D_{\text{city}} = 0.0085$, the polynomial denominators involve $S^4 \approx 5 \times 10^{-9}$, causing $T < 0$ and the square root to be undefined.
+
+The original C++ code never actually evaluated this formula correctly due to Bug #1: `pow(T, 1/2)` performs integer division in C++, yielding `pow(T, 0) = 1`.
+The complex geometric term was silently ignored in all published results.
+
+This implementation replaces Equation 6 with a simplified geometric derivation that is numerically stable and physically equivalent: a trapezoidal seawall prism along the coastline plus two tapered wing prisms running inland up the city slope.
+
+### Dike unit cost ($c_d$)
+
+The paper and C++ both specify $c_d = 10$ dollars per cubic meter.
+However, the C++ `CalculateDikeCost` function contains Bug #4: it uses `CityWidth` (43,000 m, the coastline length) where the formula calls for `WidthDikeTop` (3 m, the dike crest width).
+This inflates the wing volume term by a factor of $\sim$14,000, which combined with the wrong slope definition (Bug #5) produces dike costs roughly $100 \times$ larger than the correct geometric formula.
+
+Since the paper's published results were generated with these bugs, its tradeoff analysis effectively assumes dike costs of 10--20 billion dollars for a Manhattan-scale seawall.
+To restore that cost scale with the corrected volume formula, we set $c_d = 1000$ dollars per cubic meter.
+This is also more physically realistic: 10 dollars per cubic meter covers only raw earth fill, while 1000 dollars per cubic meter better reflects the full cost of engineered flood defense construction.
+
+### Other C++ bug fixes
+
+The original C++ reference code contains seven bugs total.
+In addition to the dike-related bugs above:
+
+- **Bug #2**: Uses constant array index `dh=5` instead of local variable `ch` in the fourth term of the $T$ polynomial.
+- **Bug #3**: Algebraic error in the fourth term: `-4*ch2+ch2/sd^2` should be `-3*ch2/sd^2`.
+- **Bug #5**: City slope computed as `CityLength/CityWidth` (= 0.047) instead of `H_city/D_city` (= 0.0085).
+- **Bug #6**: Resistance cost (Equations 4--5) uses zone value $Val_{Z1}$ instead of $V_w$ (value after withdrawal).
+- **Bug #7**: $V_w$ computed as $V_{\text{city}} - C_W$ instead of Equation 2.
+
+This implementation fixes all seven bugs to match the paper's intended formulas.
 
 ## References

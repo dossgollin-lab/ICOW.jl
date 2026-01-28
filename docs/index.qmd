@@ -100,14 +100,18 @@ Pkg.add(url="https://github.com/dossgollin-lab/ICOW.jl")
 using ICOW.EAD
 using Random
 
-# City with default parameters (50 years, quadrature integration)
+# City with default parameters (100 years, quadrature integration)
 config = EADConfig()
 
-# Stationary GEV surge distribution + discount rate
-scenario = EADScenario(surge_loc=3.0, surge_scale=1.0, surge_shape=0.0, discount_rate=0.03)
+# GEV surge distribution (The Battery, NYC) + 1 cm/yr sea level rise
+n_years = config.n_years
+scenario = EADScenario(;
+    surge_loc=0.935, surge_scale=0.260, surge_shape=0.030,
+    discount_rate=0.02, mean_sea_level=collect(range(0.0; step=0.01, length=n_years)),
+)
 
 # Protection strategy: moderate dike + some resistance
-policy = StaticPolicy(a_frac=0.3, w_frac=0.0, b_frac=0.2, r_frac=0.1, P=0.5)
+policy = StaticPolicy(; a_frac=0.3, w_frac=0.0, b_frac=0.2, r_frac=0.1, P=0.5)
 
 # Run simulation
 rng = MersenneTwister(42)

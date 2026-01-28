@@ -322,7 +322,7 @@ All exogenous parameters are fields in the `CityParameters` struct.
 | Dike | Startup height | $D_{startup}$ | `D_startup` | 2.0 | m | Equivalent height for fixed costs |
 | Dike | Top width | $w_d$ | `w_d` | 3.0 | m | Width of dike top |
 | Dike | Side slope | $s$ | `s_dike` | 0.5 | m/m | Horizontal/vertical ratio |
-| Dike | Cost per volume | $c_d$ | `c_d` | 10.0 | $/m$^3$ | Material cost |
+| Dike | Cost per volume | $c_d$ | `c_d` | 1000.0 | $/m$^3$ | Construction cost |
 | Zones | Protected ratio | $r_{prot}$ | `r_prot` | 1.1 | - | Value multiplier for zone 3 |
 | Zones | Unprotected ratio | $r_{unprot}$ | `r_unprot` | 0.95 | - | Value multiplier for zones 1-2 |
 | Withdrawal | Cost factor | $f_w$ | `f_w` | 1.0 | - | Withdrawal cost adjustment |
@@ -378,6 +378,16 @@ These values differ from Table 3/4 in the paper:
 | $p_{min}$ | 0.001 | 0.05 |
 | $D_{startup}$ | 3.0 | 2.0 |
 | $w_d$ | 4.0 | 3.0 |
+
+#### Recalibrated: Dike Unit Cost ($c_d$)
+
+Both the paper and C++ use $c_d = 10$ \$/m$^3$.
+However, the C++ `CalculateDikeCost` function has Bug #4 (using `CityWidth` = 43,000 instead of `WidthDikeTop` = 3 in the wing volume term), which inflates dike volume by roughly 100x.
+The paper's published results were generated with this bug, so the paper's tradeoff analysis effectively assumes dike costs of $\sim$\$10--20B for a Manhattan-scale seawall.
+
+Our implementation uses the geometrically correct dike volume formula (Equation 6), which produces $\sim$100x less volume for the wing term.
+To restore the intended cost scale, we set $c_d = 1000$ \$/m$^3$.
+This is also more realistic: $10/m$^3$ covers only raw fill, while $1000/m$^3$ better reflects engineered flood defense construction costs (foundation work, clay core, armor, environmental mitigation).
 
 #### Trust the C++ Code for Logic
 

@@ -20,10 +20,12 @@ This page assumes familiarity with the basic concepts (Config, Scenario, Policy,
 
 ```{julia}
 #| code-fold: true
+#| output: false
 using ICOW.Stochastic
+using Distributions
 using Random
 using CairoMakie
-CairoMakie.activate!(type = "svg")
+CairoMakie.activate!(; type="svg")
 using Statistics
 ```
 
@@ -45,15 +47,18 @@ Key parameters:
 
 ## Defining the Surge Scenario
 
-Unlike EAD mode (which takes distributions), Stochastic mode takes a **realized time series** of annual maximum surge heights -- one value per year.
+Unlike EAD mode (which takes GEV distribution parameters), Stochastic mode takes a **realized time series** of annual maximum surge heights -- one value per year.
 This represents a single "what if" trajectory of storms.
+Here we sample from the GEV distribution calibrated to The Battery, NYC per @ceres_cityonawedge:2019.
 
 ```{julia}
 rng = MersenneTwister(123)
-n_years = 50
-surges = 3.0 .+ randn(rng, n_years)
+n_years = 100
+surge_dist = GeneralizedExtremeValue(0.935, 0.260, 0.030)
+surges = rand(rng, surge_dist, n_years)
 
-scenario = StochasticScenario(surges=surges, discount_rate=0.03)
+mean_sea_level = collect(range(0.0; step=0.01, length=n_years))
+scenario = StochasticScenario(; surges=surges, discount_rate=0.02, mean_sea_level=mean_sea_level)
 ```
 
 ```{julia}
@@ -79,11 +84,11 @@ Here are several archetypal strategies:
 
 ```{julia}
 archetypes = [
-    ("No protection",        StaticPolicy(a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
-    ("Dike only",            StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
-    ("Withdraw + resist",    StaticPolicy(a_frac=0.2, w_frac=0.5, b_frac=0.0, r_frac=0.3, P=0.7)),
-    ("Mixed",                StaticPolicy(a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
-    ("High dike + resist",   StaticPolicy(a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3)),
+    ("No additional protection", StaticPolicy(; a_frac=0.0, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Dike only",                StaticPolicy(; a_frac=0.5, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0)),
+    ("Withdraw + resist",        StaticPolicy(; a_frac=0.2, w_frac=0.5, b_frac=1.0, r_frac=0.3, P=0.7)),
+    ("Mixed",                    StaticPolicy(; a_frac=0.3, w_frac=0.1, b_frac=0.2, r_frac=0.1, P=0.5)),
+    ("High dike + resist",       StaticPolicy(; a_frac=0.5, w_frac=0.0, b_frac=0.1, r_frac=0.1, P=0.3)),
 ]
 policies = last.(archetypes)
 names = first.(archetypes)
@@ -98,22 +103,33 @@ outcome = simulate(config, scenario, policy, rng)
 outcome
 ```
 
-## Why Stochastic? The Role of Randomness
+## Why Stochastic? The Role of Storm Variability
 
-The same policy, scenario, and surge sequence can produce **different outcomes** because dike failure is a Bernoulli event.
-Running many replicates reveals the damage distribution:
+EAD mode integrates over the surge distribution analytically, giving a single expected damage number.
+But real cities experience a specific sequence of storms -- some lucky (mostly small surges), some unlucky (a rare extreme event early on).
+Stochastic mode captures this by simulating many independent surge sequences, revealing the full distribution of outcomes.
 
 ```{julia}
-n_replicates = 200
+n_scenarios = 200
+rng_scenarios = MersenneTwister(42)
+scenarios = [
+    StochasticScenario(;
+        surges=rand(rng_scenarios, surge_dist, n_years),
+        discount_rate=0.02,
+        mean_sea_level=mean_sea_level,
+    )
+    for _ in 1:n_scenarios
+]
+
 damages = [
-    value(simulate(config, scenario, policy, MersenneTwister(seed)).damage)
-    for seed in 1:n_replicates
+    value(simulate(config, s, policy, MersenneTwister(i)).damage)
+    for (i, s) in enumerate(scenarios)
 ]
 ```
 
 ```{julia}
 fig = Figure(; size=(600, 350))
-ax = Axis(fig[1, 1]; xlabel="Damage (\$B)", ylabel="Count", title="Damage distribution ($n_replicates replicates)")
+ax = Axis(fig[1, 1]; xlabel="Damage (\$B)", ylabel="Count", title="Damage distribution across $n_scenarios surge sequences")
 hist!(ax, damages ./ 1e9; bins=30, color=(:steelblue, 0.7))
 vlines!(ax, [mean(damages) / 1e9]; color=:red, linewidth=2, label="Mean")
 vlines!(ax, [quantile(damages, 0.05) / 1e9]; color=:orange, linewidth=2, linestyle=:dash, label="5th pctile")
@@ -133,21 +149,19 @@ A policy that looks optimal under EAD may have unacceptable tail losses.
 
 ## Comparing Policies
 
-We use `explore()` to evaluate all five policies against our scenario.
-Because dike failure is stochastic, we run multiple seeds by creating duplicate scenarios:
+We use `explore()` to evaluate all five policies across many independent surge sequences.
+Each scenario is a different realization of storm history over the planning horizon:
 
 ```{julia}
-n_seeds = 50
-scenarios = [StochasticScenario(surges=surges, discount_rate=0.03) for _ in 1:n_seeds]
 result = explore(config, scenarios, policies; progress=false)
 result
 ```
 
 The result is a YAXArrays Dataset with dimensions `(policy, scenario)`.
-Each "scenario" here is the same surge sequence evaluated with a different RNG seed, so the scenario dimension captures seed-to-seed variance:
+Each scenario is an independent surge sequence, so the scenario dimension captures storm variability:
 
 ```{julia}
-# Mean and 95th percentile damage across seeds for each policy
+# Mean and 95th percentile damage across scenarios for each policy
 mean_dmg = [mean(result[:damage].data[p, :]) for p in 1:length(policies)] ./ 1e9
 p95_dmg = [quantile(result[:damage].data[p, :], 0.95) for p in 1:length(policies)] ./ 1e9
 

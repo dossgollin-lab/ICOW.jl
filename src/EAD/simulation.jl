@@ -12,6 +12,9 @@ Create initial state with zero-protection FloodDefenses.
 function SimOptDecisions.initialize(
     config::EADConfig{T}, scenario::EADScenario, ::AbstractRNG
 ) where {T}
+    n = config.n_years
+    msl = SimOptDecisions.value(scenario.mean_sea_level)
+    @assert length(msl) >= n "mean_sea_level length ($(length(msl))) must be >= n_years ($n)"
     EADState{T}()
 end
 
@@ -88,8 +91,10 @@ function SimOptDecisions.run_timestep(
     cost = max(zero(T), cost)
 
     # Expected damage via integration over surge distribution
+    # Shift GEV location by mean sea level for this year
+    msl = T(SimOptDecisions.value(scenario.mean_sea_level)[year])
     dist = GeneralizedExtremeValue(
-        SimOptDecisions.value(scenario.surge_loc),
+        SimOptDecisions.value(scenario.surge_loc) + msl,
         SimOptDecisions.value(scenario.surge_scale),
         SimOptDecisions.value(scenario.surge_shape),
     )

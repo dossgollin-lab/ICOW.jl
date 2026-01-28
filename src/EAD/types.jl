@@ -47,7 +47,7 @@ Base.@kwdef struct EADConfig{T<:Real} <: SimOptDecisions.AbstractConfig
     D_startup::T = 2.0      # Startup height for fixed costs (m)
     w_d::T = 3.0            # Dike top width (m)
     s_dike::T = 0.5         # Dike side slope (horizontal/vertical)
-    c_d::T = 10.0           # Dike cost per volume (\$/m^3)
+    c_d::T = 1000.0         # Dike cost per volume (\$/m^3)
 
     # Zones (2)
     r_prot::T = 1.1         # Protected zone value ratio
@@ -78,7 +78,7 @@ Base.@kwdef struct EADConfig{T<:Real} <: SimOptDecisions.AbstractConfig
     gamma_thresh::T = 1.01  # Threshold exponent
 
     # Simulation settings
-    n_years::Int = 50
+    n_years::Int = 100
     integrator::IntegrationMethod = QuadratureIntegrator()
 end
 
@@ -162,6 +162,7 @@ SimOptDecisions.@scenariodef EADScenario begin
     @continuous surge_scale 0.01 20.0
     @continuous surge_shape -1.0 1.0
     @continuous discount_rate 0.0 1.0
+    @timeseries mean_sea_level
 end
 
 # =============================================================================

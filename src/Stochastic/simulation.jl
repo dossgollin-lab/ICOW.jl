@@ -12,6 +12,9 @@ Create initial state with zero-protection FloodDefenses.
 function SimOptDecisions.initialize(
     config::StochasticConfig{T}, scenario::StochasticScenario, ::AbstractRNG
 ) where {T}
+    n = length(SimOptDecisions.value(scenario.surges))
+    msl = SimOptDecisions.value(scenario.mean_sea_level)
+    @assert length(msl) >= n "mean_sea_level length ($(length(msl))) must be >= surges length ($n)"
     StochasticState{T}()
 end
 
@@ -87,9 +90,10 @@ function SimOptDecisions.run_timestep(
     cost = _investment_cost(config, new_defenses) - _investment_cost(config, state.defenses)
     cost = max(zero(T), cost)
 
-    # Stochastic damage
+    # Stochastic damage: surge + mean sea level for this year
     surges = SimOptDecisions.value(scenario.surges)
-    h_raw = surges[year]
+    msl_series = SimOptDecisions.value(scenario.mean_sea_level)
+    h_raw = T(surges[year] + msl_series[year])
     damage = _stochastic_damage(config, new_defenses, h_raw, rng)
 
     # Update state
