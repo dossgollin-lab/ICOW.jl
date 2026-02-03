@@ -1,7 +1,7 @@
 ---
-title: "Tutorial"
+title: "Quickstart"
 subtitle: "Your First iCOW Analysis"
-bibliography: ../references.bib
+bibliography: references.bib
 engine: julia
 ---
 
@@ -11,7 +11,7 @@ By the end, you will have configured a coastal city, tried several protection st
 ::: {.callout-note}
 ## What You'll Need
 
-- Julia 1.10 or later with ICOW.jl installed (see [Home](../index.qmd) for installation)
+- Julia 1.10 or later with ICOW.jl installed (see [Home](index.qmd) for installation)
 - Basic familiarity with Julia syntax (variables, functions, arrays)
 - No prior knowledge of flood risk modeling is assumed
 :::
@@ -84,7 +84,7 @@ scenario = EADScenario(;
 The shape parameter controls the tail behavior:
 
 - `shape = 0`: Gumbel distribution (light-tailed, exponential decay)
-- `shape > 0`: Fréchet distribution (heavy-tailed, more extreme surges possible)
+- `shape > 0`: Frechet distribution (heavy-tailed, more extreme surges possible)
 - `shape < 0`: Weibull distribution (bounded upper tail)
 
 For most coastal locations, the shape parameter is near zero or slightly positive.
@@ -93,7 +93,7 @@ For most coastal locations, the shape parameter is near zero or slightly positiv
 ## Step 3: Try a Protection Strategy
 
 A `StaticPolicy` specifies how to allocate protection using five fractions, all between 0 and 1.
-The "stick-breaking" parameterization guarantees that all physical constraints are satisfied automatically (see [Architecture](../core/architecture.qmd) for details).
+The "stick-breaking" parameterization guarantees that all physical constraints are satisfied automatically (see [Architecture](developers/architecture.qmd) for details).
 
 Let's try a strategy that invests in a moderate dike with some resistance:
 
@@ -216,7 +216,7 @@ scatter!(ax, inv_1, dmg_1; markersize=12, color=:steelblue, label="Baseline (sha
 # Heavy-tailed scenario
 inv_2 = result_both[:investment].data[:, 2] ./ 1e9
 dmg_2 = result_both[:expected_damage].data[:, 2] ./ 1e9
-scatter!(ax, inv_2, dmg_2; markersize=12, color=:firebrick, marker=:diamond, label="Fréchet (shape=0.15)")
+scatter!(ax, inv_2, dmg_2; markersize=12, color=:firebrick, marker=:diamond, label="Frechet (shape=0.15)")
 
 # Connect same policies across scenarios
 for i in 1:length(policy_list)
@@ -240,9 +240,8 @@ This is why **analyzing sensitivity to uncertain hazard parameters** is essentia
 You've completed a basic iCOW analysis.
 Here's where to go from here:
 
-- **Understand the math**: [Equations](../core/equations.qmd) describes every cost and damage formula
-- **Explore tail risk**: [Stochastic Walkthrough](../stochastic/details.qmd) shows how stochastic dike failure creates hidden variance
-- **Understand the design**: [Architecture](../core/architecture.qmd) explains the module structure and policy reparameterization
-- **Check assumptions**: [Assumptions & Scope](assumptions.qmd) describes what the model can and cannot represent
+- **Understand the math**: [Equations](equations.qmd) describes every cost and damage formula
+- **Explore tail risk**: [Stochastic Walkthrough](stochastic/details.qmd) shows how stochastic dike failure creates hidden variance
+- **Understand the design**: [Architecture](developers/architecture.qmd) explains the module structure and policy reparameterization
 
 ## References

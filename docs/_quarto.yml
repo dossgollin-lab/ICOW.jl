@@ -15,20 +15,10 @@ website:
     contents:
       - href: index.qmd
         text: Home
-      - section: "Getting Started"
-        contents:
-          - href: getting-started/background.qmd
-            text: Background
-          - href: getting-started/tutorial.qmd
-            text: Tutorial
-          - href: getting-started/assumptions.qmd
-            text: Assumptions & Scope
-      - section: "The Model"
-        contents:
-          - href: core/equations.qmd
-            text: Equations
-          - href: core/architecture.qmd
-            text: Architecture
+      - href: quickstart.qmd
+        text: Quickstart
+      - href: equations.qmd
+        text: Equations
       - section: "EAD Mode"
         contents:
           - href: ead/model.qmd
@@ -49,6 +39,12 @@ website:
             text: EAD
           - href: api/stochastic.qmd
             text: Stochastic
+      - section: "For Developers"
+        contents:
+          - href: developers/architecture.qmd
+            text: Architecture
+          - href: developers/contributing.qmd
+            text: Contributing
   page-footer:
     left: "ICOW.jl - Dossgollin Lab"
     right:

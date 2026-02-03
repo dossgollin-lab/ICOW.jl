@@ -1,0 +1,116 @@
+---
+title: "Contributing"
+subtitle: "Development Guide"
+engine: julia
+---
+
+## Where Does Code Belong?
+
+ICOW.jl depends on [SimOptDecisions.jl](https://github.com/dossgollin-lab/SimOptDecisions) for the simulation framework.
+When contributing, consider where your code belongs:
+
+| Change Type | Where It Goes |
+|-------------|---------------|
+| New simulation mode or policy type | ICOW.jl (`src/Stochastic/` or `src/EAD/`) |
+| Changes to cost/damage physics | ICOW.jl (`src/Core/`) |
+| New `AbstractConfig`, `AbstractScenario`, etc. | ICOW.jl (submodule `types.jl`) |
+| Changes to `simulate`, `explore`, or framework logic | SimOptDecisions.jl |
+| New integration methods or outcome types | SimOptDecisions.jl |
+
+If you need to modify SimOptDecisions, open a PR there first, then update ICOW.jl to use the new version.
+
+## Development Environment
+
+Clone the repo and instantiate:
+
+```bash
+git clone https://github.com/dossgollin-lab/ICOW.jl
+cd ICOW.jl
+julia --project -e 'using Pkg; Pkg.instantiate()'
+```
+
+SimOptDecisions is an unregistered dependency.
+If `instantiate` fails, add it manually:
+
+```bash
+julia --project -e 'using Pkg; Pkg.add(url="https://github.com/dossgollin-lab/SimOptDecisions.git")'
+```
+
+## Running Tests
+
+Run the full test suite:
+
+```bash
+julia --project test/runtests.jl
+```
+
+Or from the Julia REPL:
+
+```julia
+using Pkg
+Pkg.test()
+```
+
+Tests are organized by module in `test/`:
+
+- `test/core/` -- Core physics functions
+- `test/ead/` -- EAD simulation mode
+- `test/stochastic/` -- Stochastic simulation mode
+
+## Code Style
+
+We use [JuliaFormatter](https://github.com/domluna/JuliaFormatter.jl) with BlueStyle.
+
+Format locally before committing:
+
+```julia
+using JuliaFormatter
+format(".", BlueStyle())
+```
+
+The CI will auto-format and commit if you forget, but it's cleaner to format locally.
+
+## Test Conventions
+
+Keep tests minimal.
+Test key invariants, not every possible case:
+
+- **Zero/edge cases**: If inputs are 0, output should be 0 (or baseline)
+- **Monotonicity**: Increasing defenses must always increase cost
+- **Component sums**: Verify that parts add up to totals
+- **Type stability**: One test per file using `@inferred`
+
+Include comments explaining the physical reasoning:
+
+```julia
+# W >= 0; defense heights must be non-negative
+@test_throws AssertionError FloodDefenses(-1.0, 0, 0, 0, 0)
+
+# 0 <= P < 1; resistance percentage must be a valid fraction
+@test_throws AssertionError FloodDefenses(0, 0, 1.5, 0, 0)
+```
+
+## CI Workflows
+
+Three GitHub Actions run on every PR:
+
+| Workflow | What It Does |
+|----------|--------------|
+| **Tests** | Runs test suite on Julia 1.10, 1.11, 1.12 |
+| **Format** | Auto-formats with JuliaFormatter (BlueStyle) |
+| **Docs** | Builds Quarto documentation |
+
+All checks must pass before merging.
+
+## Pull Request Workflow
+
+1. Fork the repo or create a feature branch
+2. Make your changes
+3. Run tests locally: `julia --project test/runtests.jl`
+4. Format your code: `format(".", BlueStyle())`
+5. Open a PR against `main`
+6. Wait for CI to pass
+7. The maintainer will review and merge
+
+That's it.
+No complex review process -- just open a PR and it will be merged once CI passes.
