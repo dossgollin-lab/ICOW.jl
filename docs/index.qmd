@@ -25,7 +25,7 @@ It provides a **flood risk modeling framework of intermediate complexity** -- fa
 
 This package is designed for researchers and students working on **climate risk management** and **decision making under uncertainty**.
 If you study how communities should invest in flood protection under uncertain hazards, iCOW provides a fast, transparent test bed for exploring strategy portfolios and their sensitivity to assumptions.
-No prior flood modeling experience is needed -- the [Background](getting-started/background.qmd) page introduces the physical concepts.
+No prior flood modeling experience is needed -- the [Quickstart](quickstart.qmd) guide walks through a complete analysis.
 :::
 
 ### Why iCOW?
@@ -34,15 +34,9 @@ iCOW bridges the gap between two extremes in flood risk modeling:
 
 | Model Type | Pros | Cons |
 |------------|------|------|
-| **Simple models** (van Dantzig style) | Fast, analytical | Single strategy (dikes only), binary damage |
+| **Simple models** [-@vandantzig_dike:1956] | Fast, analytical | Single strategy (dikes only), binary damage |
 | **Regional models** | Realistic, site-specific | Computationally expensive, requires extensive data |
 | **iCOW** | Fast enough for optimization | Captures multiple strategies and realistic damage |
-
-Simple models like @vandantzig_dike:1956 assume dikes either hold (zero damage) or fail (100% damage).
-This misses the reality that flooding causes **graduated damage** depending on depth and extent.
-Regional models capture this complexity but require extensive site-specific data and computational resources.
-
-iCOW provides a middle ground: it's computationally efficient enough to evaluate millions of strategy combinations while capturing the key physics that drive risk-cost tradeoffs.
 
 ## SimOptDecisions Framework
 
@@ -94,50 +88,13 @@ using Pkg
 Pkg.add(url="https://github.com/dossgollin-lab/ICOW.jl")
 ```
 
-## Quick Example
-
-```julia
-using ICOW.EAD
-using Random
-
-# City with default parameters (100 years, quadrature integration)
-config = EADConfig()
-
-# GEV surge distribution (The Battery, NYC) + 1 cm/yr sea level rise
-n_years = config.n_years
-scenario = EADScenario(;
-    surge_loc=0.935, surge_scale=0.260, surge_shape=0.030,
-    discount_rate=0.02, mean_sea_level=collect(range(0.0; step=0.01, length=n_years)),
-)
-
-# Protection strategy: moderate dike + some resistance
-policy = StaticPolicy(; a_frac=0.3, w_frac=0.0, b_frac=0.2, r_frac=0.1, P=0.5)
-
-# Run simulation
-rng = MersenneTwister(42)
-outcome = simulate(config, scenario, policy, rng)
-
-# Results (value() extracts numeric values from outcome fields)
-value(outcome.investment)       # investment cost ($)
-value(outcome.expected_damage)  # expected flood damage ($)
-total_cost(outcome)             # investment + expected damage ($)
-```
-
-The `StaticPolicy` uses a stick-breaking reparameterization to guarantee all physical constraints are satisfied.
-See [Architecture](core/architecture.qmd) for details on how policy fractions map to `FloodDefenses`.
-
 ## Next Steps
 
-**New to iCOW or flood risk modeling?** Start here:
-
-- [Background](getting-started/background.qmd) -- Physical motivation and real-world strategies
-- [Tutorial](getting-started/tutorial.qmd) -- Hands-on walkthrough of a complete analysis
-- [Assumptions & Scope](getting-started/assumptions.qmd) -- What the model can and cannot represent
+**New to iCOW?** Start with the [Quickstart](quickstart.qmd) for a hands-on walkthrough.
 
 **Ready to dive into the details?**
 
-- [Equations](core/equations.qmd) -- Full mathematical formulation
-- [Architecture](core/architecture.qmd) -- Module structure and type system
+- [Equations](equations.qmd) -- Full mathematical formulation
 - [EAD Walkthrough](ead/details.qmd) -- Expected annual damage mode
 - [Stochastic Walkthrough](stochastic/details.qmd) -- Stochastic simulation mode
 - [API Reference](api/core.qmd) -- Function signatures and docstrings
