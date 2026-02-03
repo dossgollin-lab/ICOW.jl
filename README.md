@@ -4,7 +4,7 @@
 [![Documentation](https://github.com/dossgollin-lab/ICOW.jl/actions/workflows/docs.yml/badge.svg?branch=main)](https://dossgollin-lab.github.io/ICOW.jl/)
 ![Julia 1.10+](https://img.shields.io/badge/Julia-1.10%2B-blue)
 
-A Julia implementation of the Idealized Coastal Optimization on a Wedge (ICOW) model for flood risk management decision analysis.
+A Julia implementation of the Island City On a Wedge (ICOW) model for flood risk management decision analysis.
 
 ## Installation
 
