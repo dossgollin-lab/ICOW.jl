@@ -36,7 +36,8 @@ const ICOWCore = ICOW.Core
 
         # At threshold: just above baseline
         threshold = t_fail * D  # = 4.75
-        @test ICOWCore.dike_failure_probability(threshold, D, t_fail, p_min) ≈ 0.0 atol = 1e-10
+        @test ICOWCore.dike_failure_probability(threshold, D, t_fail, p_min) ≈ 0.0 atol =
+            1e-10
 
         # Linear ramp between threshold and D
         h_mid = (threshold + D) / 2  # = 4.875
@@ -89,10 +90,13 @@ end
         B = 3.0
         D = 5.0
 
-        cost = ICOWCore.resistance_cost(V_w, f_cR, H_bldg, H_city, W, R_small, B, D, b_basement)
+        cost = ICOWCore.resistance_cost(
+            V_w, f_cR, H_bldg, H_city, W, R_small, B, D, b_basement
+        )
 
         # Eq 4: C_R = V_w * f_cR * R * (R/2 + b) / (H_bldg * (H_city - W))
-        expected = V_w * f_cR * R_small * (R_small / 2 + b_basement) / (H_bldg * (H_city - W))
+        expected =
+            V_w * f_cR * R_small * (R_small / 2 + b_basement) / (H_bldg * (H_city - W))
         @test cost ≈ expected
     end
 end
@@ -133,16 +137,37 @@ end
     @testset "Below threshold: no penalty" begin
         h_surge = 2.0  # Low surge
         damage = ICOWCore.total_event_damage(
-            bounds, values, h_surge, b_basement, H_bldg, f_damage,
-            P, f_intact, f_failed, d_thresh, f_thresh, gamma_thresh, dike_failed
+            bounds,
+            values,
+            h_surge,
+            b_basement,
+            H_bldg,
+            f_damage,
+            P,
+            f_intact,
+            f_failed,
+            d_thresh,
+            f_thresh,
+            gamma_thresh,
+            dike_failed,
         )
         # Damage should be below threshold for low surge
         if damage <= d_thresh
             # No penalty applied - damage equals raw sum
             raw_sum = sum(
                 ICOWCore.zone_damage(
-                    i, bounds[2i+1], bounds[2i+2], values[i+1],
-                    h_surge, b_basement, H_bldg, f_damage, P, f_intact, f_failed, dike_failed
+                    i,
+                    bounds[2i + 1],
+                    bounds[2i + 2],
+                    values[i + 1],
+                    h_surge,
+                    b_basement,
+                    H_bldg,
+                    f_damage,
+                    P,
+                    f_intact,
+                    f_failed,
+                    dike_failed,
                 ) for i in 0:4
             )
             @test damage ≈ raw_sum
@@ -152,15 +177,36 @@ end
     @testset "Above threshold: penalty applied" begin
         h_surge = 15.0  # High surge to exceed threshold
         damage = ICOWCore.total_event_damage(
-            bounds, values, h_surge, b_basement, H_bldg, f_damage,
-            P, f_intact, f_failed, d_thresh, f_thresh, gamma_thresh, dike_failed
+            bounds,
+            values,
+            h_surge,
+            b_basement,
+            H_bldg,
+            f_damage,
+            P,
+            f_intact,
+            f_failed,
+            d_thresh,
+            f_thresh,
+            gamma_thresh,
+            dike_failed,
         )
 
         # Calculate raw damage
         raw_sum = sum(
             ICOWCore.zone_damage(
-                i, bounds[2i+1], bounds[2i+2], values[i+1],
-                h_surge, b_basement, H_bldg, f_damage, P, f_intact, f_failed, dike_failed
+                i,
+                bounds[2i + 1],
+                bounds[2i + 2],
+                values[i + 1],
+                h_surge,
+                b_basement,
+                H_bldg,
+                f_damage,
+                P,
+                f_intact,
+                f_failed,
+                dike_failed,
             ) for i in 0:4
         )
 
