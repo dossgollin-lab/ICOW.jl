@@ -175,7 +175,7 @@ The original C++ avoided this by accidentally computing `pow(T, 0) = 1` instead 
 
 **Original C++ Bugs (historical documentation):**
 
-The original C++ implementation (iCOW_2018_06_11.cpp) had 7 bugs:
+The original C++ implementation (iCOW_2018_06_11.cpp) had 8 bugs:
 
 1. **Integer division**: `pow(T, 1/2)` evaluated as `pow(T, 0) = 1` (never computed sqrt)
 2. **Array index**: Used constant `dh=5` instead of variable `ch`
@@ -184,12 +184,14 @@ The original C++ implementation (iCOW_2018_06_11.cpp) had 7 bugs:
 5. **Slope definition**: Used inverted slope ratio
 6. **Resistance cost**: Used zone value instead of $V_w$
 7. **V_w calculation**: Used $V_{city} - C_W$ instead of Equation 2
+8. **Resistance with no dike**: When $B < \text{minHeight}$ (0.1m), C++ sets $R = 0$, preventing "resistance-only" strategies. The correct behavior is to use Equation 4 (unconstrained) when there is no dike ($B = 0$ and $D = 0$), regardless of $R$ value
 
 **Our implementation:**
 
 - Uses simplified geometric formula (numerically stable, physically correct)
 - Uses correct terrain slope $S = H_{city}/D_{city} = 0.0085$
 - Fixes bugs #6-7 in resistance cost and $V_w$ calculations
+- Fixes bug #8: uses Equation 4 (unconstrained) when $B = 0$ and $D = 0$ (no dike), allowing "resistance-only" strategies
 - C++ validation (`test/validation/cpp_reference/`) validates cost and zone calculations (dike volume uses different formula)
 
 ### Equation 7: Dike Cost (p. 17)

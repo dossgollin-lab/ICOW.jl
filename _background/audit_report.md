@@ -343,18 +343,27 @@ Truncates to 0.01-99.99 percentile range. For typical GEV parameters, this captu
    ```julia
    if R < B || (B == zero(T) && D == zero(T))
    ```
+   **STATUS: FIXED** (February 2026)
 
 2. **Add T2**: Test case for resistance-only strategy that would catch C1
+   **STATUS: FIXED** (February 2026)
 
 ### Short-term
 
 3. **Fix M1**: Correct C++ slope for documentation accuracy
-4. **Add T1**: Extend C++ harness to output damage calculations
+   **STATUS: FIXED** (February 2026) - Changed to `CEC/CityLength = 0.0085`
+
+4. **Fix M2**: Add guard for `t_fail >= 1.0` in dike_failure_probability
+   **STATUS: FIXED** (February 2026)
+
 5. **Update D1-D3**: Clarify documentation
+   **STATUS: PARTIALLY ADDRESSED** - Bug #8 documented in equations.md and docs/equations.qmd
 
 ### Long-term
 
 6. **Add T3-T4**: Comprehensive edge case testing
+   **STATUS: FIXED** (February 2026) - Added `test/core/edge_cases_tests.jl`
+
 7. **Consider**: Symbolic verification of damage formulas against paper
 
 ---
