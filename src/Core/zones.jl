@@ -21,10 +21,19 @@ function zone_boundaries(H_city::T, W::T, R::T, B::T, D::T) where {T<:AbstractFl
     end
 
     z2_low = z1_high
-    z2_high = W + B
+    # When no dike (B=0 and D=0), zones 2-3 collapse to same point as zone 1 top
+    if B == zero(T) && D == zero(T)
+        z2_high = z1_high
+    else
+        z2_high = W + B
+    end
 
     z3_low = z2_high
-    z3_high = W + B + D
+    if B == zero(T) && D == zero(T)
+        z3_high = z1_high
+    else
+        z3_high = W + B + D
+    end
 
     z4_low = z3_high
     z4_high = H_city
