@@ -37,6 +37,8 @@ The city is partitioned into zones based on lever settings (see Figure 3, p. 11)
 Zone 2 only exists if $R < B$ (resistance doesn't reach dike base).
 $f_{dike} = f_{intact}$ if dike holds, $f_{failed}$ if dike fails (stochastic per Equation 8).
 
+**Resistance-only strategies ($B = 0$, $D = 0$):** When there is no dike, Zone 1 extends to $W + R$ (full resistance height), and Zones 2-3 have zero width. Zone 4 covers the remainder from $W + R$ to $H_{city}$.
+
 ### Physical Cross-Section Diagram
 
 ```text
@@ -238,12 +240,14 @@ $$
 
 ### Zone Value Calculations (from C++ code)
 
+**Standard case (with dike):**
+
 $$
 Val_{Z1} = V_w \cdot r_{unprot} \cdot \frac{\min(\mathbf{R}, \mathbf{B})}{H_{city} - \mathbf{W}}
 $$
 
 $$
-Val_{Z2} = V_w \cdot r_{unprot} \cdot \frac{\mathbf{B} - \mathbf{R}}{H_{city} - \mathbf{W}}
+Val_{Z2} = V_w \cdot r_{unprot} \cdot \frac{\max(0, \mathbf{B} - \mathbf{R})}{H_{city} - \mathbf{W}}
 $$
 
 $$
@@ -252,6 +256,12 @@ $$
 
 $$
 Val_{Z4} = V_w \cdot \frac{H_{city} - \mathbf{W} - \mathbf{B} - \mathbf{D}}{H_{city} - \mathbf{W}}
+$$
+
+**Resistance-only case ($B = 0$, $D = 0$):** When there is no dike, Zone 1 uses the full resistance height $R$ without the $r_{unprot}$ multiplier:
+
+$$
+Val_{Z1} = V_w \cdot \frac{\mathbf{R}}{H_{city} - \mathbf{W}}, \quad Val_{Z2} = Val_{Z3} = 0, \quad Val_{Z4} = V_w \cdot \frac{H_{city} - \mathbf{W} - \mathbf{R}}{H_{city} - \mathbf{W}}
 $$
 
 ### Protected Zone Damage (from C++ code)

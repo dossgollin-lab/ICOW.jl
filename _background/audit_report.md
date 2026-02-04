@@ -357,7 +357,7 @@ Truncates to 0.01-99.99 percentile range. For typical GEV parameters, this captu
    **STATUS: FIXED** (February 2026)
 
 5. **Update D1-D3**: Clarify documentation
-   **STATUS: PARTIALLY ADDRESSED** - Bug #8 documented in equations.md and docs/equations.qmd
+   **STATUS: FIXED** (February 2026) - Zone calculations for resistance-only strategies documented
 
 ### Long-term
 

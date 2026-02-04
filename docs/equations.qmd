@@ -48,6 +48,8 @@ The city is partitioned into five zones based on lever settings:
 
 Zone 2 only exists when $R < B$ (resistance does not reach the dike base).
 
+**Resistance-only strategies ($B = 0$, $D = 0$):** When there is no dike, Zone 1 extends to $W + R$ (full resistance height), and Zones 2--3 have zero width. Zone 4 covers the remainder from $W + R$ to $H_{\text{city}}$.
+
 ::: {.callout-note}
 ## Physical Intuition: Why Five Zones?
 
@@ -269,12 +271,14 @@ This is because the sudden rush of water through a breach causes more destructio
 
 ### Zone Values
 
+**Standard case (with dike):**
+
 $$
 Val_{Z1} = V_w \cdot r_{\text{unprot}} \cdot \frac{\min(R, B)}{H_{\text{city}} - W}
 $$
 
 $$
-Val_{Z2} = V_w \cdot r_{\text{unprot}} \cdot \frac{B - R}{H_{\text{city}} - W}
+Val_{Z2} = V_w \cdot r_{\text{unprot}} \cdot \frac{\max(0, B - R)}{H_{\text{city}} - W}
 $$
 
 $$
@@ -283,6 +287,12 @@ $$
 
 $$
 Val_{Z4} = V_w \cdot \frac{H_{\text{city}} - W - B - D}{H_{\text{city}} - W}
+$$
+
+**Resistance-only case ($B = 0$, $D = 0$):** When there is no dike, Zone 1 uses the full resistance height $R$ without the $r_{\text{unprot}}$ multiplier:
+
+$$
+Val_{Z1} = V_w \cdot \frac{R}{H_{\text{city}} - W}, \quad Val_{Z2} = Val_{Z3} = 0, \quad Val_{Z4} = V_w \cdot \frac{H_{\text{city}} - W - R}{H_{\text{city}} - W}
 $$
 
 ### Threshold Damage
