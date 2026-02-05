@@ -237,25 +237,42 @@ function Base.show(io::IO, m::MonteCarloIntegrator)
 end
 
 function Base.show(io::IO, c::EADConfig{T}) where {T}
-    print(io, "EADConfig{", T, "}(28 parameters, ",
-        c.n_years, " years, ", c.integrator, ")")
+    print(
+        io, "EADConfig{", T, "}(28 parameters, ", c.n_years, " years, ", c.integrator, ")"
+    )
 end
 
 function Base.show(io::IO, ::MIME"text/plain", c::EADConfig{T}) where {T}
     print(io, "EADConfig{", T, "}")
     _show_config_params(io, c)
-    print(io, "\n  ", rpad("Simulation", 14),
-        "n_years=", c.n_years, "  integrator=", c.integrator)
+    print(
+        io,
+        "\n  ",
+        rpad("Simulation", 14),
+        "n_years=",
+        c.n_years,
+        "  integrator=",
+        c.integrator,
+    )
 end
 
 function Base.show(io::IO, s::EADScenario)
     n = length(SimOptDecisions.value(s.mean_sea_level))
-    print(io, "EADScenario(GEV(",
-        "loc=", SimOptDecisions.value(s.surge_loc),
-        ", scale=", SimOptDecisions.value(s.surge_scale),
-        ", shape=", SimOptDecisions.value(s.surge_shape),
-        "), discount_rate=", SimOptDecisions.value(s.discount_rate),
-        ", ", n, " MSL steps)")
+    print(
+        io,
+        "EADScenario(GEV(",
+        "loc=",
+        SimOptDecisions.value(s.surge_loc),
+        ", scale=",
+        SimOptDecisions.value(s.surge_scale),
+        ", shape=",
+        SimOptDecisions.value(s.surge_shape),
+        "), discount_rate=",
+        SimOptDecisions.value(s.discount_rate),
+        ", ",
+        n,
+        " MSL steps)",
+    )
 end
 
 function Base.show(io::IO, s::EADState)
@@ -265,6 +282,14 @@ end
 function Base.show(io::IO, o::EADOutcome)
     inv = SimOptDecisions.value(o.investment)
     dmg = SimOptDecisions.value(o.expected_damage)
-    print(io, "EADOutcome(investment=", inv,
-        ", expected_damage=", dmg, ", total=", inv + dmg, ")")
+    print(
+        io,
+        "EADOutcome(investment=",
+        inv,
+        ", expected_damage=",
+        dmg,
+        ", total=",
+        inv + dmg,
+        ")",
+    )
 end

@@ -209,8 +209,14 @@ end
 
 function Base.show(io::IO, s::StochasticScenario)
     n = length(SimOptDecisions.value(s.surges))
-    print(io, "StochasticScenario(",
-        n, " years, discount_rate=", SimOptDecisions.value(s.discount_rate), ")")
+    print(
+        io,
+        "StochasticScenario(",
+        n,
+        " years, discount_rate=",
+        SimOptDecisions.value(s.discount_rate),
+        ")",
+    )
 end
 
 function Base.show(io::IO, s::StochasticState)
@@ -220,6 +226,14 @@ end
 function Base.show(io::IO, o::StochasticOutcome)
     inv = SimOptDecisions.value(o.investment)
     dmg = SimOptDecisions.value(o.damage)
-    print(io, "StochasticOutcome(investment=", inv,
-        ", damage=", dmg, ", total=", inv + dmg, ")")
+    print(
+        io,
+        "StochasticOutcome(investment=",
+        inv,
+        ", damage=",
+        dmg,
+        ", total=",
+        inv + dmg,
+        ")",
+    )
 end
