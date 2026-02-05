@@ -16,6 +16,15 @@ SimOptDecisions.@policydef StaticPolicy begin
 end
 export StaticPolicy
 
+function Base.show(io::IO, p::StaticPolicy)
+    print(io, "StaticPolicy(",
+        "a_frac=", SimOptDecisions.value(p.a_frac),
+        ", w_frac=", SimOptDecisions.value(p.w_frac),
+        ", b_frac=", SimOptDecisions.value(p.b_frac),
+        ", r_frac=", SimOptDecisions.value(p.r_frac),
+        ", P=", SimOptDecisions.value(p.P), ")")
+end
+
 # Shared functions dispatched on config/outcome type in submodules
 function validate_config end
 function is_feasible end

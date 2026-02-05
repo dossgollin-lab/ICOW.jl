@@ -193,3 +193,33 @@ Total cost is investment plus realized damage.
 function total_cost(o::StochasticOutcome)
     SimOptDecisions.value(o.investment) + SimOptDecisions.value(o.damage)
 end
+
+# =============================================================================
+# Display methods
+# =============================================================================
+
+function Base.show(io::IO, c::StochasticConfig{T}) where {T}
+    print(io, "StochasticConfig{", T, "}(28 parameters)")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", c::StochasticConfig{T}) where {T}
+    print(io, "StochasticConfig{", T, "}")
+    _show_config_params(io, c)
+end
+
+function Base.show(io::IO, s::StochasticScenario)
+    n = length(SimOptDecisions.value(s.surges))
+    print(io, "StochasticScenario(",
+        n, " years, discount_rate=", SimOptDecisions.value(s.discount_rate), ")")
+end
+
+function Base.show(io::IO, s::StochasticState)
+    print(io, "StochasticState(", s.defenses, ")")
+end
+
+function Base.show(io::IO, o::StochasticOutcome)
+    inv = SimOptDecisions.value(o.investment)
+    dmg = SimOptDecisions.value(o.damage)
+    print(io, "StochasticOutcome(investment=", inv,
+        ", damage=", dmg, ", total=", inv + dmg, ")")
+end

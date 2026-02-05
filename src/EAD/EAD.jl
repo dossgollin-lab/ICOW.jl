@@ -3,7 +3,7 @@
 
 module EAD
 
-import ..ICOW: FloodDefenses, StaticPolicy, validate_config, is_feasible, total_cost
+import ..ICOW: FloodDefenses, StaticPolicy, validate_config, is_feasible, total_cost, _show_config_params
 using ..ICOW: Core
 using SimOptDecisions
 using Random
