@@ -79,3 +79,24 @@ function Base.show(io::IO, l::FloodDefenses)
         print(io, "FloodDefenses(", join(parts, ", "), ")")
     end
 end
+
+# Shared config display helper for StochasticConfig and EADConfig
+const _CONFIG_PARAM_GROUPS = (
+    ("Geometry", (:V_city, :H_bldg, :H_city, :D_city, :W_city, :H_seawall)),
+    ("Dike", (:D_startup, :w_d, :s_dike, :c_d)),
+    ("Zones", (:r_prot, :r_unprot)),
+    ("Withdrawal", (:f_w, :f_l)),
+    ("Resistance", (:f_adj, :f_lin, :f_exp, :t_exp, :b_basement)),
+    ("Damage", (:f_damage, :f_intact, :f_failed, :t_fail, :p_min, :f_runup)),
+    ("Threshold", (:d_thresh, :f_thresh, :gamma_thresh)),
+)
+
+function _show_config_params(io::IO, config)
+    for (name, fields) in _CONFIG_PARAM_GROUPS
+        print(io, "\n  ", rpad(name, 14))
+        for (i, f) in enumerate(fields)
+            i > 1 && print(io, "  ")
+            print(io, f, "=", getfield(config, f))
+        end
+    end
+end
