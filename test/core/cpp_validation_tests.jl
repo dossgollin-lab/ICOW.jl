@@ -1,6 +1,6 @@
 # Validate Core physics functions against debugged C++ reference outputs
 #
-# The C++ reference (icow_debugged.cpp) has all 7 bugs fixed to match paper formulas.
+# The C++ reference (icow_debugged.cpp) has all 8 bugs fixed to match paper formulas.
 # Output files in outputs/ are committed and used for regression testing.
 # See outputs/summary.txt for provenance and bug fix details.
 #
@@ -111,7 +111,7 @@ end
                     CPP_F_ADJ, CPP_F_LIN, CPP_F_EXP, CPP_T_EXP, P
                 )
                 julia_rc = ICOWCore.resistance_cost(
-                    julia_vw, f_cR, CPP_H_BLDG, CPP_H_CITY, W, R, B, CPP_B_BASEMENT
+                    julia_vw, f_cR, CPP_H_BLDG, CPP_H_CITY, W, R, B, D, CPP_B_BASEMENT
                 )
                 @test julia_rc ≈ cpp_costs[test_name]["resistance_cost"] rtol = rtol
             end

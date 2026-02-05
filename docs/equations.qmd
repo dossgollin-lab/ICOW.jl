@@ -48,6 +48,8 @@ The city is partitioned into five zones based on lever settings:
 
 Zone 2 only exists when $R < B$ (resistance does not reach the dike base).
 
+**Resistance-only strategies ($B = 0$, $D = 0$):** When there is no dike, Zone 1 extends to $W + R$ (full resistance height), and Zones 2--3 have zero width. Zone 4 covers the remainder from $W + R$ to $H_{\text{city}}$.
+
 ::: {.callout-note}
 ## Physical Intuition: Why Five Zones?
 
@@ -269,12 +271,14 @@ This is because the sudden rush of water through a breach causes more destructio
 
 ### Zone Values
 
+**Standard case (with dike):**
+
 $$
 Val_{Z1} = V_w \cdot r_{\text{unprot}} \cdot \frac{\min(R, B)}{H_{\text{city}} - W}
 $$
 
 $$
-Val_{Z2} = V_w \cdot r_{\text{unprot}} \cdot \frac{B - R}{H_{\text{city}} - W}
+Val_{Z2} = V_w \cdot r_{\text{unprot}} \cdot \frac{\max(0, B - R)}{H_{\text{city}} - W}
 $$
 
 $$
@@ -283,6 +287,12 @@ $$
 
 $$
 Val_{Z4} = V_w \cdot \frac{H_{\text{city}} - W - B - D}{H_{\text{city}} - W}
+$$
+
+**Resistance-only case ($B = 0$, $D = 0$):** When there is no dike, Zone 1 uses the full resistance height $R$ without the $r_{\text{unprot}}$ multiplier:
+
+$$
+Val_{Z1} = V_w \cdot \frac{R}{H_{\text{city}} - W}, \quad Val_{Z2} = Val_{Z3} = 0, \quad Val_{Z4} = V_w \cdot \frac{H_{\text{city}} - W - R}{H_{\text{city}} - W}
 $$
 
 ### Threshold Damage
@@ -399,7 +409,7 @@ This is also more physically realistic: 10 dollars per cubic meter covers only r
 
 ### Other C++ bug fixes
 
-The original C++ reference code contains seven bugs total.
+The original C++ reference code contains eight bugs total.
 In addition to the dike-related bugs above:
 
 - **Bug #2**: Uses constant array index `dh=5` instead of local variable `ch` in the fourth term of the $T$ polynomial.
@@ -407,7 +417,8 @@ In addition to the dike-related bugs above:
 - **Bug #5**: City slope computed as `CityLength/CityWidth` (= 0.047) instead of `H_city/D_city` (= 0.0085).
 - **Bug #6**: Resistance cost (Equations 4--5) uses zone value $Val_{Z1}$ instead of $V_w$ (value after withdrawal).
 - **Bug #7**: $V_w$ computed as $V_{\text{city}} - C_W$ instead of Equation 2.
+- **Bug #8**: When $B < 0.1$ m, the C++ code sets $R = 0$, preventing "resistance-only" strategies (flood-proofing without a dike). The correct behavior is to use Equation 4 (unconstrained) when there is no dike ($B = 0$ and $D = 0$).
 
-This implementation fixes all seven bugs to match the paper's intended formulas.
+This implementation fixes all eight bugs to match the paper's intended formulas.
 
 ## References

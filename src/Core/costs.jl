@@ -36,18 +36,21 @@ function resistance_cost_fraction(
 end
 
 """
-    resistance_cost(V_w, f_cR, H_bldg, H_city, W, R, B, b_basement)
+    resistance_cost(V_w, f_cR, H_bldg, H_city, W, R, B, D, b_basement)
 
 Calculate flood-proofing cost (Equations 4-5). See _background/equations.md.
 V_w is value after withdrawal, f_cR is resistance cost fraction.
+Uses Eq 4 (unconstrained) when R < B or when there is no dike (B=0 and D=0).
 """
 function resistance_cost(
-    V_w::T, f_cR::T, H_bldg::T, H_city::T, W::T, R::T, B::T, b_basement::T
+    V_w::T, f_cR::T, H_bldg::T, H_city::T, W::T, R::T, B::T, D::T, b_basement::T
 ) where {T<:AbstractFloat}
     @assert W < H_city "W must be strictly less than H_city to avoid division by zero"
     denominator = H_bldg * (H_city - W)
 
-    if R < B
+    # Use Eq 4 (unconstrained) when R < B or when there's no dike (B=0 and D=0)
+    # This allows "resistance-only" strategies where flood-proofing is the sole defense
+    if R < B || (B == zero(T) && D == zero(T))
         # Eq 4: C_R = (V_w * f_cR * R * (R/2 + b)) / (H_bldg * (H_city - W))
         numerator = V_w * f_cR * R * (R / 2 + b_basement)
     else
@@ -92,6 +95,12 @@ function dike_failure_probability(
     # No dike means certain failure if surge > 0
     if D == zero(T)
         return h_surge > zero(T) ? one(T) : p_min
+    end
+
+    # When t_fail >= 1, failure only occurs at full overtopping (instant transition)
+    # This avoids division by zero in the denominator D * (1 - t_fail)
+    if t_fail >= one(T)
+        return h_surge >= D ? one(T) : p_min
     end
 
     threshold = t_fail * D

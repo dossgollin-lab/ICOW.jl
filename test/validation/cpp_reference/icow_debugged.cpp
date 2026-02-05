@@ -1,15 +1,20 @@
 // island City On a Wedge, a modeling framework of intermediate complexity
-// DEBUGGED VERSION - Fixed 7 bugs to match paper formulas exactly
+// DEBUGGED VERSION - Fixed 8 bugs to match paper formulas exactly
 //
 // Bugs fixed (see docs/equations.md for details):
 // 1. Line 147: Integer division pow(T, 1/2) → sqrt(T)
 // 2. Line 145: Array index dh=5 → cost height ch in fourth term
 // 3. Line 145: Algebraic error -4*ch2+ch2/sd^2 → -3*ch2/sd^2
 // 4. Line 148: Wrong variable W (city width) → wdt (dike top width)
-// 5. Line 35: Slope definition CityLength/CityWidth → CityWidth/CityLength
+// 5. Line 35: Slope definition - corrected to CEC/CityLength (terrain grade)
 // 6. Lines 213, 229: Use V_w instead of vz1 in resistance cost (Equations 4-5)
 // 7. Line 379: V_w calculation - use Equation 2 instead of V_city - C_W
+// 8. Lines 262-266: Don't set rh=0 when B<minHeight - allows resistance-only strategies
 // + Added guard against negative T for numerical stability
+//
+// NOTE: The Julia implementation uses a different (simplified geometric) formula for dike
+// volume that is numerically stable. This C++ code retains the paper's formula for
+// historical reference, but dike calculations are NOT validated against Julia.
 
 // Copyright (C) 2019 Robert L. Ceres
 
@@ -44,8 +49,8 @@ extern "C" {
     const double CEC=17;              //m City Elevation Change, Bennet Park in the Washington Heights area of Manhattan is
     const double CityWidth=43000.0;                      //m
     const double CityLength=2000.0;                     //m
-    // BUG FIX 3: Corrected slope definition from CityLength/CityWidth to CityWidth/CityLength
-    const double CitySlope=CityWidth/CityLength;  // = 21.5 (was 0.0465)
+    // BUG FIX 5: Corrected slope definition to CEC/CityLength (terrain grade = rise/run)
+    const double CitySlope=CEC/CityLength;  // = 0.0085 (was 0.0465, then incorrectly 21.5)
     const double TotalCityValueInitial = 1500000000000; // 1,500,000,000,000 1,000,000,000,000  1,00,000,000,000;  50,000,000,000,000
     const double WithdrawelPercentLost = 0.01;
     const double BH = 30;//20; //m
@@ -259,10 +264,11 @@ extern "C" {
             cityChar[rp]=P;
           }
         if (D==baseValue) {cityChar[dh]=0.0;} else {cityChar[dh]=D;}
+        // BUG FIX 8: Don't set rh=0 when B<minHeight - allows resistance-only strategies
         if (B<minHeight)
         {
             cityChar[dbh]=0.0;
-            cityChar[rh]=0;
+            // Previously: cityChar[rh]=0; - REMOVED to allow R>0 when B=0
         }
         else
         {
@@ -552,10 +558,10 @@ int main() {
 
     // Write summary header
     summary_out << "# ICOW C++ Reference Outputs (Debugged Version)\n";
-    summary_out << "# Generated from debugged C++ code with 3 bug fixes applied\n";
-    summary_out << "# Bug Fix 1: Line 147 - Changed pow(..., 1/2) to sqrt(...)\n";
-    summary_out << "# Bug Fix 2: Line 145 - Changed 2*dh*(ch+1/sd) to 2*ch*(ch+1/sd)\n";
-    summary_out << "# Bug Fix 3: Line 35 - Changed CitySlope from CityLength/CityWidth to CityWidth/CityLength\n\n";
+    summary_out << "# Generated from debugged C++ code with 8 bug fixes applied\n";
+    summary_out << "# See header of icow_debugged.cpp and _background/equations.md for full details\n";
+    summary_out << "# Bug Fix 5: CitySlope = CEC/CityLength (terrain grade)\n";
+    summary_out << "# Bug Fix 8: Don't set rh=0 when B<minHeight (allows resistance-only)\n\n";
 
     // Process each test case
     for (const auto& tc : test_cases) {

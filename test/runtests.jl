@@ -10,6 +10,9 @@ using Distributions
     # Core physics functions (validated against debugged C++ reference)
     include("core/cpp_validation_tests.jl")
 
+    # Core edge cases and boundary conditions
+    include("core/edge_cases_tests.jl")
+
     # Stochastic submodule
     @testset "Stochastic" begin
         include("stochastic/types_tests.jl")
