@@ -13,4 +13,7 @@ SimOptDecisions = "8764eb7a-9599-4112-a7c7-9b4115e89f97"
 Distributions = ">= 0.25"
 QuadGK = ">= 2"
 SimOptDecisions = ">= 0.1"
-julia = "1.10"
+julia = "1.11"
+
+[sources]
+SimOptDecisions = {url = "https://github.com/dossgollin-lab/SimOptDecisions"}
