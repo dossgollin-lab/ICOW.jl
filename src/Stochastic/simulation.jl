@@ -152,7 +152,7 @@ function _investment_cost(config::StochasticConfig{T}, fd::FloodDefenses{T}) whe
         config.f_adj, config.f_lin, config.f_exp, config.t_exp, fd.P
     )
     C_R = Core.resistance_cost(
-        V_w, f_cR, config.H_bldg, config.H_city, fd.W, fd.R, fd.B, config.b_basement
+        V_w, f_cR, config.H_bldg, config.H_city, fd.W, fd.R, fd.B, fd.D, config.b_basement
     )
 
     if fd.D == zero(T)

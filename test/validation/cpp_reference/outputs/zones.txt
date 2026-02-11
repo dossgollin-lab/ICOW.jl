@@ -36,14 +36,14 @@ zone4_top: 17
 
 # Test Case: resistance_only
 # Levers: W=0, R=4, P=0.5, D=0, B=0
-case_number: 9
-zone1_value: 0
+case_number: 8
+zone1_value: 352941176470.588
 zone2_value: 0
 zone3_value: 0
-zone4_value: 1500000000000
-zone1_top: 0
-zone2_top: 0
-zone3_top: 0
+zone4_value: 1147058823529.41
+zone1_top: 4
+zone2_top: 4
+zone3_top: 4
 zone4_top: 17
 
 # Test Case: withdrawal_only
