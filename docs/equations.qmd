@@ -209,6 +209,27 @@ $$
 C_D = V_{\text{dike}} \cdot c_d
 $$
 
+Because the volume formula is roughly quadratic in $D$ (plus the startup height $D_{\text{startup}}$), each additional meter of dike becomes progressively more expensive:
+
+```{julia}
+#| code-fold: true
+using ICOW, ICOW.EAD, ICOW.Core
+using CairoMakie
+CairoMakie.activate!(; type="svg")
+
+config = EADConfig()
+D_range = range(0, 15; length=200)
+costs = map(D_range) do D
+    V = Core.dike_volume(config.H_city, config.D_city, config.D_startup, config.s_dike, config.w_d, config.W_city, Float64(D))
+    Core.dike_cost(V, config.c_d) / 1e9
+end
+
+fig = Figure(size=(600, 350))
+ax = Axis(fig[1, 1]; xlabel="Dike height D (m)", ylabel="Construction cost (billion USD)")
+lines!(ax, collect(D_range), costs; linewidth=2)
+fig
+```
+
 ### Total Investment
 
 $$
