@@ -99,6 +99,17 @@ end
             V_w * f_cR * R_small * (R_small / 2 + b_basement) / (H_bldg * (H_city - W))
         @test cost ≈ expected
     end
+
+    @testset "B=0 with dike (D>0) uses Eq 4" begin
+        B = 0.0
+        D = 5.0
+
+        # B=0 means no dike base constraining resistance, so Eq 4 applies
+        cost = ICOWCore.resistance_cost(V_w, f_cR, H_bldg, H_city, W, R, B, D, b_basement)
+        expected = V_w * f_cR * R * (R / 2 + b_basement) / (H_bldg * (H_city - W))
+        @test cost ≈ expected
+        @test cost > 0
+    end
 end
 
 @testset "Threshold Damage Penalty" begin

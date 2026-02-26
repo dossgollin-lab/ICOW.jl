@@ -40,7 +40,7 @@ end
 
 Calculate flood-proofing cost (Equations 4-5). See _background/equations.md.
 V_w is value after withdrawal, f_cR is resistance cost fraction.
-Uses Eq 4 (unconstrained) when R < B or when there is no dike (B=0 and D=0).
+Uses Eq 4 (unconstrained) when R < B or when B=0.
 """
 function resistance_cost(
     V_w::T, f_cR::T, H_bldg::T, H_city::T, W::T, R::T, B::T, D::T, b_basement::T
@@ -48,9 +48,9 @@ function resistance_cost(
     @assert W < H_city "W must be strictly less than H_city to avoid division by zero"
     denominator = H_bldg * (H_city - W)
 
-    # Use Eq 4 (unconstrained) when R < B or when there's no dike (B=0 and D=0)
+    # Use Eq 4 (unconstrained) when R < B or when B=0 (no dike base constraining resistance)
     # This allows "resistance-only" strategies where flood-proofing is the sole defense
-    if R < B || (B == zero(T) && D == zero(T))
+    if R < B || B == zero(T)
         # Eq 4: C_R = (V_w * f_cR * R * (R/2 + b)) / (H_bldg * (H_city - W))
         numerator = V_w * f_cR * R * (R / 2 + b_basement)
     else
